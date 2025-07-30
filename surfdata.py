@@ -322,30 +322,23 @@ def create_surf_session(user_id):
             result = create_session_with_participants(session_data, user_id, tagged_users)
             
             if result:
-                created_sessions = result['sessions']
+                created_session = result['session']
                 participants = result['participants']
-                session_group_id = result['session_group_id']
                 
-                # Return enhanced response with tagging information
+                # Return simplified response
                 return jsonify({
                     "status": "success",
-                    "message": f"Surf session created successfully with {len(tagged_users)} tagged participants",
+                    "message": f"Surf session created successfully with {len(participants) - 1} tagged participants",
                     "data": {
-                        "session_group_id": session_group_id,
-                        "sessions_created": len(created_sessions),
-                        "original_session_id": created_sessions[0]["id"],
-                        "tagged_sessions": [
-                            {"session_id": s["id"], "user_id": s["user_id"]} 
-                            for s in created_sessions[1:]
-                        ],
-                        "participants": len(participants),
-                        "location": session_data['location'],
+                        "session_id": created_session["id"],
+                        "location": created_session['location'],
                         "date": session_date,
                         "time": session_time,
                         "end_time": end_time,
                         "swell_buoy_id": session_data.get('swell_buoy_id'),
                         "met_buoy_id": session_data.get('met_buoy_id'),
-                        "tide_station_id": session_data.get('tide_station_id')
+                        "tide_station_id": session_data.get('tide_station_id'),
+                        "participants": [p['user_id'] for p in participants]
                     }
                 }), 200
             else:
