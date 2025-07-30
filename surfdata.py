@@ -18,7 +18,6 @@ from ocean_data.swell import fetch_swell_data
 from ocean_data.meteorology import fetch_meteorological_data
 from ocean_data.tide import fetch_tide_data, fetch_historical_tide_data, tide_data_list_to_json
 from ocean_data.location import get_buoys_for_location, is_valid_location, get_spot_config
-from ocean_data.forecast import get_surf_forecast
 
 app = Flask(__name__)
 
@@ -699,34 +698,7 @@ def search_users(user_id):
         print(f"Error in user search: {str(e)}")
         return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
 
-@app.route('/api/forecast/<string:spot_name>', methods=['GET'])
-@token_required
-@cache.cached(timeout=3600, key_prefix='forecast:%s')
-def get_forecast_endpoint(user_id, spot_name):
-    """
-    API endpoint to get the 7-day surf forecast for a specific spot.
-    The response is cached for 1 hour.
-    """
-    try:
-        # The spot_name from the URL is automatically used as the cache key
-        forecast_data = get_surf_forecast(spot_name)
-        
-        if forecast_data is None:
-            return jsonify({"status": "fail", "message": f"Invalid surf spot: {spot_name}"}), 404
-            
-        return jsonify({
-            "status": "success",
-            "data": forecast_data
-        }), 200
-        
-    except Exception as e:
-        print(f"Error in forecast endpoint: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({
-            "status": "error",
-            "message": f"An error occurred while generating the forecast: {str(e)}"
-        }), 500
+
 
 @app.route('/api/surf-spots', methods=['GET'])
 def get_surf_spots():
