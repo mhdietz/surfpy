@@ -35,37 +35,29 @@ def get_all_sessions():
             # Get all session data plus participants from the same session group
             cur.execute("""
                 SELECT 
-                    s1.*, 
-                    u1.email as user_email,
+                    s.*, 
+                    u.email as user_email,
                     COALESCE(
-                        u1.raw_user_meta_data->>'display_name',
-                        NULLIF(TRIM(COALESCE(u1.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u1.raw_user_meta_data->>'last_name', '')), ''),
-                        split_part(u1.email, '@', 1)
+                        u.raw_user_meta_data->>'display_name',
+                        NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
+                        split_part(u.email, '@', 1)
                     ) as display_name,
-                    
-                    -- Get other participants in the same session group (excluding current session owner)
-                    COALESCE(
-                        ARRAY_AGG(
-                            DISTINCT jsonb_build_object(
-                                'user_id', s2.user_id,
-                                'display_name', COALESCE(
-                                    u2.raw_user_meta_data->>'display_name',
-                                    NULLIF(TRIM(COALESCE(u2.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u2.raw_user_meta_data->>'last_name', '')), ''),
-                                    split_part(u2.email, '@', 1)
-                                )
+                    COALESCE((
+                        SELECT jsonb_agg(jsonb_build_object(
+                            'user_id', p_u.id,
+                            'display_name', COALESCE(
+                                p_u.raw_user_meta_data->>'display_name',
+                                NULLIF(TRIM(COALESCE(p_u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(p_u.raw_user_meta_data->>'last_name', '')), ''),
+                                split_part(p_u.email, '@', 1)
                             )
-                        ) FILTER (WHERE s2.user_id != s1.user_id AND s2.user_id IS NOT NULL),
-                        ARRAY[]::jsonb[]
-                    ) as participants
-                    
-                FROM surf_sessions_duplicate s1
-                LEFT JOIN auth.users u1 ON s1.user_id = u1.id
-                LEFT JOIN surf_sessions_duplicate s2 ON s1.session_group_id = s2.session_group_id AND s1.session_group_id IS NOT NULL
-                LEFT JOIN auth.users u2 ON s2.user_id = u2.id
-                GROUP BY s1.id, s1.created_at, s1.session_name, s1.location, s1.fun_rating, s1.time, s1.session_notes, 
-                         s1.raw_swell, s1.date, s1.swell_buoy_id, s1.raw_met, s1.met_buoy_id, s1.raw_tide, 
-                         s1.tide_station_id, s1.user_id, s1.end_time, s1.session_group_id, u1.email, u1.raw_user_meta_data
-                ORDER BY s1.created_at DESC
+                        ))
+                        FROM session_participants sp
+                        JOIN auth.users p_u ON sp.user_id = p_u.id
+                        WHERE sp.session_id = s.id
+                    ), '[]'::jsonb) as participants
+                FROM surf_sessions_duplicate s
+                LEFT JOIN auth.users u ON s.user_id = u.id
+                ORDER BY s.created_at DESC
             """)
             sessions = cur.fetchall()
             # Convert to a list so we can modify it
@@ -112,38 +104,30 @@ def get_user_sessions(user_id):
             # Same query structure as get_all_sessions but filtered by user_id
             cur.execute("""
                 SELECT 
-                    s1.*, 
-                    u1.email as user_email,
+                    s.*, 
+                    u.email as user_email,
                     COALESCE(
-                        u1.raw_user_meta_data->>'display_name',
-                        NULLIF(TRIM(COALESCE(u1.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u1.raw_user_meta_data->>'last_name', '')), ''),
-                        split_part(u1.email, '@', 1)
+                        u.raw_user_meta_data->>'display_name',
+                        NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
+                        split_part(u.email, '@', 1)
                     ) as display_name,
-                    
-                    -- Get other participants in the same session group (excluding current session owner)
-                    COALESCE(
-                        ARRAY_AGG(
-                            DISTINCT jsonb_build_object(
-                                'user_id', s2.user_id,
-                                'display_name', COALESCE(
-                                    u2.raw_user_meta_data->>'display_name',
-                                    NULLIF(TRIM(COALESCE(u2.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u2.raw_user_meta_data->>'last_name', '')), ''),
-                                    split_part(u2.email, '@', 1)
-                                )
+                    COALESCE((
+                        SELECT jsonb_agg(jsonb_build_object(
+                            'user_id', p_u.id,
+                            'display_name', COALESCE(
+                                p_u.raw_user_meta_data->>'display_name',
+                                NULLIF(TRIM(COALESCE(p_u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(p_u.raw_user_meta_data->>'last_name', '')), ''),
+                                split_part(p_u.email, '@', 1)
                             )
-                        ) FILTER (WHERE s2.user_id != s1.user_id AND s2.user_id IS NOT NULL),
-                        ARRAY[]::jsonb[]
-                    ) as participants
-                    
-                FROM surf_sessions_duplicate s1
-                LEFT JOIN auth.users u1 ON s1.user_id = u1.id
-                LEFT JOIN surf_sessions_duplicate s2 ON s1.session_group_id = s2.session_group_id AND s1.session_group_id IS NOT NULL
-                LEFT JOIN auth.users u2 ON s2.user_id = u2.id
-                WHERE s1.user_id = %s  -- KEY DIFFERENCE: Filter by specific user
-                GROUP BY s1.id, s1.created_at, s1.session_name, s1.location, s1.fun_rating, s1.time, s1.session_notes, 
-                         s1.raw_swell, s1.date, s1.swell_buoy_id, s1.raw_met, s1.met_buoy_id, s1.raw_tide, 
-                         s1.tide_station_id, s1.user_id, s1.end_time, s1.session_group_id, u1.email, u1.raw_user_meta_data
-                ORDER BY s1.created_at DESC
+                        ))
+                        FROM session_participants sp
+                        JOIN auth.users p_u ON sp.user_id = p_u.id
+                        WHERE sp.session_id = s.id
+                    ), '[]'::jsonb) as participants
+                FROM surf_sessions_duplicate s
+                LEFT JOIN auth.users u ON s.user_id = u.id
+                WHERE s.user_id = %s
+                ORDER BY s.created_at DESC
             """, (user_id,))
             
             sessions = cur.fetchall()
@@ -189,37 +173,29 @@ def get_session(session_id):
             # Get session details plus participants from the same session group
             cur.execute("""
                 SELECT 
-                    s1.*, 
-                    u1.email as user_email,
+                    s.*, 
+                    u.email as user_email,
                     COALESCE(
-                        u1.raw_user_meta_data->>'display_name',
-                        NULLIF(TRIM(COALESCE(u1.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u1.raw_user_meta_data->>'last_name', '')), ''),
-                        split_part(u1.email, '@', 1)
+                        u.raw_user_meta_data->>'display_name',
+                        NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
+                        split_part(u.email, '@', 1)
                     ) as display_name,
-                    
-                    -- Get other participants in the same session group (excluding current session owner)
-                    COALESCE(
-                        ARRAY_AGG(
-                            DISTINCT jsonb_build_object(
-                                'user_id', s2.user_id,
-                                'display_name', COALESCE(
-                                    u2.raw_user_meta_data->>'display_name',
-                                    NULLIF(TRIM(COALESCE(u2.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u2.raw_user_meta_data->>'last_name', '')), ''),
-                                    split_part(u2.email, '@', 1)
-                                )
+                    COALESCE((
+                        SELECT jsonb_agg(jsonb_build_object(
+                            'user_id', p_u.id,
+                            'display_name', COALESCE(
+                                p_u.raw_user_meta_data->>'display_name',
+                                NULLIF(TRIM(COALESCE(p_u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(p_u.raw_user_meta_data->>'last_name', '')), ''),
+                                split_part(p_u.email, '@', 1)
                             )
-                        ) FILTER (WHERE s2.user_id != s1.user_id AND s2.user_id IS NOT NULL),
-                        ARRAY[]::jsonb[]
-                    ) as participants
-                    
-                FROM surf_sessions_duplicate s1
-                LEFT JOIN auth.users u1 ON s1.user_id = u1.id
-                LEFT JOIN surf_sessions_duplicate s2 ON s1.session_group_id = s2.session_group_id AND s1.session_group_id IS NOT NULL
-                LEFT JOIN auth.users u2 ON s2.user_id = u2.id
-                WHERE s1.id = %s
-                GROUP BY s1.id, s1.created_at, s1.session_name, s1.location, s1.fun_rating, s1.time, s1.session_notes, 
-                         s1.raw_swell, s1.date, s1.swell_buoy_id, s1.raw_met, s1.met_buoy_id, s1.raw_tide, 
-                         s1.tide_station_id, s1.user_id, s1.end_time, s1.session_group_id, u1.email, u1.raw_user_meta_data
+                        ))
+                        FROM session_participants sp
+                        JOIN auth.users p_u ON sp.user_id = p_u.id
+                        WHERE sp.session_id = s.id
+                    ), '[]'::jsonb) as participants
+                FROM surf_sessions_duplicate s
+                LEFT JOIN auth.users u ON s.user_id = u.id
+                WHERE s.id = %s
             """, (session_id,))
             session = cur.fetchone()
             
@@ -691,8 +667,8 @@ def generate_session_group_id():
 
 def create_session_with_participants(session_data, creator_user_id, tagged_user_ids=None):
     """
-    Create a session with optional tagged participants
-    Returns the created sessions and participant records
+    Create a session with optional tagged participants.
+    This creates a single session and then adds participants to it.
     """
     conn = get_db_connection()
     if not conn:
@@ -700,193 +676,53 @@ def create_session_with_participants(session_data, creator_user_id, tagged_user_
     
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Generate a session group ID if we have tagged users
-            session_group_id = generate_session_group_id() if tagged_user_ids else None
+            # 1. Create the single session for the creator
+            # The session_group_id is no longer needed for new sessions
+            if 'session_group_id' in session_data:
+                del session_data['session_group_id']
             
-            # Add session_group_id to the original session data
-            if session_group_id:
-                session_data['session_group_id'] = session_group_id
-            
-            # 1. Create the original session for the creator
             original_session = create_session(session_data, creator_user_id)
             if not original_session:
                 return None
             
-            created_sessions = [original_session]
+            new_session_id = original_session['id']
             participant_records = []
             
-            # 2. Create participant record for the creator (using the same connection)
-            if session_group_id:
-                cur.execute("""
-                    INSERT INTO session_participants (session_id, user_id, tagged_by_user_id, role)
-                    VALUES (%s, %s, %s, %s)
-                    RETURNING *
-                """, (original_session['id'], creator_user_id, creator_user_id, 'creator'))
-                
-                creator_participant = cur.fetchone()
-                if creator_participant:
-                    participant_records.append(dict(creator_participant))
+            # 2. Create participant record for the creator
+            cur.execute("""
+                INSERT INTO session_participants (session_id, user_id, tagged_by_user_id, role)
+                VALUES (%s, %s, %s, %s)
+                RETURNING *
+            """, (new_session_id, creator_user_id, creator_user_id, 'creator'))
             
-            # 3. Create duplicate sessions for tagged users (all in the same transaction)
+            creator_participant = cur.fetchone()
+            if creator_participant:
+                participant_records.append(dict(creator_participant))
+            
+            # 3. Create participant records for tagged users
             if tagged_user_ids:
                 for tagged_user_id in tagged_user_ids:
-                    # Create duplicate session data
-                    duplicate_data = session_data.copy()
-                    duplicate_data['user_id'] = tagged_user_id
-                    duplicate_data['session_group_id'] = session_group_id
+                    cur.execute("""
+                        INSERT INTO session_participants (session_id, user_id, tagged_by_user_id, role)
+                        VALUES (%s, %s, %s, %s)
+                        RETURNING *
+                    """, (new_session_id, tagged_user_id, creator_user_id, 'tagged_participant'))
                     
-                    # Find the next available ID
-                    cur.execute("SELECT MAX(id) FROM surf_sessions_duplicate")
-                    max_id_result = cur.fetchone()
-                    max_id = max_id_result['max'] if max_id_result and 'max' in max_id_result else None
-                    next_id = 1 if max_id is None else max_id + 1
-                    
-                    duplicate_data['id'] = next_id
-                    
-                    # Handle JSONB fields
-                    if 'raw_swell' in duplicate_data:
-                        if not isinstance(duplicate_data['raw_swell'], Json):
-                            duplicate_data['raw_swell'] = Json(duplicate_data['raw_swell'])
-                            
-                    if 'raw_met' in duplicate_data:
-                        if not isinstance(duplicate_data['raw_met'], Json):
-                            duplicate_data['raw_met'] = Json(duplicate_data['raw_met'])
-                            
-                    if 'raw_tide' in duplicate_data:
-                        if not isinstance(duplicate_data['raw_tide'], Json):
-                            duplicate_data['raw_tide'] = Json(duplicate_data['raw_tide'])
-                    
-                    # Remove created_at if present
-                    if 'created_at' in duplicate_data:
-                        del duplicate_data['created_at']
-                    
-                    # Insert the duplicate session
-                    columns = ', '.join(duplicate_data.keys())
-                    placeholders = ', '.join(['%s'] * len(duplicate_data))
-                    
-                    query = f"""
-                    INSERT INTO surf_sessions_duplicate ({columns}) 
-                    VALUES ({placeholders})
-                    RETURNING *
-                    """
-                    
-                    cur.execute(query, list(duplicate_data.values()))
-                    duplicate_session = cur.fetchone()
-                    
-                    if duplicate_session:
-                        # Convert time objects to strings for JSON serialization
-                        duplicate_session_dict = dict(duplicate_session)
-                        if 'time' in duplicate_session_dict and isinstance(duplicate_session_dict['time'], time):
-                            duplicate_session_dict['time'] = duplicate_session_dict['time'].isoformat()
-                        if 'end_time' in duplicate_session_dict and isinstance(duplicate_session_dict['end_time'], time):
-                            duplicate_session_dict['end_time'] = duplicate_session_dict['end_time'].isoformat()
-                        if 'date' in duplicate_session_dict and isinstance(duplicate_session_dict['date'], date):
-                            duplicate_session_dict['date'] = duplicate_session_dict['date'].isoformat()
-                        
-                        created_sessions.append(duplicate_session_dict)
-                        
-                        # Create participant record for tagged user (in the same transaction)
-                        cur.execute("""
-                            INSERT INTO session_participants (session_id, user_id, tagged_by_user_id, role)
-                            VALUES (%s, %s, %s, %s)
-                            RETURNING *
-                        """, (duplicate_session['id'], tagged_user_id, creator_user_id, 'tagged_participant'))
-                        
-                        tagged_participant = cur.fetchone()
-                        if tagged_participant:
-                            participant_records.append(dict(tagged_participant))
+                    tagged_participant = cur.fetchone()
+                    if tagged_participant:
+                        participant_records.append(dict(tagged_participant))
             
             # Commit the entire transaction
             conn.commit()
             
             return {
-                'sessions': created_sessions,
-                'participants': participant_records,
-                'session_group_id': session_group_id
+                'session': original_session,
+                'participants': participant_records
             }
             
     except Exception as e:
         print(f"Error creating session with participants: {e}")
         conn.rollback()
-        raise
-    finally:
-        conn.close()
-
-def create_duplicate_session(original_session_data, new_user_id, session_group_id):
-    """Create a duplicate session for a tagged user"""
-    conn = get_db_connection()
-    if not conn:
-        return None
-    
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Create a copy of the session data for the new user
-            duplicate_data = original_session_data.copy()
-            duplicate_data['user_id'] = new_user_id
-            duplicate_data['session_group_id'] = session_group_id
-            
-            # Find the next available ID
-            cur.execute("SELECT MAX(id) FROM surf_sessions_duplicate")
-            max_id_result = cur.fetchone()
-            max_id = max_id_result['max'] if max_id_result and 'max' in max_id_result else None
-            next_id = 1 if max_id is None else max_id + 1
-            
-            duplicate_data['id'] = next_id
-            
-            # Handle JSONB fields - check if they're already Json objects or raw data
-            if 'raw_swell' in duplicate_data:
-                if isinstance(duplicate_data['raw_swell'], Json):
-                    # Already a Json object, keep as is
-                    pass
-                else:
-                    # Raw data, wrap in Json
-                    duplicate_data['raw_swell'] = Json(duplicate_data['raw_swell'])
-                    
-            if 'raw_met' in duplicate_data:
-                if isinstance(duplicate_data['raw_met'], Json):
-                    # Already a Json object, keep as is
-                    pass
-                else:
-                    # Raw data, wrap in Json
-                    duplicate_data['raw_met'] = Json(duplicate_data['raw_met'])
-                    
-            if 'raw_tide' in duplicate_data:
-                if isinstance(duplicate_data['raw_tide'], Json):
-                    # Already a Json object, keep as is
-                    pass
-                else:
-                    # Raw data, wrap in Json
-                    duplicate_data['raw_tide'] = Json(duplicate_data['raw_tide'])
-            
-            # Remove created_at if present
-            if 'created_at' in duplicate_data:
-                del duplicate_data['created_at']
-            
-            columns = ', '.join(duplicate_data.keys())
-            placeholders = ', '.join(['%s'] * len(duplicate_data))
-            
-            query = f"""
-            INSERT INTO surf_sessions_duplicate ({columns}) 
-            VALUES ({placeholders})
-            RETURNING *
-            """
-            
-            cur.execute(query, list(duplicate_data.values()))
-            
-            duplicate_session = cur.fetchone()
-            if duplicate_session:
-                # Convert time objects to strings for JSON serialization
-                if 'time' in duplicate_session and isinstance(duplicate_session['time'], time):
-                    duplicate_session['time'] = duplicate_session['time'].isoformat()
-                if 'end_time' in duplicate_session and isinstance(duplicate_session['end_time'], time):
-                    duplicate_session['end_time'] = duplicate_session['end_time'].isoformat()
-                if 'date' in duplicate_session and isinstance(duplicate_session['date'], date):
-                    duplicate_session['date'] = duplicate_session['date'].isoformat()
-            
-            return duplicate_session
-            
-    except Exception as e:
-        print(f"Error creating duplicate session: {e}")
         raise
     finally:
         conn.close()
