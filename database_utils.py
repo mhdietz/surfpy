@@ -24,15 +24,15 @@ def get_db_connection():
         print(f"Error connecting to database: {e}")
         return None
 
-def get_all_sessions():
-    """Retrieve all surf sessions with user display name information and participants"""
+def get_all_sessions(current_user_id):
+    """Retrieve all surf sessions with user display name, participants, and shaka data"""
     conn = get_db_connection()
     if not conn:
         return []
     
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Get all session data plus participants from the same session group
+            # Get all session data plus participants and shaka info
             cur.execute("""
                 SELECT 
                     s.*, 
@@ -54,11 +54,34 @@ def get_all_sessions():
                         FROM session_participants sp
                         JOIN auth.users p_u ON sp.user_id = p_u.id
                         WHERE sp.session_id = s.id
-                    ), '[]'::jsonb) as participants
+                    ), '[]'::jsonb) as participants,
+                    jsonb_build_object(
+                        'count', (SELECT COUNT(*) FROM session_shakas WHERE session_id = s.id),
+                        'viewer_has_shakaed', EXISTS(SELECT 1 FROM session_shakas WHERE session_id = s.id AND user_id = %s),
+                        'preview', COALESCE((
+                            SELECT jsonb_agg(shaka_user.data)
+                            FROM (
+                                SELECT
+                                    jsonb_build_object(
+                                        'user_id', u_shaka.id,
+                                        'display_name', COALESCE(
+                                            u_shaka.raw_user_meta_data->>'display_name',
+                                            NULLIF(TRIM(COALESCE(u_shaka.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u_shaka.raw_user_meta_data->>'last_name', '')), ''),
+                                            split_part(u_shaka.email, '@', 1)
+                                        )
+                                    ) as data
+                                FROM session_shakas ss
+                                JOIN auth.users u_shaka ON ss.user_id = u_shaka.id
+                                WHERE ss.session_id = s.id
+                                ORDER BY ss.created_at DESC
+                                LIMIT 2
+                            ) as shaka_user
+                        ), '[]'::jsonb)
+                    ) as shakas
                 FROM surf_sessions_duplicate s
                 LEFT JOIN auth.users u ON s.user_id = u.id
                 ORDER BY s.created_at DESC
-            """)
+            """, (current_user_id,))
             sessions = cur.fetchall()
             # Convert to a list so we can modify it
             sessions_list = list(sessions)
@@ -94,7 +117,7 @@ def get_all_sessions():
 # Add this new function to your database_utils.py file (place it near the other session functions)
 
 def get_user_sessions(user_id):
-    """Retrieve surf sessions for a specific user with participants"""
+    """Retrieve surf sessions for a specific user with participants and shaka data"""
     conn = get_db_connection()
     if not conn:
         return []
@@ -123,12 +146,35 @@ def get_user_sessions(user_id):
                         FROM session_participants sp
                         JOIN auth.users p_u ON sp.user_id = p_u.id
                         WHERE sp.session_id = s.id
-                    ), '[]'::jsonb) as participants
+                    ), '[]'::jsonb) as participants,
+                    jsonb_build_object(
+                        'count', (SELECT COUNT(*) FROM session_shakas WHERE session_id = s.id),
+                        'viewer_has_shakaed', EXISTS(SELECT 1 FROM session_shakas WHERE session_id = s.id AND user_id = %s),
+                        'preview', COALESCE((
+                            SELECT jsonb_agg(shaka_user.data)
+                            FROM (
+                                SELECT
+                                    jsonb_build_object(
+                                        'user_id', u_shaka.id,
+                                        'display_name', COALESCE(
+                                            u_shaka.raw_user_meta_data->>'display_name',
+                                            NULLIF(TRIM(COALESCE(u_shaka.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u_shaka.raw_user_meta_data->>'last_name', '')), ''),
+                                            split_part(u_shaka.email, '@', 1)
+                                        )
+                                    ) as data
+                                FROM session_shakas ss
+                                JOIN auth.users u_shaka ON ss.user_id = u_shaka.id
+                                WHERE ss.session_id = s.id
+                                ORDER BY ss.created_at DESC
+                                LIMIT 2
+                            ) as shaka_user
+                        ), '[]'::jsonb)
+                    ) as shakas
                 FROM surf_sessions_duplicate s
                 LEFT JOIN auth.users u ON s.user_id = u.id
                 WHERE s.user_id = %s
                 ORDER BY s.created_at DESC
-            """, (user_id,))
+            """, (user_id, user_id))
             
             sessions = cur.fetchall()
             # Convert to a list so we can modify it
@@ -162,15 +208,15 @@ def get_user_sessions(user_id):
     finally:
         conn.close()
 
-def get_session(session_id):
-    """Retrieve a single surf session including user display name and participants"""
+def get_session(session_id, current_user_id):
+    """Retrieve a single surf session including user display name, participants, and shaka data"""
     conn = get_db_connection()
     if not conn:
         return None
     
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Get session details plus participants from the same session group
+            # Get session details plus participants and shaka info
             cur.execute("""
                 SELECT 
                     s.*, 
@@ -192,11 +238,34 @@ def get_session(session_id):
                         FROM session_participants sp
                         JOIN auth.users p_u ON sp.user_id = p_u.id
                         WHERE sp.session_id = s.id
-                    ), '[]'::jsonb) as participants
+                    ), '[]'::jsonb) as participants,
+                    jsonb_build_object(
+                        'count', (SELECT COUNT(*) FROM session_shakas WHERE session_id = s.id),
+                        'viewer_has_shakaed', EXISTS(SELECT 1 FROM session_shakas WHERE session_id = s.id AND user_id = %s),
+                        'preview', COALESCE((
+                            SELECT jsonb_agg(shaka_user.data)
+                            FROM (
+                                SELECT
+                                    jsonb_build_object(
+                                        'user_id', u_shaka.id,
+                                        'display_name', COALESCE(
+                                            u_shaka.raw_user_meta_data->>'display_name',
+                                            NULLIF(TRIM(COALESCE(u_shaka.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u_shaka.raw_user_meta_data->>'last_name', '')), ''),
+                                            split_part(u_shaka.email, '@', 1)
+                                        )
+                                    ) as data
+                                FROM session_shakas ss
+                                JOIN auth.users u_shaka ON ss.user_id = u_shaka.id
+                                WHERE ss.session_id = s.id
+                                ORDER BY ss.created_at DESC
+                                LIMIT 2
+                            ) as shaka_user
+                        ), '[]'::jsonb)
+                    ) as shakas
                 FROM surf_sessions_duplicate s
                 LEFT JOIN auth.users u ON s.user_id = u.id
                 WHERE s.id = %s
-            """, (session_id,))
+            """, (current_user_id, session_id))
             session = cur.fetchone()
             
             if session:
@@ -406,6 +475,52 @@ def delete_session(session_id, user_id):
         print(f"Error deleting session: {e}")
         conn.rollback()
         raise  # Re-raise to see the actual error
+    finally:
+        conn.close()
+
+def toggle_shaka(session_id, user_id):
+    """Toggle a 'shaka' on a surf session for a user."""
+    conn = get_db_connection()
+    if not conn:
+        return None
+
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # Check if the shaka already exists
+            cur.execute(
+                "SELECT * FROM session_shakas WHERE session_id = %s AND user_id = %s",
+                (session_id, user_id)
+            )
+            exists = cur.fetchone()
+
+            if exists:
+                # If it exists, delete it
+                cur.execute(
+                    "DELETE FROM session_shakas WHERE session_id = %s AND user_id = %s",
+                    (session_id, user_id)
+                )
+            else:
+                # If it does not exist, insert it
+                cur.execute(
+                    "INSERT INTO session_shakas (session_id, user_id) VALUES (%s, %s)",
+                    (session_id, user_id)
+                )
+
+            # Get the new total count of shakas for the session
+            cur.execute(
+                "SELECT COUNT(*) as shaka_count FROM session_shakas WHERE session_id = %s",
+                (session_id,)
+            )
+            result = cur.fetchone()
+            shaka_count = result['shaka_count'] if result else 0
+
+            conn.commit()
+            return {"shaka_count": shaka_count}
+
+    except Exception as e:
+        print(f"Error toggling shaka: {e}")
+        conn.rollback()
+        raise
     finally:
         conn.close()
 
@@ -782,8 +897,8 @@ def get_session_participants(session_id):
     finally:
         conn.close()
 
-def get_sessions_by_location(location_slug):
-    """Retrieve all surf sessions for a specific location, including participants."""
+def get_sessions_by_location(location_slug, current_user_id):
+    """Retrieve all surf sessions for a specific location, including participants and shaka data."""
     # Get the configuration for the given location slug from the database
     spot_config = get_surf_spot_by_slug(location_slug)
     if not spot_config:
@@ -829,7 +944,30 @@ def get_sessions_by_location(location_slug):
                             )
                         ) FILTER (WHERE s2.user_id != s1.user_id AND s2.user_id IS NOT NULL),
                         ARRAY[]::jsonb[]
-                    ) as participants
+                    ) as participants,
+                    jsonb_build_object(
+                        'count', (SELECT COUNT(*) FROM session_shakas WHERE session_id = s1.id),
+                        'viewer_has_shakaed', EXISTS(SELECT 1 FROM session_shakas WHERE session_id = s1.id AND user_id = %s),
+                        'preview', COALESCE((
+                            SELECT jsonb_agg(shaka_user.data)
+                            FROM (
+                                SELECT
+                                    jsonb_build_object(
+                                        'user_id', u_shaka.id,
+                                        'display_name', COALESCE(
+                                            u_shaka.raw_user_meta_data->>'display_name',
+                                            NULLIF(TRIM(COALESCE(u_shaka.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u_shaka.raw_user_meta_data->>'last_name', '')), ''),
+                                            split_part(u_shaka.email, '@', 1)
+                                        )
+                                    ) as data
+                                FROM session_shakas ss
+                                JOIN auth.users u_shaka ON ss.user_id = u_shaka.id
+                                WHERE ss.session_id = s1.id
+                                ORDER BY ss.created_at DESC
+                                LIMIT 2
+                            ) as shaka_user
+                        ), '[]'::jsonb)
+                    ) as shakas
                 FROM surf_sessions_duplicate s1
                 LEFT JOIN auth.users u1 ON s1.user_id = u1.id
                 LEFT JOIN surf_sessions_duplicate s2 ON s1.session_group_id = s2.session_group_id AND s1.session_group_id IS NOT NULL
@@ -841,7 +979,7 @@ def get_sessions_by_location(location_slug):
                 ORDER BY s1.created_at DESC
             """
 
-            cur.execute(query, (tuple(possible_names),))
+            cur.execute(query, (current_user_id, tuple(possible_names)))
             sessions = cur.fetchall()
             sessions_list = list(sessions)
 

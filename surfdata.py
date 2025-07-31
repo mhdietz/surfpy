@@ -387,7 +387,7 @@ def get_surf_sessions(user_id):
             sessions = get_user_sessions(user_id)
         else:
             # Existing behavior - get all sessions from all users
-            sessions = get_all_sessions()
+            sessions = get_all_sessions(user_id)
             
         return jsonify({"status": "success", "data": sessions}), 200
     except Exception as e:
@@ -400,8 +400,8 @@ def get_surf_sessions(user_id):
 @token_required
 def get_surf_session(user_id, session_id):
     try:
-        # Get session regardless of user
-        session = get_session(session_id)
+        # Get session regardless of user, passing user_id for shaka status
+        session = get_session(session_id, user_id)
         if not session:
             return jsonify({"status": "fail", "message": f"Session with id {session_id} not found"}), 404
         return jsonify({"status": "success", "data": session}), 200
@@ -420,7 +420,7 @@ def get_location_surf_sessions(user_id, location_slug):
             return jsonify({"status": "fail", "message": f"Invalid location slug: {location_slug}"}), 404
 
         # Fetch sessions using the new database function
-        sessions = get_sessions_by_location(location_slug)
+        sessions = get_sessions_by_location(location_slug, user_id)
         
         return jsonify({"status": "success", "data": sessions}), 200
     except Exception as e:
@@ -439,7 +439,7 @@ def update_surf_session(user_id, session_id):
             return jsonify({"status": "fail", "message": "No data provided"}), 400
         
         # Get existing session
-        existing_session = get_session(session_id)
+        existing_session = get_session(session_id, user_id)
         if not existing_session:
             return jsonify({"status": "fail", "message": f"Session with id {session_id} not found"}), 404
         
@@ -576,6 +576,20 @@ def delete_surf_session(user_id, session_id):
         import traceback
         print(traceback.format_exc())
         return jsonify({"status": "fail", "message": f"Error deleting surf session: {str(e)}"}), 500
+
+@app.route('/api/surf-sessions/<int:session_id>/shaka', methods=['POST'])
+@token_required
+def toggle_shaka_route(user_id, session_id):
+    try:
+        result = database_utils.toggle_shaka(session_id, user_id)
+        if result is not None:
+            return jsonify({"status": "success", "data": result}), 200
+        else:
+            return jsonify({"status": "fail", "message": "Failed to toggle shaka"}), 500
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
 
 @app.route('/api/test', methods=['GET'])
 def test_route():
