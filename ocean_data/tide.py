@@ -2,12 +2,12 @@
 Ocean Data Module - Tide
 
 This module provides functions for retrieving and processing tide data
-from NOAA tide stations using the surfpy library.
+from NOAA tide stations using the noaa-coops library for detailed tide events.
 """
 
 from datetime import datetime, timezone, timedelta
-import surfpy
-import requests
+import noaa_coops as coops
+import pandas as pd
 
 # Custom class to mimic surfpy.TideData for historical data
 class TideData:
@@ -17,123 +17,176 @@ class TideData:
 
 from .utils import convert_to_utc, meters_to_feet, is_valid_data, format_date
 
-def fetch_tide_station(station_id):
+def get_detailed_tide_data(station_id: str, target_datetime: datetime):
     """
-    Fetch a tide station object by ID.
+    Fetches detailed tide information for a specific time, including water level,
+    tide direction, and details of the next tide event.
+
+    Args:
+        station_id (str): The NOAA station ID.
+        target_datetime (datetime): The specific time for the tide data (in UTC).
+
+    Returns:
+        dict: A dictionary with detailed tide information or None on failure.
     """
     try:
-        dummy_location = surfpy.Location(0, 0)
-        return surfpy.TideStation(station_id, dummy_location)
+        station = coops.Station(station_id)
+        target_datetime = convert_to_utc(target_datetime)
+
+        # 1. Fetch water level for the entire day of the target_datetime
+        begin_date_wl = target_datetime.replace(hour=0, minute=0, second=0, microsecond=0).strftime("%Y%m%d %H:%M")
+        end_date_wl = (target_datetime.replace(hour=23, minute=59, second=59, microsecond=999999)).strftime("%Y%m%d %H:%M")
+        
+        df_water_level = station.get_data(
+            begin_date=begin_date_wl,
+            end_date=end_date_wl,
+            product="predictions",
+            datum="MLLW",
+            time_zone="gmt"
+        )
+        print(f"DEBUG: df_water_level after get_data:\n{df_water_level.head()}")
+
+        if df_water_level.empty:
+            print("DEBUG: df_water_level is empty after get_data.")
+            return None
+
+        # Ensure the DataFrame index is timezone-aware UTC for comparison
+        if df_water_level.index.tz is None:
+            df_water_level.index = df_water_level.index.tz_localize(timezone.utc)
+        else:
+            df_water_level.index = df_water_level.index.tz_convert(timezone.utc)
+        print(f"DEBUG: df_water_level.index after tz handling:\n{df_water_level.index}")
+        print(f"DEBUG: target_datetime: {target_datetime}")
+
+        # Calculate time differences and convert to absolute seconds
+        time_deltas = (df_water_level.index - target_datetime).to_series()
+        print(f"DEBUG: time_deltas dtype: {time_deltas.dtype}")
+        print(f"DEBUG: time_deltas before total_seconds:\n{time_deltas.head()}")
+        
+        # Debugging individual timedelta conversion
+        if not time_deltas.empty:
+            first_delta = time_deltas.iloc[0]
+            print(f"DEBUG: first_delta: {first_delta}, type: {type(first_delta)}")
+            print(f"DEBUG: first_delta.total_seconds(): {first_delta.total_seconds()}")
+
+        total_seconds_series = time_deltas.dt.total_seconds()
+        print(f"DEBUG: total_seconds_series before abs:\n{total_seconds_series.head()}")
+        print(f"DEBUG: total_seconds_series dtype before abs: {total_seconds_series.dtype}")
+
+        total_seconds_abs = total_seconds_series.abs()
+        print(f"DEBUG: total_seconds_abs after abs:\n{total_seconds_abs.head()}")
+        print(f"DEBUG: total_seconds_abs dtype after abs: {total_seconds_abs.dtype}")
+        df_water_level['time_diff'] = total_seconds_abs.values
+        print(f"DEBUG: df_water_level['time_diff'] before dropna:\n{df_water_level['time_diff'].head()}")
+
+        current_water_level_row = df_water_level.loc[df_water_level['time_diff'].dropna().idxmin()]
+        current_water_level = float(current_water_level_row['v'])
+
+        # 2. Fetch high/low tide predictions for a 48-hour window
+        begin_date_hl = target_datetime.strftime("%Y%m%d")
+        end_date_hl = (target_datetime + timedelta(days=2)).strftime("%Y%m%d")
+
+        df_hilo = station.get_data(
+            begin_date=begin_date_hl,
+            end_date=end_date_hl,
+            product="predictions",
+            datum="MLLW",
+            interval="hilo",
+            time_zone="gmt"
+        )
+
+        if df_hilo.empty:
+            return None
+
+        # Ensure the DataFrame index is timezone-aware UTC for comparison
+        if df_hilo.index.tz is None:
+            df_hilo.index = df_hilo.index.tz_localize(timezone.utc)
+        else:
+            df_hilo.index = df_hilo.index.tz_convert(timezone.utc)
+
+        # 3. Find the next tide event
+        next_event = None
+        for index, row in df_hilo.iterrows():
+            if index > target_datetime:
+                next_event = row
+                next_event['t'] = index
+                break
+        
+        if next_event is None:
+            return None
+
+        # 4. Determine tide direction
+        next_event_height = float(next_event['v'])
+        tide_direction = "rising" if next_event_height > current_water_level else "falling"
+
+        # 5. Format the output
+        return {
+            "water_level": current_water_level,
+            "direction": tide_direction,
+            "next_event_type": 'high' if next_event['type'] == 'H' else 'low',
+            "next_event_at": next_event['t'].to_pydatetime().replace(tzinfo=timezone.utc),
+            "next_event_height": next_event_height,
+            "units": "meters" # Raw data is in meters
+        }
+
     except Exception as e:
-        print(f"Error fetching tide station: {str(e)}")
+        print(f"Error in get_detailed_tide_data: {e}")
         return None
 
 def fetch_tide_data(station_id, target_datetime=None, use_imperial_units=True):
     """
-    Fetch and process water level data for a specific tide station and time.
+    Orchestrates fetching detailed tide data and converts units if necessary.
+    This function is the main public interface for the tide module.
     """
-    try:
-        if target_datetime is None:
-            target_datetime = datetime.now(timezone.utc)
-        target_datetime = convert_to_utc(target_datetime)
-        station = fetch_tide_station(station_id)
-        if not station:
-            print(f"No tide station found with ID {station_id}")
-            return generate_dummy_tide_data(target_datetime, station_id, use_imperial_units)
-        water_level_data = fetch_water_level(station, target_datetime)
-        if not water_level_data:
-            print(f"No water level data found for station {station_id}")
-            return generate_dummy_tide_data(target_datetime, station_id, use_imperial_units)
-        return water_level_to_json(water_level_data, station, use_imperial_units)
-    except Exception as e:
-        print(f"Error retrieving tide data: {str(e)}")
+    if target_datetime is None:
+        target_datetime = datetime.now(timezone.utc)
+    
+    target_datetime = convert_to_utc(target_datetime)
+
+    detailed_data = get_detailed_tide_data(station_id, target_datetime)
+
+    if not detailed_data:
         return generate_dummy_tide_data(target_datetime, station_id, use_imperial_units)
+
+    # Convert units if requested
+    if use_imperial_units:
+        detailed_data["water_level"] = round(meters_to_feet(detailed_data["water_level"]), 2)
+        detailed_data["next_event_height"] = round(meters_to_feet(detailed_data["next_event_height"]), 2)
+        detailed_data["units"] = "feet"
+
+    return detailed_data
 
 def fetch_historical_tide_data(station_id: str, start_date: datetime, end_date: datetime, use_imperial_units: bool = True) -> list:
     """
     Fetch a range of historical tide data from a station.
+    This function remains for fetching data for tide charts.
     """
     try:
-        station = fetch_tide_station(station_id)
-        if not station:
-            print(f"No tide station found with ID {station_id}")
-            return []
-        
-        # The surfpy tide fetching is already range-based. We will parse the response
-        # into TideData objects to match the forecast function's output type.
-        tide_url = station.create_tide_data_url(
-            start_date, end_date, datum=surfpy.TideStation.TideDatum.mean_lower_low_water,
-            interval=surfpy.TideStation.DataInterval.hourly, unit=surfpy.units.Units.metric
+        station = coops.Station(station_id)
+        begin_date_str = start_date.strftime("%Y%m%d %H:%M")
+        end_date_str = end_date.strftime("%Y%m%d %H:%M")
+
+        df_water_level = station.get_data(
+            begin_date=begin_date_str,
+            end_date=end_date_str,
+            product="predictions",
+            datum="MLLW",
+            time_zone="gmt"
         )
-        response = requests.get(tide_url)
-        if response.status_code != 200:
-            return []
-        data_json = response.json()
-        if 'predictions' not in data_json or not data_json['predictions']:
+
+        if df_water_level.empty:
             return []
 
         water_levels = []
-        for pred in data_json['predictions']:
-            date = datetime.strptime(pred.get('t', ''), "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
-            height_meters = float(pred.get('v', 0))
-            # Convert to a TideData object for consistency
-            tide_obj = TideData(date=date, water_level=height_meters)
+        for index, row in df_water_level.iterrows():
+            tide_obj = TideData(date=index.to_pydatetime().replace(tzinfo=timezone.utc), water_level=row['v'])
             water_levels.append(tide_obj)
+        
         return water_levels
 
     except Exception as e:
         print(f"Error fetching historical tide data: {str(e)}")
         return []
-
-def fetch_water_level(station, target_datetime):
-    """
-    Fetch water level for a given tide station at a specific time.
-    """
-    try:
-        start_time = target_datetime - timedelta(hours=3)
-        end_time = target_datetime + timedelta(hours=3)
-        tide_url = station.create_tide_data_url(
-            start_time, end_time, datum=surfpy.TideStation.TideDatum.mean_lower_low_water,
-            interval=surfpy.TideStation.DataInterval.default, unit=surfpy.units.Units.metric
-        )
-        response = requests.get(tide_url)
-        if response.status_code != 200:
-            return None
-        data_json = response.json()
-        if 'predictions' not in data_json or not data_json['predictions']:
-            return None
-        water_levels = []
-        for pred in data_json['predictions']:
-            date = datetime.strptime(pred.get('t', ''), "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
-            water_levels.append({"date": date, "height": float(pred.get('v', 0))})
-        if not water_levels:
-            return None
-        return min(water_levels, key=lambda x: abs(x["date"] - target_datetime))
-    except Exception as e:
-        print(f"Error retrieving water level data: {str(e)}")
-        return None
-
-def water_level_to_json(water_level, station, use_imperial_units=True):
-    """
-    Convert water level data to a JSON-serializable structure.
-    """
-    if not water_level:
-        return {"error": "No water level data available"}
-    height_meters = water_level["height"]
-    if use_imperial_units and is_valid_data(height_meters):
-        height_value = round(meters_to_feet(height_meters), 2)
-        units = "feet"
-    else:
-        height_value = height_meters
-        units = "meters"
-    return {
-        "station_id": station.station_id,
-        "location": {"latitude": station.location.latitude, "longitude": station.location.longitude},
-        "state": station.state if hasattr(station, 'state') else None,
-        "date": format_date(water_level["date"]),
-        "water_level": height_value,
-        "units": units
-    }
 
 def tide_data_list_to_json(tide_data_list, use_imperial_units=True):
     """
@@ -171,10 +224,14 @@ def generate_dummy_tide_data(target_datetime, station_id, use_imperial_units=Tru
         height_value, units = 3.2, "feet"
     else:
         height_value, units = 1.0, "meters"
+    
     return {
         "station_id": station_id,
-        "location": {"latitude": 0, "longitude": 0},
         "date": datetime_str,
         "water_level": height_value,
+        "direction": "rising",
+        "next_event_type": "high",
+        "next_event_at": (target_datetime + timedelta(hours=3)).isoformat(),
+        "next_event_height": height_value + 1.0,
         "units": units
     }

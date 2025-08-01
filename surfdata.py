@@ -295,10 +295,15 @@ def create_surf_session(user_id):
         session_data['raw_met'] = met_data
 
         # 3. Fetch tide data
-        # Fetch the single tide data point for the session start (for the new column)
-        session_start_tide_data = fetch_tide_data(tide_station_id, target_datetime, use_imperial_units=True)
-        session_data['session_tide_data'] = session_start_tide_data
-
+        detailed_tide_data = fetch_tide_data(tide_station_id, target_datetime, use_imperial_units=True)
+        
+        if detailed_tide_data:
+            session_data['session_water_level'] = detailed_tide_data.get('water_level')
+            session_data['tide_direction'] = detailed_tide_data.get('direction')
+            session_data['next_tide_event_type'] = detailed_tide_data.get('next_event_type')
+            session_data['next_tide_event_at'] = detailed_tide_data.get('next_event_at')
+            session_data['next_tide_event_height'] = detailed_tide_data.get('next_event_height')
+        
         # Fetch the full day of historical tide data (for the existing raw_tide column)
         daily_tide_data_list = fetch_historical_tide_data(tide_station_id, utc_start_of_day, utc_end_of_day, use_imperial_units=True)
         session_data['raw_tide'] = tide_data_list_to_json(daily_tide_data_list)
@@ -529,8 +534,23 @@ def update_surf_session(user_id, session_id):
             # 3. Fetch updated tide data using the ocean_data module
             tide_station_id = session_data.get('tide_station_id', existing_session.get('tide_station_id'))
             if tide_station_id:
-                tide_data = fetch_tide_data(tide_station_id, target_datetime, use_imperial_units=True)
-                session_data['raw_tide'] = tide_data
+                detailed_tide_data = fetch_tide_data(tide_station_id, target_datetime, use_imperial_units=True)
+                if detailed_tide_data:
+                    session_data['session_water_level'] = detailed_tide_data.get('water_level')
+                    session_data['tide_direction'] = detailed_tide_data.get('direction')
+                    session_data['next_tide_event_type'] = detailed_tide_data.get('next_event_type')
+                    session_data['next_tide_event_at'] = detailed_tide_data.get('next_event_at')
+                    session_data['next_tide_event_height'] = detailed_tide_data.get('next_event_height')
+                
+                # Ensure raw_tide is preserved if not explicitly updated
+                if 'raw_tide' not in session_data:
+                    # Fetch the full day of historical tide data (for the existing raw_tide column)
+                    local_start_of_day = spot_tz.localize(datetime.combine(naive_datetime.date(), datetime.min.time()))
+                    local_end_of_day = spot_tz.localize(datetime.combine(naive_datetime.date(), datetime.max.time()))
+                    utc_start_of_day = local_start_of_day.astimezone(timezone.utc)
+                    utc_end_of_day = local_end_of_day.astimezone(timezone.utc)
+                    daily_tide_data_list = fetch_historical_tide_data(tide_station_id, utc_start_of_day, utc_end_of_day, use_imperial_units=True)
+                    session_data['raw_tide'] = tide_data_list_to_json(daily_tide_data_list)
         
         # Update the session in the database
         updated_session = update_session(session_id, session_data, user_id)
