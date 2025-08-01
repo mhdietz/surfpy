@@ -44,10 +44,8 @@ def get_detailed_tide_data(station_id: str, target_datetime: datetime):
             datum="MLLW",
             time_zone="gmt"
         )
-        print(f"DEBUG: df_water_level after get_data:\n{df_water_level.head()}")
 
         if df_water_level.empty:
-            print("DEBUG: df_water_level is empty after get_data.")
             return None
 
         # Ensure the DataFrame index is timezone-aware UTC for comparison
@@ -55,29 +53,12 @@ def get_detailed_tide_data(station_id: str, target_datetime: datetime):
             df_water_level.index = df_water_level.index.tz_localize(timezone.utc)
         else:
             df_water_level.index = df_water_level.index.tz_convert(timezone.utc)
-        print(f"DEBUG: df_water_level.index after tz handling:\n{df_water_level.index}")
-        print(f"DEBUG: target_datetime: {target_datetime}")
 
         # Calculate time differences and convert to absolute seconds
         time_deltas = (df_water_level.index - target_datetime).to_series()
-        print(f"DEBUG: time_deltas dtype: {time_deltas.dtype}")
-        print(f"DEBUG: time_deltas before total_seconds:\n{time_deltas.head()}")
-        
-        # Debugging individual timedelta conversion
-        if not time_deltas.empty:
-            first_delta = time_deltas.iloc[0]
-            print(f"DEBUG: first_delta: {first_delta}, type: {type(first_delta)}")
-            print(f"DEBUG: first_delta.total_seconds(): {first_delta.total_seconds()}")
-
         total_seconds_series = time_deltas.dt.total_seconds()
-        print(f"DEBUG: total_seconds_series before abs:\n{total_seconds_series.head()}")
-        print(f"DEBUG: total_seconds_series dtype before abs: {total_seconds_series.dtype}")
-
         total_seconds_abs = total_seconds_series.abs()
-        print(f"DEBUG: total_seconds_abs after abs:\n{total_seconds_abs.head()}")
-        print(f"DEBUG: total_seconds_abs dtype after abs: {total_seconds_abs.dtype}")
         df_water_level['time_diff'] = total_seconds_abs.values
-        print(f"DEBUG: df_water_level['time_diff'] before dropna:\n{df_water_level['time_diff'].head()}")
 
         current_water_level_row = df_water_level.loc[df_water_level['time_diff'].dropna().idxmin()]
         current_water_level = float(current_water_level_row['v'])

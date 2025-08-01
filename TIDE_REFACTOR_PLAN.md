@@ -111,4 +111,29 @@ Our testing of the `noaa-coops` library and the underlying API revealed the foll
 
 This confirms that the `noaa-coops` library provides the necessary data in a structured format, which simplifies the logic required in our `get_detailed_tide_data` function.
 
-I am ready to begin implementation. Please confirm if I should proceed.
+### **7. Update Session Retrieval Endpoints**
+
+This section outlines the plan to update the `get_all_sessions`, `get_user_sessions`, and `get_session` endpoints in `database_utils.py` to include the newly added tide information.
+
+**a. Identify Target Functions:**
+    *   `database_utils.get_all_sessions`
+    *   `database_utils.get_user_sessions`
+    *   `database_utils.get_session`
+
+**b. Modify SQL Queries:**
+    *   For each of the identified functions, locate the main `SELECT` statement that retrieves data from the `surf_sessions_duplicate` table (aliased as `s`).
+    *   Explicitly add the new tide-related columns to the `SELECT` clause:
+        *   `s.session_water_level`
+        *   `s.tide_direction`
+        *   `s.next_tide_event_type`
+        *   `s.next_tide_event_at`
+        *   `s.next_tide_event_height`
+    *   While `SELECT s.*` *should* include these new columns automatically, explicitly listing them ensures clarity and prevents potential issues if the table structure changes in unexpected ways or if `s.*` behaves differently in complex queries.
+
+**c. Review Data Serialization:**
+    *   Examine the existing data processing loops within each function (e.g., `for i, session in enumerate(sessions_list):`).
+    *   Verify that the `next_tide_event_at` (which is a `timestamp with time zone`) is correctly serialized to a string (e.g., using `.isoformat()`) for JSON output, similar to how `date` and `time` fields are currently handled. The `session_water_level` and `next_tide_event_height` (double precision) and `tide_direction`, `next_tide_event_type` (text) should be handled automatically by `RealDictCursor`.
+
+**d. Verification (Post-Implementation):**
+    *   After making the code changes, manually test each of the modified `GET` endpoints (`/api/surf-sessions`, `/api/surf-sessions?user_only=true`, `/api/surf-sessions/<session_id>`) using Postman or a similar tool.
+    *   Confirm that the JSON responses now include the `session_water_level`, `tide_direction`, `next_tide_event_type`, `next_tide_event_at`, and `next_tide_event_height` fields with correct values.
