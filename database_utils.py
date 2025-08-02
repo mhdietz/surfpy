@@ -32,10 +32,13 @@ def get_all_sessions(current_user_id):
     
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Get all session data plus participants and shaka info
+            # Get all session data plus participants and shaka data
             cur.execute("""
                 SELECT 
-                    s.*, 
+                    s.id, s.created_at, s.session_name, s.location, s.fun_rating, s.time, s.session_notes,
+                    s.raw_swell, s.date, s.swell_buoy_id, s.raw_met, s.met_buoy_id,
+                    s.tide_station_id, s.user_id, s.end_time, s.session_group_id,
+                    s.session_water_level, s.tide_direction, s.next_tide_event_type, s.next_tide_event_at, s.next_tide_event_height,
                     u.email as user_email,
                     COALESCE(
                         u.raw_user_meta_data->>'display_name',
@@ -100,6 +103,25 @@ def get_all_sessions(current_user_id):
                 if 'date' in session and isinstance(session['date'], date):
                     sessions_list[i]['date'] = session['date'].isoformat()
                 
+                # Group tide data into a single object
+                tide_data = {}
+                if 'session_water_level' in session:
+                    tide_data['water_level'] = session.pop('session_water_level')
+                if 'tide_direction' in session:
+                    tide_data['direction'] = session.pop('tide_direction')
+                if 'next_tide_event_type' in session:
+                    tide_data['next_event_type'] = session.pop('next_tide_event_type')
+                if 'next_tide_event_at' in session:
+                    # Ensure it's ISO formatted before adding to tide_data
+                    if isinstance(session['next_tide_event_at'], datetime):
+                        tide_data['next_event_at'] = session.pop('next_tide_event_at').isoformat()
+                    else:
+                        tide_data['next_event_at'] = session.pop('next_tide_event_at')
+                if 'next_tide_event_height' in session:
+                    tide_data['next_event_height'] = session.pop('next_tide_event_height')
+                
+                sessions_list[i]['tide'] = tide_data
+
                 # Convert participants from JSONB array to Python list
                 if 'participants' in session and session['participants']:
                     # participants is already a list of dictionaries from the JSONB array
@@ -127,7 +149,10 @@ def get_user_sessions(user_id):
             # Same query structure as get_all_sessions but filtered by user_id
             cur.execute("""
                 SELECT 
-                    s.*, 
+                    s.id, s.created_at, s.session_name, s.location, s.fun_rating, s.time, s.session_notes,
+                    s.raw_swell, s.date, s.swell_buoy_id, s.raw_met, s.met_buoy_id,
+                    s.tide_station_id, s.user_id, s.end_time, s.session_group_id,
+                    s.session_water_level, s.tide_direction, s.next_tide_event_type, s.next_tide_event_at, s.next_tide_event_height,
                     u.email as user_email,
                     COALESCE(
                         u.raw_user_meta_data->>'display_name',
@@ -194,6 +219,25 @@ def get_user_sessions(user_id):
                 if 'date' in session and isinstance(session['date'], date):
                     sessions_list[i]['date'] = session['date'].isoformat()
                 
+                # Group tide data into a single object
+                tide_data = {}
+                if 'session_water_level' in session:
+                    tide_data['water_level'] = session.pop('session_water_level')
+                if 'tide_direction' in session:
+                    tide_data['direction'] = session.pop('tide_direction')
+                if 'next_tide_event_type' in session:
+                    tide_data['next_event_type'] = session.pop('next_tide_event_type')
+                if 'next_tide_event_at' in session:
+                    # Ensure it's ISO formatted before adding to tide_data
+                    if isinstance(session['next_tide_event_at'], datetime):
+                        tide_data['next_event_at'] = session.pop('next_tide_event_at').isoformat()
+                    else:
+                        tide_data['next_event_at'] = session.pop('next_tide_event_at')
+                if 'next_tide_event_height' in session:
+                    tide_data['next_event_height'] = session.pop('next_tide_event_height')
+                
+                sessions_list[i]['tide'] = tide_data
+
                 # Convert participants from JSONB array to Python list
                 if 'participants' in session and session['participants']:
                     # participants is already a list of dictionaries from the JSONB array
@@ -219,7 +263,10 @@ def get_session(session_id, current_user_id):
             # Get session details plus participants and shaka info
             cur.execute("""
                 SELECT 
-                    s.*, 
+                    s.id, s.created_at, s.session_name, s.location, s.fun_rating, s.time, s.session_notes,
+                    s.raw_swell, s.date, s.swell_buoy_id, s.raw_met, s.met_buoy_id,
+                    s.tide_station_id, s.user_id, s.end_time, s.session_group_id,
+                    s.session_water_level, s.tide_direction, s.next_tide_event_type, s.next_tide_event_at, s.next_tide_event_height,
                     u.email as user_email,
                     COALESCE(
                         u.raw_user_meta_data->>'display_name',
@@ -281,6 +328,25 @@ def get_session(session_id, current_user_id):
                 if 'date' in session and isinstance(session['date'], date):
                     session['date'] = session['date'].isoformat()
                 
+                # Group tide data into a single object
+                tide_data = {}
+                if 'session_water_level' in session:
+                    tide_data['water_level'] = session.pop('session_water_level')
+                if 'tide_direction' in session:
+                    tide_data['direction'] = session.pop('tide_direction')
+                if 'next_tide_event_type' in session:
+                    tide_data['next_event_type'] = session.pop('next_tide_event_type')
+                if 'next_tide_event_at' in session:
+                    # Ensure it's ISO formatted before adding to tide_data
+                    if isinstance(session['next_tide_event_at'], datetime):
+                        tide_data['next_event_at'] = session.pop('next_tide_event_at').isoformat()
+                    else:
+                        tide_data['next_event_at'] = session.pop('next_tide_event_at')
+                if 'next_tide_event_height' in session:
+                    tide_data['next_event_height'] = session.pop('next_tide_event_height')
+                
+                session['tide'] = tide_data
+
                 # Convert participants from JSONB array to Python list
                 if 'participants' in session and session['participants']:
                     # participants is already a list of dictionaries from the JSONB array
@@ -921,7 +987,10 @@ def get_sessions_by_location(location_slug, current_user_id):
             # The query is similar to get_all_sessions, but with a WHERE clause for the location
             query = """
                 SELECT
-                    s1.*,
+                    s1.id, s1.created_at, s1.session_name, s1.location, s1.fun_rating, s1.time, s1.session_notes,
+                    s1.raw_swell, s1.date, s1.swell_buoy_id, s1.raw_met, s1.met_buoy_id,
+                    s1.tide_station_id, s1.user_id, s1.end_time, s1.session_group_id,
+                    s1.session_water_level, s1.tide_direction, s1.next_tide_event_type, s1.next_tide_event_at, s1.next_tide_event_height,
                     u1.email as user_email,
                     COALESCE(
                         u1.raw_user_meta_data->>'display_name',
@@ -970,7 +1039,7 @@ def get_sessions_by_location(location_slug, current_user_id):
                 LEFT JOIN auth.users u2 ON s2.user_id = u2.id
                 WHERE s1.location IN %s
                 GROUP BY s1.id, s1.created_at, s1.session_name, s1.location, s1.fun_rating, s1.time, s1.session_notes,
-                         s1.raw_swell, s1.date, s1.swell_buoy_id, s1.raw_met, s1.met_buoy_id, s1.raw_tide,
+                         s1.raw_swell, s1.date, s1.swell_buoy_id, s1.raw_met, s1.met_buoy_id,
                          s1.tide_station_id, s1.user_id, s1.end_time, s1.session_group_id, u1.email, u1.raw_user_meta_data
                 ORDER BY s1.created_at DESC
             """
@@ -987,6 +1056,26 @@ def get_sessions_by_location(location_slug, current_user_id):
                     sessions_list[i]['end_time'] = session['end_time'].isoformat()
                 if 'date' in session and isinstance(session['date'], date):
                     sessions_list[i]['date'] = session['date'].isoformat()
+                
+                # Group tide data into a single object
+                tide_data = {}
+                if 'session_water_level' in session:
+                    tide_data['water_level'] = session.pop('session_water_level')
+                if 'tide_direction' in session:
+                    tide_data['direction'] = session.pop('tide_direction')
+                if 'next_tide_event_type' in session:
+                    tide_data['next_event_type'] = session.pop('next_tide_event_type')
+                if 'next_tide_event_at' in session:
+                    # Ensure it's ISO formatted before adding to tide_data
+                    if isinstance(session['next_tide_event_at'], datetime):
+                        tide_data['next_event_at'] = session.pop('next_tide_event_at').isoformat()
+                    else:
+                        tide_data['next_event_at'] = session.pop('next_tide_event_at')
+                if 'next_tide_event_height' in session:
+                    tide_data['next_event_height'] = session.pop('next_tide_event_height')
+                
+                sessions_list[i]['tide'] = tide_data
+
                 if 'participants' in session and session['participants']:
                     sessions_list[i]['participants'] = session['participants']
                 else:
