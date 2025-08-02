@@ -400,9 +400,7 @@ def create_session(session_data, user_id):
             if 'raw_met' in session_data:
                 session_data['raw_met'] = Json(session_data['raw_met'])
             
-            # Handle raw_tide as JSONB
-            if 'raw_tide' in session_data:
-                session_data['raw_tide'] = Json(session_data['raw_tide'])
+            
 
             
 
@@ -475,9 +473,7 @@ def update_session(session_id, update_data, user_id):
             if 'raw_met' in update_data:
                 update_data['raw_met'] = Json(update_data['raw_met'])
             
-            # Handle raw_tide as JSONB
-            if 'raw_tide' in update_data:
-                update_data['raw_tide'] = Json(update_data['raw_tide'])
+            
 
             
 

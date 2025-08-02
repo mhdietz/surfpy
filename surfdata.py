@@ -16,7 +16,7 @@ from psycopg2.extras import RealDictCursor
 # Import ocean data modules
 from ocean_data.swell import fetch_swell_data
 from ocean_data.meteorology import fetch_meteorological_data
-from ocean_data.tide import fetch_tide_data, fetch_historical_tide_data, tide_data_list_to_json
+from ocean_data.tide import fetch_tide_data
 from ocean_data.location import get_buoys_for_location, is_valid_location, get_spot_config
 
 app = Flask(__name__)
@@ -304,9 +304,7 @@ def create_surf_session(user_id):
             session_data['next_tide_event_at'] = detailed_tide_data.get('next_event_at')
             session_data['next_tide_event_height'] = detailed_tide_data.get('next_event_height')
         
-        # Fetch the full day of historical tide data (for the existing raw_tide column)
-        daily_tide_data_list = fetch_historical_tide_data(tide_station_id, utc_start_of_day, utc_end_of_day, use_imperial_units=True)
-        session_data['raw_tide'] = tide_data_list_to_json(daily_tide_data_list)
+        
 
         # Add buoy IDs to session data
         session_data['swell_buoy_id'] = swell_buoy_id
@@ -542,15 +540,7 @@ def update_surf_session(user_id, session_id):
                     session_data['next_tide_event_at'] = detailed_tide_data.get('next_event_at')
                     session_data['next_tide_event_height'] = detailed_tide_data.get('next_event_height')
                 
-                # Ensure raw_tide is preserved if not explicitly updated
-                if 'raw_tide' not in session_data:
-                    # Fetch the full day of historical tide data (for the existing raw_tide column)
-                    local_start_of_day = spot_tz.localize(datetime.combine(naive_datetime.date(), datetime.min.time()))
-                    local_end_of_day = spot_tz.localize(datetime.combine(naive_datetime.date(), datetime.max.time()))
-                    utc_start_of_day = local_start_of_day.astimezone(timezone.utc)
-                    utc_end_of_day = local_end_of_day.astimezone(timezone.utc)
-                    daily_tide_data_list = fetch_historical_tide_data(tide_station_id, utc_start_of_day, utc_end_of_day, use_imperial_units=True)
-                    session_data['raw_tide'] = tide_data_list_to_json(daily_tide_data_list)
+                
         
         # Update the session in the database
         updated_session = update_session(session_id, session_data, user_id)

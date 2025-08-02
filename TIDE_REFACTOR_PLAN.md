@@ -66,7 +66,7 @@ The `create_surf_session` and `update_surf_session` endpoints will be updated to
     *   `session_data['next_tide_event_at'] = tide_data.get('next_event_at')`
     *   ...and so on for the other new fields.
 3.  **Remove `session_tide_data`**: The new individual fields make the old `session_tide_data` JSON blob obsolete. The code will be updated to no longer fetch or save this field for new or updated sessions.
-4.  **Fix Existing Bug**: I will correct the bug in `update_surf_session` where the detailed `raw_tide` data (used for charts) was being incorrectly overwritten. The new tide data will be mapped to its own distinct fields, and the `raw_tide` data will be preserved correctly.
+4.  **Remove `raw_tide` Handling**: The logic for fetching and saving the full day's `raw_tide` data (used for charts) will be removed to streamline the process.
 
 #### **Step 3: Database Interaction (`database_utils.py`)**
 
@@ -137,3 +137,41 @@ This section outlines the plan to update the `get_all_sessions`, `get_user_sessi
 **d. Verification (Post-Implementation):**
     *   After making the code changes, manually test each of the modified `GET` endpoints (`/api/surf-sessions`, `/api/surf-sessions?user_only=true`, `/api/surf-sessions/<session_id>`) using Postman or a similar tool.
     *   Confirm that the JSON responses now include the `session_water_level`, `tide_direction`, `next_tide_event_type`, `next_tide_event_at`, and `next_tide_event_height` fields with correct values.
+
+### **8. Phase 2: Removing `raw_tide` Data**
+
+This phase outlines the plan to completely remove the storage of the full day's tide data (`raw_tide`), which was previously used for generating visual charts. This will streamline the session creation process and reduce database storage.
+
+**Important Prerequisite:** This action is irreversible. The frontend component responsible for displaying the daily tide chart must be removed or updated, as it will no longer receive the necessary `raw_tide` data.
+
+#### **Step 1: Archive Obsolete Functions (`ocean_data/tide.py`)**
+
+To preserve the logic for potential future use while keeping the active codebase clean, the functions responsible for fetching the full day's tide data will be archived.
+
+1.  **Create Archive Directory**: A new directory will be created at `archives/tide_logic/`.
+2.  **Create Archive File**: A new file, `archived_tide_functions.py`, will be created inside the new directory.
+3.  **Isolate and Move Code**: The `fetch_historical_tide_data` and `tide_data_list_to_json` functions will be moved from `ocean_data/tide.py` into the new archive file. Necessary imports will be added to the archive file to ensure the code remains self-contained.
+4.  **Clean Original File**: The original functions will be removed from `ocean_data/tide.py`.
+
+#### **Step 2: Modify API Endpoints (`surfdata.py`)**
+
+The API endpoints will be updated to no longer fetch or handle the `raw_tide` data.
+
+1.  **In `create_surf_session`**: The lines that call `fetch_historical_tide_data` and `tide_data_list_to_json` will be removed.
+2.  **In `update_surf_session`**: The corresponding lines that re-fetch this data when a session is updated will also be removed.
+
+#### **Step 3: Clean Up Database Interaction (`database_utils.py`)**
+
+The code that prepares the `raw_tide` data for the database will be removed.
+
+1.  **In `create_session` and `update_session`**: The conditional block that checks for and processes the `raw_tide` key will be deleted.
+
+#### **Step 4: Update Database Schema**
+
+The final step is to remove the now-obsolete column from the database.
+
+1.  **Execute SQL Command**: The following SQL `ALTER TABLE` statement will be executed to drop the column:
+    ```sql
+    ALTER TABLE surf_sessions_duplicate DROP COLUMN raw_tide;
+    ```
+
