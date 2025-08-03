@@ -136,17 +136,16 @@ def get_all_sessions(current_user_id):
     finally:
         conn.close()
 
-# Add this new function to your database_utils.py file (place it near the other session functions)
-
-def get_user_sessions(user_id):
-    """Retrieve surf sessions for a specific user with participants and shaka data"""
+# This function is now modified to accept a profile_user_id and a viewer_user_id
+def get_user_sessions(profile_user_id, viewer_user_id):
+    """Retrieve surf sessions created by a specific user, with shaka data relative to the viewer."""
     conn = get_db_connection()
     if not conn:
         return []
     
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Same query structure as get_all_sessions but filtered by user_id
+            # The query is filtered by the profile_user_id, but shaka status is checked against the viewer_user_id
             cur.execute("""
                 SELECT 
                     s.id, s.created_at, s.session_name, s.location, s.fun_rating, s.time, s.session_notes,
@@ -199,7 +198,7 @@ def get_user_sessions(user_id):
                 LEFT JOIN auth.users u ON s.user_id = u.id
                 WHERE s.user_id = %s
                 ORDER BY s.created_at DESC
-            """, (user_id, user_id))
+            """, (viewer_user_id, profile_user_id))
             
             sessions = cur.fetchall()
             # Convert to a list so we can modify it
