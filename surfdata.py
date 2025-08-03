@@ -16,7 +16,7 @@ from psycopg2.extras import RealDictCursor
 # Import ocean data modules
 from ocean_data.swell import fetch_swell_data
 from ocean_data.meteorology import fetch_meteorological_data
-from ocean_data.tide import fetch_tide_data, fetch_historical_tide_data, tide_data_list_to_json
+from ocean_data.tide import fetch_tide_data
 from ocean_data.location import get_buoys_for_location, is_valid_location, get_spot_config
 
 app = Flask(__name__)
@@ -295,13 +295,16 @@ def create_surf_session(user_id):
         session_data['raw_met'] = met_data
 
         # 3. Fetch tide data
-        # Fetch the single tide data point for the session start (for the new column)
-        session_start_tide_data = fetch_tide_data(tide_station_id, target_datetime, use_imperial_units=True)
-        session_data['session_tide_data'] = session_start_tide_data
-
-        # Fetch the full day of historical tide data (for the existing raw_tide column)
-        daily_tide_data_list = fetch_historical_tide_data(tide_station_id, utc_start_of_day, utc_end_of_day, use_imperial_units=True)
-        session_data['raw_tide'] = tide_data_list_to_json(daily_tide_data_list)
+        detailed_tide_data = fetch_tide_data(tide_station_id, target_datetime, use_imperial_units=True)
+        
+        if detailed_tide_data:
+            session_data['session_water_level'] = detailed_tide_data.get('water_level')
+            session_data['tide_direction'] = detailed_tide_data.get('direction')
+            session_data['next_tide_event_type'] = detailed_tide_data.get('next_event_type')
+            session_data['next_tide_event_at'] = detailed_tide_data.get('next_event_at')
+            session_data['next_tide_event_height'] = detailed_tide_data.get('next_event_height')
+        
+        
 
         # Add buoy IDs to session data
         session_data['swell_buoy_id'] = swell_buoy_id
@@ -529,8 +532,15 @@ def update_surf_session(user_id, session_id):
             # 3. Fetch updated tide data using the ocean_data module
             tide_station_id = session_data.get('tide_station_id', existing_session.get('tide_station_id'))
             if tide_station_id:
-                tide_data = fetch_tide_data(tide_station_id, target_datetime, use_imperial_units=True)
-                session_data['raw_tide'] = tide_data
+                detailed_tide_data = fetch_tide_data(tide_station_id, target_datetime, use_imperial_units=True)
+                if detailed_tide_data:
+                    session_data['session_water_level'] = detailed_tide_data.get('water_level')
+                    session_data['tide_direction'] = detailed_tide_data.get('direction')
+                    session_data['next_tide_event_type'] = detailed_tide_data.get('next_event_type')
+                    session_data['next_tide_event_at'] = detailed_tide_data.get('next_event_at')
+                    session_data['next_tide_event_height'] = detailed_tide_data.get('next_event_height')
+                
+                
         
         # Update the session in the database
         updated_session = update_session(session_id, session_data, user_id)
