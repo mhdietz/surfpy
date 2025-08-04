@@ -385,9 +385,10 @@ def get_surf_sessions(user_id):
         user_only = request.args.get('user_only', 'false').lower() == 'true'
         
         if user_only:
-            # Import and use the new user-specific function
+            # DEPRECATED: This will be removed in a future version.
+            # Use the /api/users/me/sessions endpoint instead.
             from database_utils import get_user_sessions
-            sessions = get_user_sessions(user_id)
+            sessions = get_user_sessions(user_id, user_id) # Pass user_id for both profile and viewer
         else:
             # Existing behavior - get all sessions from all users
             sessions = get_all_sessions(user_id)
@@ -714,6 +715,28 @@ def search_users(user_id):
     except Exception as e:
         print(f"Error in user search: {str(e)}")
         return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/api/users/<string:profile_user_id>/sessions', methods=['GET'])
+@token_required
+def get_user_journal_sessions(viewer_user_id, profile_user_id):
+    """
+    Get all surf sessions created by a specific user.
+    Handles 'me' as an alias for the authenticated user.
+    """
+    try:
+        # Handle 'me' alias
+        if profile_user_id == 'me':
+            profile_user_id = viewer_user_id
+
+        # Import and use the modified user-specific function
+        from database_utils import get_user_sessions
+        sessions = get_user_sessions(profile_user_id, viewer_user_id)
+            
+        return jsonify({"status": "success", "data": sessions}), 200
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"status": "fail", "message": f"Error retrieving user sessions: {str(e)}"}), 500
 
 
 
