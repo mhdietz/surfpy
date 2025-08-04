@@ -89,3 +89,29 @@ The `surfpy` library handles all the low-level details of communicating with the
                                                                                                 |
                                                                                         (BuoyStations, BuoyStation, BuoyData)
 ```
+
+---
+
+## Alternative Wind Data Sources (Currently Unused)
+
+Besides the primary flow using NDBC buoys, the `surfpy` library contains two other modules capable of fetching wind data. These are not currently used for session logging but represent alternative strategies for acquiring more proximate wind data.
+
+### 1. NOAA Weather.gov API (`surfpy/weatherapi.py`)
+
+-   **How it Works**: This module interfaces with the `api.weather.gov` REST API. Instead of relying on physical buoys, this service provides forecast data for a high-resolution grid covering the entire United States.
+-   **Data Flow**:
+    1.  The `WeatherApi.points()` method takes a precise latitude and longitude for a surf spot.
+    2.  It returns the specific forecast office and grid cell (`gridId`, `gridX`, `gridY`) corresponding to that location.
+    3.  The `WeatherApi.hourly_forecast()` method then fetches a detailed, hour-by-hour weather forecast for that exact grid cell.
+    4.  The `WeatherApi.parse_weather_forecast()` function converts the JSON response into the standard `BuoyData` objects used throughout the application.
+-   **Potential Use Case**: This is the ideal solution for getting more accurate, localized wind data. By calling `WeatherApi.fetch_hourly_forecast(location)` with the surf spot's exact coordinates, the system can retrieve a highly proximate wind forecast, which serves as an excellent proxy for historical conditions.
+
+### 2. NOAA GFS Weather Model (`surfpy/weathermodel.py`)
+
+-   **How it Works**: This is a lower-level module for fetching raw forecast data directly from the Global Forecast System (GFS) model via NOAA's NOMADS server. It downloads data in the binary GRIB2 format.
+-   **Data Flow**:
+    1.  The `GFSModel` class constructs a URL to download a GRIB file for a specific model run and forecast hour.
+    2.  The `fetch_grib_data()` method retrieves this binary file.
+    3.  The `parse_grib_data()` method uses the `pygrib` library to extract weather variables (like wind components `UGRD` and `VGRD`) for a specific location from the GRIB file.
+    4.  The `to_buoy_data_weather()` method converts the raw model output into `BuoyData` objects.
+-   **Potential Use Case**: This approach is more complex than using the `weatherapi.py` and is better suited for building detailed, multi-day *future* forecasts from scratch, rather than fetching simple historical wind data for a logged session.

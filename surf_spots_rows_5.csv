@@ -1,0 +1,24 @@
+id,created_at,slug,name,swell_buoy_id,tide_station_id,wind_lat,breaking_wave_depth,breaking_wave_angle,breaking_wave_slope,timezone,wind_long,region,met_buoy_id
+1,2025-07-14 19:33:53.00354+00,lido-beach,Lido,44065,8516663,40.58,5,160,0.02,America/New_York,-73.66,New York,44065
+2,2025-07-14 19:36:30.170545+00,manasquan-beach,Manasquan,44091,8532337,40.11,5,110,0.02,America/New_York,-74.03,New Jersey,44065
+3,2025-07-14 20:30:52.005343+00,Rockaways-beach,Rockaways,44065,8516881,40.58,5,160,0.02,America/New_York,-73.82,New Jersey,44065
+4,2025-07-14 20:31:46.445703+00,belmar-beach,Belmar,44091,8532337,40.17,5,110,0.02,America/New_York,-74.01,New Jersey,44065
+5,2025-07-14 20:32:27.784608+00,steamer-lane,Steamer Lane,46236,9413450,36.95,5,140,0.02,America/Los_Angeles,-122.02,Santa Cruz,46026
+6,2025-07-14 20:33:05.490523+00,trestles,Trestles,46277,9410230,33.39,5,220,0.02,America/Los_Angeles,-117.58,San Clemente,46086
+8,2025-07-15 15:45:46.113999+00,,"Mary Heeney
+",,,,,,,,,,
+9,2025-07-16 03:36:42.112833+00,lucia-scotti-beach,Lucia Scotti,<3<3<3,,,,,,,,,
+10,2025-07-21 02:15:38.116848+00,capitola,Capitola,46236,9413450,36.98,5,170,0.02,America/Los_Angeles,-121.95,Santa Cruz,46026
+11,2025-07-21 02:15:38.116848+00,carmel-beach,Carmel Beach,46240,9413450,36.55,5,270,0.02,America/Los_Angeles,-121.93,Santa Cruz,46026
+12,2025-07-21 02:15:38.116848+00,montara,Montara,46237,9414131,37.55,5,290,0.02,America/Los_Angeles,-122.49,SF Bay Area,46026
+13,2025-07-21 02:15:38.116848+00,ocean-beach-central,Ocean Beach (central),46237,9414131,37.76,5,270,0.02,America/Los_Angeles,-122.51,SF Bay Area,46026
+14,2025-07-21 02:15:38.116848+00,ocean-beach-north,Ocean Beach (north),46237,9414131,37.75,5,270,0.02,America/Los_Angeles,-122.51,SF Bay Area,46026
+15,2025-07-21 02:15:38.116848+00,ocean-beach-south,Ocean Beach (south),46237,9414131,37.75,5,270,0.02,America/Los_Angeles,-122.51,SF Bay Area,46026
+16,2025-07-21 02:15:38.116848+00,pacific-north-end,Pacifica (north end),46237,9414131,37.87,5,300,0.02,America/Los_Angeles,-122.27,SF Bay Area,46026
+17,2025-07-21 02:15:38.116848+00,pacifica-south-end,Pacifica (south end),46237,9414131,37.64,5,300,0.02,America/Los_Angeles,-122.47,SF Bay Area,46026
+18,2025-07-21 02:15:38.116848+00,pleasure-point,Pleasure Point,46236,9413745,36.97,5,150,0.02,America/Los_Angeles,-121.96,Santa Cruz,46026
+19,2025-07-21 02:15:38.116848+00,princeton-jetty,Princeton Jetty,46237,9414131,37.5,5,220,0.02,America/Los_Angeles,-122.47,SF Bay Area,46026
+20,2025-07-21 02:15:38.116848+00,privates,Privates,46236,9413745,36.96,5,140,0.02,America/Los_Angeles,-121.96,Santa Cruz,46026
+21,2025-07-21 02:15:38.116848+00,rockaways-67th-st,Rockaways 67th St.,44065,8516881,40.58,5,160,0.02,America/New_York,-73.82,New York,44065
+22,2025-07-21 02:15:38.116848+00,rockaways-90th-st,Rockaways 90th St.,44065,8516881,40.58,5,160,0.02,America/New_York,-73.82,New York,44065
+23,2025-07-21 02:15:38.116848+00,san-onofre-state-beach,San Onofre State Beach,46277,9410580,33.35,5,200,0.02,America/Los_Angeles,-117.52,San Clemente,46086
