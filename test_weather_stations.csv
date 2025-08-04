@@ -1,0 +1,3 @@
+surf_spot_slug,spot_lat,spot_lon,primary_station_id,primary_station_name,primary_distance_miles,secondary_station_id,secondary_station_name,secondary_distance_miles,tertiary_station_id,tertiary_station_name,tertiary_distance_miles
+steamer-lane,36.95,-122.02,AP803,KE6AFE Santa Cruz,2.5,C9585,CW9585 Santa Cruz,3.6,XCDC1,COAST DAIRIES,10.6
+lido-beach,40.58,-73.65,KJFK,"New York, Kennedy International Airport",6.7,KFRG,Farmingdale - Republic Airport,16.5,KLGA,"New York, La Guardia Airport",17.8
