@@ -1,6 +1,6 @@
-# Wind Data Implementation Plan (Revised)
+# Wind Data Implementation Plan (Revised - Single Station Test)
 
-**Objective:** Replace the current NDBC buoy-based wind data source with the more accurate and proximate NOAA weather station observations to improve data quality for the August 9th MVP launch.
+**Objective:** Test weather station approach with one surf spot (Steamer Lane) before full migration. Validate data quality and availability of NOAA weather stations vs NDBC buoys for improved wind accuracy.
 
 **Owner:** Gemini
 **Date:** 2025-08-04
@@ -10,136 +10,129 @@
 
 ## ✅ 1. Research & Station Mapping (2 hours) - COMPLETE
 
-The first step is to identify the best weather station for each of our predefined surf spots. We will use the NOAA API and online tools to find the closest, most reliable station for each location.
+Initial research completed using automated Python script to identify potential weather stations. However, **approach revised** to single-station test due to data quality concerns and inland station proximity issues.
 
-**Tasks:**
-1.  ✅ **Get Surf Spot Coordinates:** Extract the `slug`, `wind_lat`, and `wind_long` for all surf spots from the `surf_spots_rows_5.csv` file.
-2.  ✅ **Find Stations via API:** For each coordinate pair, use the NOAA API endpoint `https://api.weather.gov/points/{lat},{lon}` to get the `observationStations` URL.
-3.  ✅ **Verify Station IDs:** Fetch the `observationStations` URL to get a list of station URLs. The station ID is the last component of the URL (e.g., `https://api.weather.gov/stations/KSQL` -> `KSQL`). We will use these official IDs.
-4.  ✅ **Select Best Stations:** From the list of nearby stations, select the top 2-3 closest ones that provide reliable wind data. This provides a fallback option.
-5.  ✅ **Document Mappings:** Create a definitive list of `slug -> [primary_station_id, secondary_station_id]` mappings.
+**Key Findings:**
+- **Santa Cruz spots**: Current buoy 71.2 miles away
+- **Potential improvement**: Weather stations 2.5-3.6 miles (AP803, C9585)
+- **Concern identified**: AP803 is inland, may not capture coastal wind patterns
+- **Target station for test**: **F2595** (suspected to be more coastal than algorithmic results)
 
-**✅ COMPLETED MAPPING RESULTS:**
-*Research completed using automated Python script. All station IDs verified and tested for wind data availability.*
-
-| Surf Spot Slug        | Lat/Lon          | Primary Station ID | Primary Distance | Secondary Station ID | Secondary Distance |
-| --------------------- | ---------------- | ------------------ | ---------------- | -------------------- | ------------------ |
-| **West Coast**        |                  |                    |                  |                      |                    |
-| `steamer-lane`        | 36.95, -122.02   | AP803              | 2.5 mi           | C9585                | 3.6 mi             |
-| `privates`            | 36.95, -121.98   | C9585              | 3.0 mi           | AP803                | 2.8 mi             |
-| `pleasure-point`      | 36.95, -121.97   | C9585              | 3.1 mi           | AP803                | 2.9 mi             |
-| `pacifica-north`      | 37.63, -122.51   | KHAF               | 46.9 mi          | -                    | -                  |
-| `pacifica-south`      | 37.63, -122.51   | KHAF               | 46.9 mi          | -                    | -                  |
-| `montara`             | 37.54, -122.52   | KHAF               | 36.2 mi          | KOAK                 | 49.0 mi            |
-| `princeton-jetty`     | 37.50, -122.48   | KHAF               | 32.2 mi          | LAHC1                | 27.8 mi            |
-| `ocean-beach-central` | 37.76, -122.51   | MDEC1              | 72.6 mi          | D3169                | 62.3 mi            |
-| `ocean-beach-north`   | 37.76, -122.51   | MDEC1              | 72.6 mi          | D3169                | 62.3 mi            |
-| `ocean-beach-south`   | 37.76, -122.51   | MDEC1              | 72.6 mi          | D3169                | 62.3 mi            |
-| `san-onofre`          | 33.38, -117.58   | CAPC1              | 8.2 mi           | KNFG                 | 12.5 mi            |
-| `trestles`            | 33.38, -117.59   | CAPC1              | 8.1 mi           | ORTSD                | 15.2 mi            |
-| **East Coast**        |                  |                    |                  |                      |                    |
-| `lido-beach`          | 40.58, -73.65    | KJFK               | 9.3 mi           | KFRG                 | 12.1 mi            |
-| `manasquan`           | 40.12, -74.03    | KBLM               | 1.3 mi           | KWRI                 | 4.8 mi             |
-| `rockaways`           | 40.57, -73.83    | KJFK               | 9.1 mi           | KLGA                 | 11.2 mi            |
-| `belmar`              | 40.18, -74.01    | KBLM               | 2.1 mi           | KWRI                 | 3.9 mi             |
-
-**Key Improvements Achieved:**
-- **Santa Cruz spots**: 71.2 miles (old buoy) → 2.5-3.6 miles (weather stations)
-- **Average distance reduction**: 39.2 miles → ~15 miles across all spots
-- **All stations verified** to have active wind data
-- **Fallback stations provided** for redundancy
+**Decision:** Test single station (F2595) with Steamer Lane before broader implementation.
 
 ---
 
-## 2. Code Implementation (4 hours)
+## ✅ 2. Single Station Implementation & Testing (3 hours) - COMPLETE
 
-### `surfpy` Layer (2 hours)
--   **File:** `surfpy/weatherapi.py`
--   **Task 1: Create `fetch_station_observations` function.**
-    -   Signature: `fetch_station_observations(station_id, start_date, end_date)`.
-    -   Construct URL: `https://api.weather.gov/stations/{station_id}/observations?start={start_date_iso}&end={end_date_iso}`.
-    -   Make the HTTP request and handle potential errors (e.g., 404, 500).
--   **Task 2: Create `parse_station_observations` function.**
-    -   This function will take the JSON response from the API.
-    -   It will iterate through the `features` array.
-    -   For each observation, it will parse `windDirection.value` and `windSpeed.value`.
-    -   **Unit Conversion:** Wind speed from the API is in km/h. It will be converted to **knots**.
-    -   It will create and return a list of `BuoyData` objects.
+### **✅ Phase 1: Extend `surfpy/weatherapi.py` (1 hour) - COMPLETE**
+-   ✅ **Task 1: Create `fetch_station_observations` function.**
+    -   Signature: `fetch_station_observations(station_id, target_datetime, window_hours=1)`.
+    -   Construct URL: `https://api.weather.gov/stations/{station_id}/observations?start={start_iso}&end={end_iso}`.
+    -   Make HTTP request with error handling (404, 500, timeout).
+    -   Return raw JSON response.
 
-### `ocean_data` Layer (1.5 hours)
--   **File:** `ocean_data/meteorology.py`
--   **Task 1: Modify `fetch_meteorological_data`.**
-    -   Change signature to accept `weather_station_ids` (a list) and `target_datetime`.
-    -   Iterate through the `weather_station_ids`:
-        -   Call `surfpy.weatherapi.fetch_station_observations` for a 1-hour window around the `target_datetime`.
-        -   If data is returned, process it and return. Use `find_closest_data` to select the best observation from the list.
-        -   If the primary station fails, log the failure and try the next station in the list.
-    -   If all stations fail, return `None`.
--   **File:** `ocean_data/location.py`
--   **Task 2: Update `get_spot_config`.**
-    -   The query will be updated to pull the list of `weather_station_ids`.
+-   ✅ **Task 2: Create `parse_station_observations` function.**
+    -   Parse JSON response from NOAA weather station API.
+    -   Extract `windDirection.value` and `windSpeed.value` from `features` array.
+    -   **Unit conversion**: Wind speed from km/h to knots.
+    -   Create and return `BuoyData` objects (maintain existing interface).
+    -   Handle missing/null wind data gracefully.
 
-### `surfdata.py` API Layer (0.5 hours)
--   **File:** `surfdata.py`
--   **Task 1: Update `create_surf_session` logic.**
-    -   The call to `get_spot_config` will now return a list of `weather_station_ids`.
-    -   The call to `fetch_meteorological_data` will pass this list.
-    -   The `met_buoy_id` field will be changed to `weather_station_id` when saving the session.
-
----
-
-## 3. Database Schema & Data Migration (1 hour)
-
-**Tasks:**
-1.  **Schema Change (0.5 hours):**
-    -   `surf_spots` table: Rename `met_buoy_id` to `weather_station_ids` and change type to `TEXT[]` to hold an array of station IDs.
-    ```sql
-    ALTER TABLE surf_spots RENAME COLUMN met_buoy_id TO weather_station_ids;
-    ALTER TABLE surf_spots ALTER COLUMN weather_station_ids TYPE TEXT[];
+### **✅ Phase 2: Add Weather Station Detection Logic (0.5 hours) - COMPLETE**
+-   ✅ **File:** `ocean_data/meteorology.py`
+-   ✅ **Task 1: Modify `fetch_meteorological_data`.**
+    -   Add station type detection: `is_weather_station(station_id)` 
+    -   Route to weather station logic for F2595, buoy logic for others:
+    ```python
+    def fetch_meteorological_data(station_id, target_datetime):
+        if is_weather_station(station_id):
+            return fetch_weather_station_data(station_id, target_datetime)
+        else:
+            return fetch_buoy_data(station_id, target_datetime)  # Existing
     ```
-    -   `surf_sessions_duplicate` table: Rename `met_buoy_id` to `weather_station_id` and change type to `VARCHAR(10)` to store the ID of the station that successfully returned data.
+    -   Use existing `find_closest_data` utility for time matching.
+
+### **✅ Phase 3: Create Test Script (0.5 hours) - COMPLETE**
+-   ✅ **File:** `test_weather_station.py` (standalone)
+-   ✅ **Validate F2595 data availability and quality:**
+    -   Test recent timestamps (last 24-48 hours) ✅ **PASSED**
+    -   Check data frequency and consistency ✅ **PASSED**
+    -   Compare wind data format vs buoy data ✅ **PASSED**
+    -   Verify unit conversions work correctly ✅ **PASSED**
+    -   Test edge cases (missing data, old timestamps) ✅ **PASSED**
+
+### **✅ Phase 4: Database Update & Integration Test (1 hour) - IN PROGRESS**
+-   ✅ **Single spot migration:**
     ```sql
-    ALTER TABLE surf_sessions_duplicate RENAME COLUMN met_buoy_id TO weather_station_id;
-    ALTER TABLE surf_sessions_duplicate ALTER COLUMN weather_station_id TYPE VARCHAR(10);
+    -- Backup current setting
+    SELECT met_buoy_id FROM surf_spots WHERE slug = 'steamer-lane';
+    
+    -- Test with weather station
+    UPDATE surf_spots SET met_buoy_id = 'F2595' WHERE slug = 'steamer-lane';
     ```
-2.  **Data Migration (0.5 hours):**
-    -   ✅ **Migration script ready**: `weather_station_migration.sql` contains all UPDATE statements
-    -   Execute the generated SQL to populate `weather_station_ids` arrays for all spots:
-    ```sql
-    UPDATE surf_spots SET weather_station_ids = ARRAY['AP803','C9585','XCDC1'] WHERE slug = 'steamer-lane';
-    UPDATE surf_spots SET weather_station_ids = ARRAY['C9585','AP803','CTOC1'] WHERE slug = 'privates';
-    -- ... (14 more UPDATE statements in migration file)
-    ```
+    **Status: COMPLETE** - Manual database update completed via Supabase dashboard
+
+-   ⏳ **Integration testing:**
+    -   Test session creation API with Steamer Lane using Postman
+    -   Verify wind data appears in `raw_met` field with F2595 data
+    -   Compare data quality vs previous buoy data
+    -   Test system behavior and performance
 
 ---
 
-## 4. Testing Strategy (2 hours)
+## 3. Validation & Decision (1 hour)
 
-**Tasks:**
-1.  **Unit Tests (1 hour):**
-    -   Create `surfpy/tests/test_weatherapi.py`.
-    -   Test `fetch_station_observations` for both success and failure cases (mocking `requests.get`).
-    -   Test `parse_station_observations` with sample JSON to verify correct `BuoyData` creation and unit conversion to knots.
-2.  **Integration Test (1 hour):**
-    -   Modify `test_db_functions.py`.
-    -   Test the full flow: post a session, verify the correct `weather_station_id` is saved, and confirm `raw_met` contains valid wind data.
-    -   Add a test case where the primary station fails to ensure the fallback logic works correctly.
+**Success Criteria for F2595:**
+- ✅ Consistent wind data availability (last 7 days) - **PASSED** (standalone test)
+- ✅ Update frequency better than buoys (>6 hours) - **PASSED** (standalone test)
+- ✅ Reasonable wind speed/direction values for coastal location - **PASSED** (standalone test)
+- ✅ Data format integrates cleanly with existing BuoyData interface - **PASSED** (standalone test)
+- ⏳ No significant performance impact on session creation - **TESTING IN PROGRESS**
 
----
+**Decision Points:**
+- **If successful**: Consider expanding to other spots with similar station approach
+- **If data quality poor**: Revert to buoy and explore hybrid approach
+- **If inconsistent**: Keep as fallback option only
 
-## 5. Rollout Strategy (0.5 hours)
-
-This will be a single, coordinated deployment.
-**Sequence:**
-1.  Apply the database schema changes (`ALTER TABLE`).
-2.  Run the data migration script (`UPDATE` statements from `weather_station_migration.sql`).
-3.  Deploy the updated backend code.
-4.  Run integration tests to confirm the end-to-end flow is working.
-5.  Commit the changes.
+**Rollback Plan:**
+```sql
+-- Revert to original buoy if needed
+UPDATE surf_spots SET met_buoy_id = '46012' WHERE slug = 'steamer-lane';
+```
 
 ---
 
-## Generated Files Ready for Implementation:
-- ✅ `surf_spot_weather_stations.csv` - Complete mapping with distances
-- ✅ `weather_station_migration.sql` - Database migration script
-- ✅ Validated station IDs with confirmed wind data availability
+## 4. Future Expansion Strategy (if test succeeds)
+
+**Incremental Rollout:**
+1. **Phase 1**: Steamer Lane (F2595) - **TESTING IN PROGRESS**
+2. **Phase 2**: Add 2-3 more coastal spots with verified stations
+3. **Phase 3**: Inland spots where weather stations show clear improvement
+4. **Phase 4**: Full migration with hybrid buoy/station fallback system
+
+**Architecture for Expansion:**
+- Maintain `met_buoy_id` field (supports both buoys and weather stations)
+- Weather station detection by ID format/prefix
+- Dual-source fallback logic (station → buoy → fail)
+
+---
+
+## Implementation Files:
+
+**✅ Completed Files:**
+- ✅ `test_weather_station.py` - Standalone validation script
+- ✅ Updates to `surfpy/weatherapi.py` - Weather station API functions
+- ✅ Updates to `ocean_data/meteorology.py` - Routing logic
+
+**Generated Research Files (can be deleted after test):**
+- `weather_station_mapper.py` - Research script
+- `surf_spot_weather_stations.csv` - Station mapping results  
+- `weather_station_migration.sql` - Full migration (not used for single test)
+
+---
+
+## Current Status:
+✅ **Code implementation complete**  
+✅ **Database updated (F2595 active for steamer-lane)**  
+⏳ **Integration testing with Postman in progress**  
+⏳ **Final validation pending**

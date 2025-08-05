@@ -44,6 +44,62 @@ class WeatherApi():
         resp = requests.get(url)
         resp_json = resp.json()
         return resp_json['properties']
+
+    @staticmethod
+    def fetch_station_observations(station_id: str, start_date: datetime.datetime, end_date: datetime.datetime) -> dict:
+        # https://api.weather.gov/stations/KNYC/observations?start=2024-08-05T12:00:00Z&end=2024-08-05T13:00:00Z
+        start_iso = start_date.strftime('%Y-%m-%dT%H:%M:%SZ')
+        end_iso = end_date.strftime('%Y-%m-%dT%H:%M:%SZ')
+        url = f'{WeatherApi._API_ROOT_URL}stations/{station_id}/observations?start={start_iso}&end={end_iso}'
+        try:
+            resp = requests.get(url, timeout=10)
+            resp.raise_for_status()
+            return resp.json()
+        except requests.exceptions.HTTPError as e:
+            print(f'Http Error: {e}')
+        except requests.exceptions.ConnectionError as e:
+            print(f'Error Connecting: {e}')
+        except requests.exceptions.Timeout as e:
+            print(f'Timeout Error: {e}')
+        except requests.exceptions.RequestException as e:
+            print(f'OOps: Something Else {e}')
+        return None
+
+    @staticmethod
+    def parse_station_observations(observation_data: dict) -> List[BuoyData]:
+        buoy_data = []
+        if not observation_data or 'features' not in observation_data:
+            return buoy_data
+
+        for feature in observation_data['features']:
+            properties = feature.get('properties', {})
+            if not properties:
+                continue
+
+            buoy_data_point = BuoyData(units.Units.english)
+            
+            # Date
+            timestamp_str = properties.get('timestamp')
+            if timestamp_str:
+                buoy_data_point.date = datetime.datetime.strptime(timestamp_str, '%Y-%m-%dT%H:%M:%S%z').astimezone(pytz.utc)
+
+            # Wind Speed (convert from km/h to knots)
+            wind_speed_data = properties.get('windSpeed', {})
+            if wind_speed_data and wind_speed_data.get('value') is not None:
+                kph = wind_speed_data['value']
+                if kph is not None:
+                    # Convert km/h to knots
+                    knots = kph * 0.539957
+                    buoy_data_point.wind_speed = knots
+
+            # Wind Direction
+            wind_direction_data = properties.get('windDirection', {})
+            if wind_direction_data and wind_direction_data.get('value') is not None:
+                buoy_data_point.wind_direction = int(wind_direction_data['value'])
+
+            buoy_data.append(buoy_data_point)
+
+        return buoy_data
     
     @staticmethod
     def parse_weather_forecast(forecast_data: dict) -> List[BuoyData]:
