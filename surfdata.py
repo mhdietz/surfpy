@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from flask_caching import Cache
 from datetime import datetime, timezone, timedelta
 import surfpy
@@ -20,6 +21,13 @@ from ocean_data.tide import fetch_tide_data
 from ocean_data.location import get_buoys_for_location, is_valid_location, get_spot_config
 
 app = Flask(__name__)
+
+#CORS configuration
+CORS(app, 
+     origins=["*"],  # Allows all origins
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     supports_credentials=True)
 
 # Configure caching
 app.config['CACHE_TYPE'] = 'SimpleCache'  # In-memory cache
