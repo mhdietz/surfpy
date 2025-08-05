@@ -2,14 +2,21 @@
 Ocean Data Module - Meteorology
 
 This module provides functions for retrieving and processing meteorological data
-from NDBC buoys using the surfpy library.
+from NDBC buoys and NOAA weather stations using the surfpy library.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import surfpy
+from surfpy.weatherapi import WeatherApi
 import math
 
 from .utils import find_closest_data, is_valid_data, convert_met_data_to_imperial
+
+def is_weather_station(station_id: str) -> bool:
+    """
+    Check if the station ID is for a weather station (non-numeric) or a buoy (numeric).
+    """
+    return not station_id.isdigit()
 
 def fetch_met_buoy(buoy_id):
     """
@@ -23,7 +30,43 @@ def fetch_met_buoy(buoy_id):
         print(f"Error fetching met buoy: {str(e)}")
         return None
 
-def fetch_meteorological_data(buoy_id, target_datetime, count=500, use_imperial_units=True):
+def fetch_weather_station_data(station_id, target_datetime, use_imperial_units=True):
+    """
+    Fetch and process meteorological data from a NOAA weather station.
+    """
+    try:
+        if target_datetime.tzinfo is None:
+            target_datetime = target_datetime.replace(tzinfo=timezone.utc)
+        
+        # Define a window around the target time to fetch observations
+        start_time = target_datetime - timedelta(hours=1)
+        end_time = target_datetime + timedelta(hours=1)
+
+        raw_observations = WeatherApi.fetch_station_observations(station_id, start_time, end_time)
+        if not raw_observations:
+            print(f"No weather station observations found for {station_id}")
+            return [generate_dummy_met_data(target_datetime, use_imperial_units)]
+
+        met_data = WeatherApi.parse_station_observations(raw_observations)
+        if not met_data:
+            print(f"Failed to parse weather station data for {station_id}")
+            return [generate_dummy_met_data(target_datetime, use_imperial_units)]
+
+        closest_data = find_closest_data(met_data, target_datetime)
+        if not closest_data:
+            print(f"No matching weather station data found for time {target_datetime}")
+            return [generate_dummy_met_data(target_datetime, use_imperial_units)]
+
+        json_data = met_data_to_json([closest_data])
+        # The parse function already returns data in imperial units (knots)
+        # if use_imperial_units:
+        #     json_data = convert_met_data_to_imperial(json_data)
+        return json_data
+    except Exception as e:
+        print(f"Error fetching weather station data: {str(e)}")
+        return [generate_dummy_met_data(target_datetime, use_imperial_units)]
+
+def fetch_buoy_data(buoy_id, target_datetime, count=500, use_imperial_units=True):
     """
     Fetch and process meteorological data for a specific buoy and time.
     """
@@ -53,6 +96,16 @@ def fetch_meteorological_data(buoy_id, target_datetime, count=500, use_imperial_
     except Exception as e:
         print(f"Error fetching meteorological data: {str(e)}")
         return [generate_dummy_met_data(target_datetime, use_imperial_units)]
+
+def fetch_meteorological_data(station_id, target_datetime, count=500, use_imperial_units=True):
+    """
+    Fetch and process meteorological data from the appropriate source 
+    (weather station or buoy) based on the station ID.
+    """
+    if is_weather_station(station_id):
+        return fetch_weather_station_data(station_id, target_datetime, use_imperial_units)
+    else:
+        return fetch_buoy_data(station_id, target_datetime, count, use_imperial_units)
 
 def fetch_historical_met_data(buoy_id: str, start_date: datetime, end_date: datetime, use_imperial_units: bool = True) -> list:
     """

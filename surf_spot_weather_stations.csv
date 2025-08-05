@@ -1,0 +1,17 @@
+surf_spot_slug,spot_lat,spot_lon,primary_station_id,primary_station_name,primary_distance_miles,secondary_station_id,secondary_station_name,secondary_distance_miles,tertiary_station_id,tertiary_station_name,tertiary_distance_miles
+steamer-lane,36.95,-122.02,AP803,KE6AFE Santa Cruz,2.5,C9585,CW9585 Santa Cruz,3.6,XCDC1,COAST DAIRIES,10.6
+privates,36.95,-121.98,C9585,CW9585 Santa Cruz,1.0,AP803,KE6AFE Santa Cruz,3.0,CTOC1,CORRALITOS,9.5
+pleasure-point,36.95,-121.97,C9585,CW9585 Santa Cruz,1.0,AP803,KE6AFE Santa Cruz,3.0,CTOC1,CORRALITOS,9.5
+pacifica-north,37.63,-122.51,KHAF,Half Moon Bay Airport,7.3,,,,,,
+pacifica-south,37.63,-122.51,KHAF,Half Moon Bay Airport,7.3,,,,,,
+montara,37.54,-122.52,KHAF,Half Moon Bay Airport,2.8,KOAK,San Francisco Bay Oakland International Airport,20.4,LAHC1,LA HONDA,22.4
+princeton-jetty,37.5,-122.48,KHAF,Half Moon Bay Airport,0.8,LAHC1,LA HONDA,19.0,,,
+ocean-beach-central,37.76,-122.51,MDEC1,MIDDLE PEAK,12.5,D3169,DW3169 Oakland,15.7,,,
+ocean-beach-north,37.76,-122.51,MDEC1,MIDDLE PEAK,12.5,D3169,DW3169 Oakland,15.7,,,
+ocean-beach-south,37.76,-122.51,MDEC1,MIDDLE PEAK,12.5,D3169,DW3169 Oakland,15.7,,,
+san-onofre,33.38,-117.58,CAPC1,BELL CANYON,12.6,KNFG,"Oceanside, Camp Pendleton, Marine Corps Air Station",13.9,ORTSD,Ortega,14.4
+trestles,33.38,-117.59,CAPC1,BELL CANYON,11.1,ORTSD,Ortega,13.0,KNFG,"Oceanside, Camp Pendleton, Marine Corps Air Station",14.7
+lido-beach,40.58,-73.65,KJFK,"New York, Kennedy International Airport",6.7,KFRG,Farmingdale - Republic Airport,16.5,KLGA,"New York, La Guardia Airport",17.8
+manasquan,40.12,-74.03,KBLM,Monmouth Executive Airport,7.7,KWRI,Mcguire Air Force Base,31.5,KJFK,"New York, Kennedy International Airport",38.7
+rockaways,40.57,-73.83,KJFK,"New York, Kennedy International Airport",6.7,KLGA,"New York, La Guardia Airport",15.2,KNYC,"New York City, Central Park",16.8
+belmar,40.18,-74.01,KBLM,Monmouth Executive Airport,6.7,KWRI,Mcguire Air Force Base,33.4,KJFK,"New York, Kennedy International Airport",34.2
