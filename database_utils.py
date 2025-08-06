@@ -35,10 +35,11 @@ def get_all_sessions(current_user_id):
             # Get all session data plus participants and shaka data
             cur.execute("""
                 SELECT 
-                    s.id, s.created_at, s.session_name, s.location, s.fun_rating, s.time, s.session_notes,
-                    s.raw_swell, s.date, s.swell_buoy_id, s.raw_met, s.met_buoy_id,
-                    s.tide_station_id, s.user_id, s.end_time, s.session_group_id,
+                    s.id, s.created_at, s.session_name, s.location, s.fun_rating, s.session_notes,
+                    s.raw_swell, s.swell_buoy_id, s.raw_met, s.met_buoy_id,
+                    s.tide_station_id, s.user_id, s.session_group_id,
                     s.session_water_level, s.tide_direction, s.next_tide_event_type, s.next_tide_event_at, s.next_tide_event_height,
+                    s.session_started_at, s.session_ended_at,
                     u.email as user_email,
                     COALESCE(
                         u.raw_user_meta_data->>'display_name',
@@ -91,18 +92,11 @@ def get_all_sessions(current_user_id):
             
             # Process each session to handle non-serializable types
             for i, session in enumerate(sessions_list):
-                # Process time objects (start_time)
-                if 'time' in session and isinstance(session['time'], time):
-                    sessions_list[i]['time'] = session['time'].isoformat()
-                
-                # Process end_time objects
-                if 'end_time' in session and isinstance(session['end_time'], time):
-                    sessions_list[i]['end_time'] = session['end_time'].isoformat()
-                
-                # Process date objects
-                if 'date' in session and isinstance(session['date'], date):
-                    sessions_list[i]['date'] = session['date'].isoformat()
-                
+                # Standardize all timestamp fields to ISO 8601 format
+                for field in ['created_at', 'session_started_at', 'session_ended_at', 'next_tide_event_at']:
+                    if field in session and isinstance(session[field], datetime):
+                        sessions_list[i][field] = session[field].isoformat()
+
                 # Group tide data into a single object
                 tide_data = {}
                 if 'session_water_level' in session:
@@ -112,11 +106,7 @@ def get_all_sessions(current_user_id):
                 if 'next_tide_event_type' in session:
                     tide_data['next_event_type'] = session.pop('next_tide_event_type')
                 if 'next_tide_event_at' in session:
-                    # Ensure it's ISO formatted before adding to tide_data
-                    if isinstance(session['next_tide_event_at'], datetime):
-                        tide_data['next_event_at'] = session.pop('next_tide_event_at').isoformat()
-                    else:
-                        tide_data['next_event_at'] = session.pop('next_tide_event_at')
+                    tide_data['next_event_at'] = session.pop('next_tide_event_at')
                 if 'next_tide_event_height' in session:
                     tide_data['next_event_height'] = session.pop('next_tide_event_height')
                 
@@ -124,7 +114,6 @@ def get_all_sessions(current_user_id):
 
                 # Convert participants from JSONB array to Python list
                 if 'participants' in session and session['participants']:
-                    # participants is already a list of dictionaries from the JSONB array
                     sessions_list[i]['participants'] = session['participants']
                 else:
                     sessions_list[i]['participants'] = []
@@ -148,10 +137,11 @@ def get_user_sessions(profile_user_id, viewer_user_id):
             # The query is filtered by the profile_user_id, but shaka status is checked against the viewer_user_id
             cur.execute("""
                 SELECT 
-                    s.id, s.created_at, s.session_name, s.location, s.fun_rating, s.time, s.session_notes,
-                    s.raw_swell, s.date, s.swell_buoy_id, s.raw_met, s.met_buoy_id,
-                    s.tide_station_id, s.user_id, s.end_time, s.session_group_id,
+                    s.id, s.created_at, s.session_name, s.location, s.fun_rating, s.session_notes,
+                    s.raw_swell, s.swell_buoy_id, s.raw_met, s.met_buoy_id,
+                    s.tide_station_id, s.user_id, s.session_group_id,
                     s.session_water_level, s.tide_direction, s.next_tide_event_type, s.next_tide_event_at, s.next_tide_event_height,
+                    s.session_started_at, s.session_ended_at,
                     u.email as user_email,
                     COALESCE(
                         u.raw_user_meta_data->>'display_name',
@@ -206,18 +196,11 @@ def get_user_sessions(profile_user_id, viewer_user_id):
             
             # Process each session to handle non-serializable types (same as get_all_sessions)
             for i, session in enumerate(sessions_list):
-                # Process time objects (start_time)
-                if 'time' in session and isinstance(session['time'], time):
-                    sessions_list[i]['time'] = session['time'].isoformat()
-                
-                # Process end_time objects
-                if 'end_time' in session and isinstance(session['end_time'], time):
-                    sessions_list[i]['end_time'] = session['end_time'].isoformat()
-                
-                # Process date objects
-                if 'date' in session and isinstance(session['date'], date):
-                    sessions_list[i]['date'] = session['date'].isoformat()
-                
+                # Standardize all timestamp fields to ISO 8601 format
+                for field in ['created_at', 'session_started_at', 'session_ended_at', 'next_tide_event_at']:
+                    if field in session and isinstance(session[field], datetime):
+                        sessions_list[i][field] = session[field].isoformat()
+
                 # Group tide data into a single object
                 tide_data = {}
                 if 'session_water_level' in session:
@@ -227,11 +210,7 @@ def get_user_sessions(profile_user_id, viewer_user_id):
                 if 'next_tide_event_type' in session:
                     tide_data['next_event_type'] = session.pop('next_tide_event_type')
                 if 'next_tide_event_at' in session:
-                    # Ensure it's ISO formatted before adding to tide_data
-                    if isinstance(session['next_tide_event_at'], datetime):
-                        tide_data['next_event_at'] = session.pop('next_tide_event_at').isoformat()
-                    else:
-                        tide_data['next_event_at'] = session.pop('next_tide_event_at')
+                    tide_data['next_event_at'] = session.pop('next_tide_event_at')
                 if 'next_tide_event_height' in session:
                     tide_data['next_event_height'] = session.pop('next_tide_event_height')
                 
@@ -239,7 +218,6 @@ def get_user_sessions(profile_user_id, viewer_user_id):
 
                 # Convert participants from JSONB array to Python list
                 if 'participants' in session and session['participants']:
-                    # participants is already a list of dictionaries from the JSONB array
                     sessions_list[i]['participants'] = session['participants']
                 else:
                     sessions_list[i]['participants'] = []
@@ -262,10 +240,11 @@ def get_session(session_id, current_user_id):
             # Get session details plus participants and shaka info
             cur.execute("""
                 SELECT 
-                    s.id, s.created_at, s.session_name, s.location, s.fun_rating, s.time, s.session_notes,
-                    s.raw_swell, s.date, s.swell_buoy_id, s.raw_met, s.met_buoy_id,
-                    s.tide_station_id, s.user_id, s.end_time, s.session_group_id,
+                    s.id, s.created_at, s.session_name, s.location, s.fun_rating, s.session_notes,
+                    s.raw_swell, s.swell_buoy_id, s.raw_met, s.met_buoy_id,
+                    s.tide_station_id, s.user_id, s.session_group_id,
                     s.session_water_level, s.tide_direction, s.next_tide_event_type, s.next_tide_event_at, s.next_tide_event_height,
+                    s.session_started_at, s.session_ended_at,
                     u.email as user_email,
                     COALESCE(
                         u.raw_user_meta_data->>'display_name',
@@ -315,18 +294,11 @@ def get_session(session_id, current_user_id):
             session = cur.fetchone()
             
             if session:
-                # Convert time objects to strings
-                if 'time' in session and isinstance(session['time'], time):
-                    session['time'] = session['time'].isoformat()
-                
-                # Convert end_time objects to strings
-                if 'end_time' in session and isinstance(session['end_time'], time):
-                    session['end_time'] = session['end_time'].isoformat()
-                
-                # Convert date objects to strings
-                if 'date' in session and isinstance(session['date'], date):
-                    session['date'] = session['date'].isoformat()
-                
+                # Standardize all timestamp fields to ISO 8601 format
+                for field in ['created_at', 'session_started_at', 'session_ended_at', 'next_tide_event_at']:
+                    if field in session and isinstance(session[field], datetime):
+                        session[field] = session[field].isoformat()
+
                 # Group tide data into a single object
                 tide_data = {}
                 if 'session_water_level' in session:
@@ -336,11 +308,7 @@ def get_session(session_id, current_user_id):
                 if 'next_tide_event_type' in session:
                     tide_data['next_event_type'] = session.pop('next_tide_event_type')
                 if 'next_tide_event_at' in session:
-                    # Ensure it's ISO formatted before adding to tide_data
-                    if isinstance(session['next_tide_event_at'], datetime):
-                        tide_data['next_event_at'] = session.pop('next_tide_event_at').isoformat()
-                    else:
-                        tide_data['next_event_at'] = session.pop('next_tide_event_at')
+                    tide_data['next_event_at'] = session.pop('next_tide_event_at')
                 if 'next_tide_event_height' in session:
                     tide_data['next_event_height'] = session.pop('next_tide_event_height')
                 
@@ -348,7 +316,6 @@ def get_session(session_id, current_user_id):
 
                 # Convert participants from JSONB array to Python list
                 if 'participants' in session and session['participants']:
-                    # participants is already a list of dictionaries from the JSONB array
                     session['participants'] = session['participants']
                 else:
                     session['participants'] = []
@@ -398,10 +365,11 @@ def create_session(session_data, user_id):
             # Handle raw_met as JSONB
             if 'raw_met' in session_data:
                 session_data['raw_met'] = Json(session_data['raw_met'])
-            
-            
 
-            
+            # Remove deprecated fields
+            session_data.pop('date', None)
+            session_data.pop('time', None)
+            session_data.pop('end_time', None)
 
             # Remove created_at if present (it should be automatically generated by the DB)
             if 'created_at' in session_data:
@@ -422,17 +390,10 @@ def create_session(session_data, user_id):
             # Handle serialization for time objects after fetching
             new_session = cur.fetchone()
             if new_session:
-                # Convert time objects to strings
-                if 'time' in new_session and isinstance(new_session['time'], time):
-                    new_session['time'] = new_session['time'].isoformat()
-                
-                # Convert end_time objects to strings
-                if 'end_time' in new_session and isinstance(new_session['end_time'], time):
-                    new_session['end_time'] = new_session['end_time'].isoformat()
-                
-                # Convert date objects to strings
-                if 'date' in new_session and isinstance(new_session['date'], date):
-                    new_session['date'] = new_session['date'].isoformat()
+                # Standardize all timestamp fields to ISO 8601 format
+                for field in ['created_at', 'session_started_at', 'session_ended_at', 'next_tide_event_at']:
+                    if field in new_session and isinstance(new_session[field], datetime):
+                        new_session[field] = new_session[field].isoformat()
                     
             return new_session
     except Exception as e:
@@ -471,10 +432,11 @@ def update_session(session_id, update_data, user_id):
             # Handle raw_met as JSONB
             if 'raw_met' in update_data:
                 update_data['raw_met'] = Json(update_data['raw_met'])
-            
-            
 
-            
+            # Remove deprecated fields
+            update_data.pop('date', None)
+            update_data.pop('time', None)
+            update_data.pop('end_time', None)
 
             # Build SET clause for the SQL query
             set_clause = ', '.join([f"{key} = %s" for key in update_data.keys()])
@@ -495,17 +457,10 @@ def update_session(session_id, update_data, user_id):
             # Handle serialization for time objects after fetching
             updated_session = cur.fetchone()
             if updated_session:
-                # Convert time objects to strings
-                if 'time' in updated_session and isinstance(updated_session['time'], time):
-                    updated_session['time'] = updated_session['time'].isoformat()
-                
-                # Convert end_time objects to strings
-                if 'end_time' in updated_session and isinstance(updated_session['end_time'], time):
-                    updated_session['end_time'] = updated_session['end_time'].isoformat()
-                
-                # Convert date objects to strings
-                if 'date' in updated_session and isinstance(updated_session['date'], date):
-                    updated_session['date'] = updated_session['date'].isoformat()
+                # Standardize all timestamp fields to ISO 8601 format
+                for field in ['created_at', 'session_started_at', 'session_ended_at', 'next_tide_event_at']:
+                    if field in updated_session and isinstance(updated_session[field], datetime):
+                        updated_session[field] = updated_session[field].isoformat()
                     
             return updated_session
     except Exception as e:
@@ -641,24 +596,24 @@ def get_dashboard_stats(current_user_id):
                 sessions_per_week_divisor = "GREATEST(EXTRACT(WEEK FROM CURRENT_DATE), 1)" if is_current_year_calc else "52.14"
                 
                 return f"""
-                    COUNT(CASE WHEN EXTRACT(YEAR FROM date) = {year} THEN 1 END) as {prefix}_total_sessions,
+                    COUNT(CASE WHEN EXTRACT(YEAR FROM session_started_at) = {year} THEN 1 END) as {prefix}_total_sessions,
                     ROUND(
-                        (COUNT(CASE WHEN EXTRACT(YEAR FROM date) = {year} THEN 1 END)::numeric / 
+                        (COUNT(CASE WHEN EXTRACT(YEAR FROM session_started_at) = {year} THEN 1 END)::numeric / 
                         {sessions_per_week_divisor})::numeric, 2
                     ) as {prefix}_sessions_per_week,
                     ROUND(
-                        AVG(CASE WHEN EXTRACT(YEAR FROM date) = {year} THEN CAST(fun_rating AS FLOAT) END)::numeric, 2
+                        AVG(CASE WHEN EXTRACT(YEAR FROM session_started_at) = {year} THEN CAST(fun_rating AS FLOAT) END)::numeric, 2
                     ) as {prefix}_avg_fun_rating,
                     ROUND(
                         AVG(CASE 
-                            WHEN EXTRACT(YEAR FROM date) = {year} AND end_time IS NOT NULL 
-                            THEN EXTRACT(EPOCH FROM (end_time - time)) / 60 
+                            WHEN EXTRACT(YEAR FROM session_started_at) = {year} AND session_ended_at IS NOT NULL 
+                            THEN EXTRACT(EPOCH FROM (session_ended_at - session_started_at)) / 60 
                         END)::numeric, 1
                     ) as {prefix}_avg_session_duration_minutes,
                     ROUND(
                         COALESCE(SUM(CASE 
-                            WHEN EXTRACT(YEAR FROM date) = {year} AND end_time IS NOT NULL 
-                            THEN EXTRACT(EPOCH FROM (end_time - time)) / 60 
+                            WHEN EXTRACT(YEAR FROM session_started_at) = {year} AND session_ended_at IS NOT NULL 
+                            THEN EXTRACT(EPOCH FROM (session_ended_at - session_started_at)) / 60 
                         END), 0)::numeric, 1
                     ) as {prefix}_total_surf_time_minutes
                 """
@@ -673,7 +628,7 @@ def get_dashboard_stats(current_user_id):
             for year in years:
                 is_current_year_calc = (year == current_year)
                 # For other users, the date column is s.date
-                other_users_yearly_selects.append(_get_yearly_stats_sql(year, f'year_{year}', is_current_year_calc).replace('date', 's.date'))
+                other_users_yearly_selects.append(_get_yearly_stats_sql(year, f'year_{year}', is_current_year_calc).replace('session_started_at', 's.session_started_at'))
 
             # 1. CURRENT USER STATS
             cur.execute(f"""
@@ -691,7 +646,7 @@ def get_dashboard_stats(current_user_id):
             cur.execute("""
                 SELECT location, COUNT(*) as session_count 
                 FROM surf_sessions_duplicate 
-                WHERE user_id = %s AND EXTRACT(YEAR FROM date) = %s
+                WHERE user_id = %s AND EXTRACT(YEAR FROM session_started_at) = %s
                 GROUP BY location 
                 ORDER BY session_count DESC 
                 LIMIT 3
@@ -730,21 +685,21 @@ def get_dashboard_stats(current_user_id):
                     -- Community average session duration (sessions with end_time)
                     ROUND(
                         AVG(CASE 
-                            WHEN end_time IS NOT NULL 
-                            THEN EXTRACT(EPOCH FROM (end_time - time)) / 60 
+                            WHEN session_ended_at IS NOT NULL 
+                            THEN EXTRACT(EPOCH FROM (session_ended_at - session_started_at)) / 60 
                         END)::numeric, 1
                     ) as avg_session_duration_minutes,
                     
                     -- Total community surf time in minutes (sessions with end_time)
                     ROUND(
                         COALESCE(SUM(CASE 
-                            WHEN end_time IS NOT NULL 
-                            THEN EXTRACT(EPOCH FROM (end_time - time)) / 60 
+                            WHEN session_ended_at IS NOT NULL 
+                            THEN EXTRACT(EPOCH FROM (session_ended_at - session_started_at)) / 60 
                         END), 0)::numeric, 1
                     ) as total_surf_time_minutes
                     
                 FROM surf_sessions_duplicate
-                WHERE EXTRACT(YEAR FROM date) = %s
+                WHERE EXTRACT(YEAR FROM session_started_at) = %s
             """, (current_year,))
             
             community_stats = cur.fetchone()
@@ -753,7 +708,7 @@ def get_dashboard_stats(current_user_id):
             cur.execute("""
                 SELECT location, COUNT(*) as session_count
                 FROM surf_sessions_duplicate 
-                WHERE EXTRACT(YEAR FROM date) = %s
+                WHERE EXTRACT(YEAR FROM session_started_at) = %s
                 GROUP BY location 
                 ORDER BY session_count DESC 
                 LIMIT 1
@@ -780,7 +735,7 @@ def get_dashboard_stats(current_user_id):
                 cur.execute("""
                     SELECT location, COUNT(*) as session_count 
                     FROM surf_sessions_duplicate 
-                    WHERE user_id = %s AND EXTRACT(YEAR FROM date) = %s
+                    WHERE user_id = %s AND EXTRACT(YEAR FROM session_started_at) = %s
                     GROUP BY location 
                     ORDER BY session_count DESC 
                     LIMIT 3
@@ -982,10 +937,11 @@ def get_sessions_by_location(location_slug, current_user_id):
             # The query is similar to get_all_sessions, but with a WHERE clause for the location
             query = """
                 SELECT
-                    s1.id, s1.created_at, s1.session_name, s1.location, s1.fun_rating, s1.time, s1.session_notes,
-                    s1.raw_swell, s1.date, s1.swell_buoy_id, s1.raw_met, s1.met_buoy_id,
-                    s1.tide_station_id, s1.user_id, s1.end_time, s1.session_group_id,
+                    s1.id, s1.created_at, s1.session_name, s1.location, s1.fun_rating, s1.session_notes,
+                    s1.raw_swell, s1.swell_buoy_id, s1.raw_met, s1.met_buoy_id,
+                    s1.tide_station_id, s1.user_id, s1.session_group_id,
                     s1.session_water_level, s1.tide_direction, s1.next_tide_event_type, s1.next_tide_event_at, s1.next_tide_event_height,
+                    s1.session_started_at, s1.session_ended_at,
                     u1.email as user_email,
                     COALESCE(
                         u1.raw_user_meta_data->>'display_name',
@@ -1033,9 +989,9 @@ def get_sessions_by_location(location_slug, current_user_id):
                 LEFT JOIN surf_sessions_duplicate s2 ON s1.session_group_id = s2.session_group_id AND s1.session_group_id IS NOT NULL
                 LEFT JOIN auth.users u2 ON s2.user_id = u2.id
                 WHERE s1.location IN %s
-                GROUP BY s1.id, s1.created_at, s1.session_name, s1.location, s1.fun_rating, s1.time, s1.session_notes,
-                         s1.raw_swell, s1.date, s1.swell_buoy_id, s1.raw_met, s1.met_buoy_id,
-                         s1.tide_station_id, s1.user_id, s1.end_time, s1.session_group_id, u1.email, u1.raw_user_meta_data
+                GROUP BY s1.id, s1.created_at, s1.session_name, s1.location, s1.fun_rating, s1.session_notes,
+                         s1.raw_swell, s1.swell_buoy_id, s1.raw_met, s1.met_buoy_id,
+                         s1.tide_station_id, s1.user_id, s1.session_group_id, u1.email, u1.raw_user_meta_data, s1.session_started_at, s1.session_ended_at
                 ORDER BY s1.created_at DESC
             """
 
@@ -1045,13 +1001,11 @@ def get_sessions_by_location(location_slug, current_user_id):
 
             # Process each session to handle non-serializable types
             for i, session in enumerate(sessions_list):
-                if 'time' in session and isinstance(session['time'], time):
-                    sessions_list[i]['time'] = session['time'].isoformat()
-                if 'end_time' in session and isinstance(session['end_time'], time):
-                    sessions_list[i]['end_time'] = session['end_time'].isoformat()
-                if 'date' in session and isinstance(session['date'], date):
-                    sessions_list[i]['date'] = session['date'].isoformat()
-                
+                # Standardize all timestamp fields to ISO 8601 format
+                for field in ['created_at', 'session_started_at', 'session_ended_at', 'next_tide_event_at']:
+                    if field in session and isinstance(session[field], datetime):
+                        sessions_list[i][field] = session[field].isoformat()
+
                 # Group tide data into a single object
                 tide_data = {}
                 if 'session_water_level' in session:
@@ -1061,11 +1015,7 @@ def get_sessions_by_location(location_slug, current_user_id):
                 if 'next_tide_event_type' in session:
                     tide_data['next_event_type'] = session.pop('next_tide_event_type')
                 if 'next_tide_event_at' in session:
-                    # Ensure it's ISO formatted before adding to tide_data
-                    if isinstance(session['next_tide_event_at'], datetime):
-                        tide_data['next_event_at'] = session.pop('next_tide_event_at').isoformat()
-                    else:
-                        tide_data['next_event_at'] = session.pop('next_tide_event_at')
+                    tide_data['next_event_at'] = session.pop('next_tide_event_at')
                 if 'next_tide_event_height' in session:
                     tide_data['next_event_height'] = session.pop('next_tide_event_height')
                 
