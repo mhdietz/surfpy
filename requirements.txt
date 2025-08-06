@@ -5,3 +5,4 @@ pytz
 PyJWT
 Flask-Caching
 noaa-coops
+flask-cors

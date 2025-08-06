@@ -1,6 +1,6 @@
-# Wind Data Retrieval Flow
+# Wind and Meteorological Data Retrieval Flow
 
-This document outlines the end-to-end process of how wind and other meteorological data is retrieved in the Surf App, from the initial API request to the final data processing.
+This document outlines the end-to-end process of how wind and other meteorological data is retrieved in the Surf App, from the initial API request to the final data processing. The system can retrieve data from two primary sources: offshore NDBC buoys and onshore NOAA weather stations.
 
 ## High-Level Architecture
 
@@ -8,7 +8,7 @@ The system is designed with a layered architecture to separate concerns:
 
 -   **`surfdata.py` (API Layer)**: Handles incoming web requests and orchestrates the data retrieval process.
 -   **`ocean_data` (Abstraction Layer)**: Provides a simplified interface for fetching various types of oceanographic data, hiding the complexity of the underlying data sources.
--   **`surfpy` (Engine Layer)**: A low-level library responsible for the direct interaction with external data providers like the National Data Buoy Center (NDBC).
+-   **`surfpy` (Engine Layer)**: A low-level library responsible for the direct interaction with external data providers, including the National Data Buoy Center (NDBC) and the NOAA `api.weather.gov` service.
 
 ---
 
@@ -25,59 +25,61 @@ The process of fetching meteorological data for a surf session follows these ste
 ### 2. Location Configuration (`ocean_data/location.py`)
 
 -   **Spot Lookup**: The `location` slug is passed to `get_spot_config(location)`.
--   **Database Query**: This function queries the `surf_spots` table to get the configuration for the specified location. This record contains the crucial `met_buoy_id`, which is the ID for the meteorological buoy associated with that surf spot.
+-   **Database Query**: This function queries the `surf_spots` table to get the configuration for the specified location. This record contains the crucial `met_station_id`.
+-   **Station ID**: The `met_station_id` can be either a numeric ID for an NDBC buoy (e.g., '44097') or a non-numeric station identifier for a NOAA weather station (e.g., 'KNYC'). This ID determines which data source will be used.
 -   **Timezone Conversion**: The spot's configured `timezone` is used to convert the user's local session time into a standardized **UTC datetime object**. This is essential for accurately querying the scientific data sources.
 
 ### 3. Data Fetching Orchestration (`ocean_data/meteorology.py`)
 
--   **Function Call**: The API endpoint calls `fetch_meteorological_data()`, passing it the `met_buoy_id` and the UTC `target_datetime`.
--   **Buoy Fetching**: This function is the bridge to the `surfpy` library. It calls `fetch_met_buoy(buoy_id)` to get the appropriate buoy object.
+-   **Function Call**: The API endpoint calls `fetch_meteorological_data()`, passing it the `met_station_id` and the UTC `target_datetime`.
+-   **Conditional Logic**: This function inspects the `met_station_id` to determine the data source.
+    -   If the ID is **numeric**, it calls `fetch_buoy_data()` to retrieve data from an NDBC buoy.
+    -   If the ID is **non-numeric**, it calls `fetch_weather_station_data()` to retrieve data from a NOAA weather station.
 
-### 4. Deep Dive: The `surfpy` Engine
+---
 
-The `surfpy` library handles all the low-level details of communicating with the NDBC.
+### 4. Data Source Flow 1: NDBC Buoys
 
-#### a. Finding All Buoys (`surfpy.buoystations.BuoyStations`)
+This flow is used for numeric station IDs and retrieves data from offshore buoys.
 
--   **Fetching Station Metadata**: The process starts with the `BuoyStations` class. Its `fetch_stations()` method sends a request to the NDBC's active stations list: `https://www.ndbc.noaa.gov/activestations.xml`.
--   **Parsing Station Data**: The `parse_stations()` method then parses this XML data. For each `<station>` entry in the XML, it creates a `BuoyStation` object.
--   **Key Buoy Attributes**: During parsing, it extracts essential metadata for each buoy, including:
-    -   `id`: The unique station ID (e.g., '44097').
-    -   `lat` & `lon`: The **latitude and longitude** of the buoy. This is stored in a `Location` object.
-    -   `name`: The human-readable name of the station.
-    -   `owner`, `program`, and `type`: Additional metadata about the buoy.
+#### a. Finding the Buoy (`surfpy.buoystations`)
 
-#### b. Representing a Single Buoy (`surfpy.buoystation.BuoyStation`)
+-   **Fetching Station Metadata**: The `BuoyStations` class fetches and parses the NDBC's active stations list from `https://www.ndbc.noaa.gov/activestations.xml` to find the metadata for the requested buoy ID.
 
--   **Buoy Object**: The `BuoyStation` class holds all the information for a single buoy, including its ID and `Location` object (which contains the latitude and longitude).
--   **Data URLs**: It has properties that construct the specific URLs for fetching data from the NDBC. For meteorological data, the relevant property is `meteorological_reading_url`, which creates a URL like: `https://www.ndbc.noaa.gov/data/realtime2/{self.station_id}.txt`.
+#### b. Fetching and Parsing Raw Data (`surfpy.buoystation`)
 
-#### c. Fetching and Parsing Raw Data
+-   **HTTP Request**: The `BuoyStation` object constructs a URL (e.g., `https://www.ndbc.noaa.gov/data/realtime2/{station_id}.txt`) and makes an HTTP `GET` request.
+-   **Parsing**: The raw, space-delimited text response is parsed by `parse_meteorological_reading_data()`.
+-   **Creating Data Objects**: For each line (representing a single time-stamped reading), it creates a `BuoyData` object with data in metric units (e.g., wind speed in m/s).
 
--   **HTTP Request**: The `fetch_meteorological_reading()` method in `BuoyStation` makes an HTTP `GET` request to the data URL.
--   **Parsing**: The raw text response from the NDBC server is passed to the static method `parse_meteorological_reading_data()`. This method reads the space-delimited text file line by line.
--   **Creating Data Objects**: For each line (representing a single time-stamped reading), it creates a `BuoyData` object.
+---
 
-#### d. The `BuoyData` Object (`surfpy.buoydata.BuoyData`)
+### 5. Data Source Flow 2: NOAA Weather Stations
 
--   This object holds the parsed values for a single reading. Key meteorological attributes populated from the NDBC text file include:
-    -   `date`
-    -   `wind_direction` (degrees)
-    -   `wind_speed` (m/s)
-    -   `wind_gust` (m/s)
-    -   `pressure` (hPa)
-    -   `air_temperature` (°C)
-    -   `water_temperature` (°C)
+This flow is used for non-numeric station IDs and retrieves data from onshore weather stations via the `api.weather.gov` service.
 
-### 5. Data Processing and Selection (`ocean_data/utils.py`)
+#### a. Fetching Observations (`surfpy.weatherapi`)
 
--   **Find Closest Match**: The list of `BuoyData` objects returned from `surfpy` is sent to the `find_closest_data()` utility. This function iterates through the list and finds the single data entry whose timestamp is closest to the user's session time.
+-   **API Call**: The `fetch_weather_station_data()` function in `ocean_data/meteorology.py` calls `WeatherApi.fetch_station_observations()`.
+-   **HTTP Request**: This method constructs the appropriate URL (e.g., `https://api.weather.gov/stations/{station_id}/observations`) and retrieves a JSON-formatted list of recent observations.
+
+#### b. Parsing Raw Data (`surfpy.weatherapi`)
+
+-   **Parsing**: The JSON response is parsed by the static method `WeatherApi.parse_station_observations()`.
+-   **Creating Data Objects**: This function iterates through the observations in the JSON response and creates a `BuoyData` object for each one. This ensures the data structure is consistent with the buoy data flow.
+-   **Unit Conversion**: The NOAA API provides wind speed in km/h. During parsing, this is converted to **knots** and stored in the `BuoyData` object.
+
+---
+
+### 6. Data Processing and Selection (`ocean_data/utils.py`)
+
+-   **Find Closest Match**: The list of `BuoyData` objects, regardless of its source (buoy or weather station), is sent to the `find_closest_data()` utility. This function iterates through the list and finds the single data entry whose timestamp is closest to the user's session time.
 -   **JSON Conversion**: The selected data point is converted into a clean JSON format.
--   **Unit Conversion**: `convert_met_data_to_imperial()` is called to convert metric units to imperial (e.g., m/s to knots, Celsius to Fahrenheit) for user-friendliness.
+-   **Unit Conversion**: If the data came from an NDBC buoy, `convert_met_data_to_imperial()` is called to convert metric units to imperial (e.g., m/s to knots, Celsius to Fahrenheit) for user-friendliness. Data from weather stations is already in a friendly format (knots).
 
-### 6. Response and Storage (`surfdata.py`)
+### 7. Response and Storage (`surfdata.py`)
 
--   **Finalize**: The processed, imperial-unit meteorological data is returned to the `/api/surf-sessions` endpoint.
+-   **Finalize**: The processed meteorological data is returned to the `/api/surf-sessions` endpoint.
 -   **Database Storage**: The data is added to the session object under the `raw_met` key and the entire session record is saved to the database.
 
 ---
@@ -85,33 +87,13 @@ The `surfpy` library handles all the low-level details of communicating with the
 ### Summary Flowchart
 
 ```
-[User Request] -> [Flask API: surfdata.py] -> [Abstraction: ocean_data/meteorology.py] -> [Engine: surfpy] -> [NDBC Data Source]
-                                                                                                |
-                                                                                        (BuoyStations, BuoyStation, BuoyData)
+[User Request] -> [Flask API: surfdata.py]
+      |
+      v
+[Abstraction: ocean_data/meteorology.py] --(ID is Numeric)--> [Engine: surfpy/buoystation] -> [NDBC Buoy Source]
+      |
+      '--(ID is Non-Numeric)--> [Engine: surfpy/weatherapi] -> [NOAA API Source]
+      |
+      v
+[Processing: ocean_data/utils.py] -> [Response to User & DB Storage]
 ```
-
----
-
-## Alternative Wind Data Sources (Currently Unused)
-
-Besides the primary flow using NDBC buoys, the `surfpy` library contains two other modules capable of fetching wind data. These are not currently used for session logging but represent alternative strategies for acquiring more proximate wind data.
-
-### 1. NOAA Weather.gov API (`surfpy/weatherapi.py`)
-
--   **How it Works**: This module interfaces with the `api.weather.gov` REST API. Instead of relying on physical buoys, this service provides forecast data for a high-resolution grid covering the entire United States.
--   **Data Flow**:
-    1.  The `WeatherApi.points()` method takes a precise latitude and longitude for a surf spot.
-    2.  It returns the specific forecast office and grid cell (`gridId`, `gridX`, `gridY`) corresponding to that location.
-    3.  The `WeatherApi.hourly_forecast()` method then fetches a detailed, hour-by-hour weather forecast for that exact grid cell.
-    4.  The `WeatherApi.parse_weather_forecast()` function converts the JSON response into the standard `BuoyData` objects used throughout the application.
--   **Potential Use Case**: This is the ideal solution for getting more accurate, localized wind data. By calling `WeatherApi.fetch_hourly_forecast(location)` with the surf spot's exact coordinates, the system can retrieve a highly proximate wind forecast, which serves as an excellent proxy for historical conditions.
-
-### 2. NOAA GFS Weather Model (`surfpy/weathermodel.py`)
-
--   **How it Works**: This is a lower-level module for fetching raw forecast data directly from the Global Forecast System (GFS) model via NOAA's NOMADS server. It downloads data in the binary GRIB2 format.
--   **Data Flow**:
-    1.  The `GFSModel` class constructs a URL to download a GRIB file for a specific model run and forecast hour.
-    2.  The `fetch_grib_data()` method retrieves this binary file.
-    3.  The `parse_grib_data()` method uses the `pygrib` library to extract weather variables (like wind components `UGRD` and `VGRD`) for a specific location from the GRIB file.
-    4.  The `to_buoy_data_weather()` method converts the raw model output into `BuoyData` objects.
--   **Potential Use Case**: This approach is more complex than using the `weatherapi.py` and is better suited for building detailed, multi-day *future* forecasts from scratch, rather than fetching simple historical wind data for a logged session.
