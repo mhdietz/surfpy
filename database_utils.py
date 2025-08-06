@@ -24,6 +24,39 @@ def get_db_connection():
         print(f"Error connecting to database: {e}")
         return None
 
+def _format_session_response(session):
+    """Take a session dictionary from the DB and format it for the API response."""
+    if not session:
+        return None
+
+    # Standardize all timestamp fields to ISO 8601 format
+    for field in ['created_at', 'session_started_at', 'session_ended_at', 'next_tide_event_at']:
+        if field in session and isinstance(session.get(field), datetime):
+            session[field] = session[field].isoformat()
+
+    # Group tide data into a single object
+    tide_data = {}
+    if 'session_water_level' in session:
+        tide_data['water_level'] = session.pop('session_water_level')
+    if 'tide_direction' in session:
+        tide_data['direction'] = session.pop('tide_direction')
+    if 'next_tide_event_type' in session:
+        tide_data['next_event_type'] = session.pop('next_tide_event_type')
+    if 'next_tide_event_at' in session:
+        tide_data['next_event_at'] = session.pop('next_tide_event_at')
+    if 'next_tide_event_height' in session:
+        tide_data['next_event_height'] = session.pop('next_tide_event_height')
+    
+    session['tide'] = tide_data
+
+    # Convert participants from JSONB array to Python list
+    if 'participants' in session and session['participants']:
+        session['participants'] = session['participants']
+    else:
+        session['participants'] = []
+    
+    return session
+
 def get_all_sessions(current_user_id):
     """Retrieve all surf sessions with user display name, participants, and shaka data"""
     conn = get_db_connection()
@@ -87,38 +120,9 @@ def get_all_sessions(current_user_id):
                 ORDER BY s.created_at DESC
             """, (current_user_id,))
             sessions = cur.fetchall()
-            # Convert to a list so we can modify it
-            sessions_list = list(sessions)
             
-            # Process each session to handle non-serializable types
-            for i, session in enumerate(sessions_list):
-                # Standardize all timestamp fields to ISO 8601 format
-                for field in ['created_at', 'session_started_at', 'session_ended_at', 'next_tide_event_at']:
-                    if field in session and isinstance(session[field], datetime):
-                        sessions_list[i][field] = session[field].isoformat()
-
-                # Group tide data into a single object
-                tide_data = {}
-                if 'session_water_level' in session:
-                    tide_data['water_level'] = session.pop('session_water_level')
-                if 'tide_direction' in session:
-                    tide_data['direction'] = session.pop('tide_direction')
-                if 'next_tide_event_type' in session:
-                    tide_data['next_event_type'] = session.pop('next_tide_event_type')
-                if 'next_tide_event_at' in session:
-                    tide_data['next_event_at'] = session.pop('next_tide_event_at')
-                if 'next_tide_event_height' in session:
-                    tide_data['next_event_height'] = session.pop('next_tide_event_height')
-                
-                sessions_list[i]['tide'] = tide_data
-
-                # Convert participants from JSONB array to Python list
-                if 'participants' in session and session['participants']:
-                    sessions_list[i]['participants'] = session['participants']
-                else:
-                    sessions_list[i]['participants'] = []
-            
-            return sessions_list
+            # Process each session using the helper function
+            return [_format_session_response(s) for s in sessions]
     except Exception as e:
         print(f"Error retrieving sessions: {e}")
         raise  # Re-raise to see the actual error
@@ -191,38 +195,9 @@ def get_user_sessions(profile_user_id, viewer_user_id):
             """, (viewer_user_id, profile_user_id))
             
             sessions = cur.fetchall()
-            # Convert to a list so we can modify it
-            sessions_list = list(sessions)
             
-            # Process each session to handle non-serializable types (same as get_all_sessions)
-            for i, session in enumerate(sessions_list):
-                # Standardize all timestamp fields to ISO 8601 format
-                for field in ['created_at', 'session_started_at', 'session_ended_at', 'next_tide_event_at']:
-                    if field in session and isinstance(session[field], datetime):
-                        sessions_list[i][field] = session[field].isoformat()
-
-                # Group tide data into a single object
-                tide_data = {}
-                if 'session_water_level' in session:
-                    tide_data['water_level'] = session.pop('session_water_level')
-                if 'tide_direction' in session:
-                    tide_data['direction'] = session.pop('tide_direction')
-                if 'next_tide_event_type' in session:
-                    tide_data['next_event_type'] = session.pop('next_tide_event_type')
-                if 'next_tide_event_at' in session:
-                    tide_data['next_event_at'] = session.pop('next_tide_event_at')
-                if 'next_tide_event_height' in session:
-                    tide_data['next_event_height'] = session.pop('next_tide_event_height')
-                
-                sessions_list[i]['tide'] = tide_data
-
-                # Convert participants from JSONB array to Python list
-                if 'participants' in session and session['participants']:
-                    sessions_list[i]['participants'] = session['participants']
-                else:
-                    sessions_list[i]['participants'] = []
-            
-            return sessions_list
+            # Process each session using the helper function
+            return [_format_session_response(s) for s in sessions]
     except Exception as e:
         print(f"Error retrieving user sessions: {e}")
         raise  # Re-raise to see the actual error
@@ -293,34 +268,7 @@ def get_session(session_id, current_user_id):
             """, (current_user_id, session_id))
             session = cur.fetchone()
             
-            if session:
-                # Standardize all timestamp fields to ISO 8601 format
-                for field in ['created_at', 'session_started_at', 'session_ended_at', 'next_tide_event_at']:
-                    if field in session and isinstance(session[field], datetime):
-                        session[field] = session[field].isoformat()
-
-                # Group tide data into a single object
-                tide_data = {}
-                if 'session_water_level' in session:
-                    tide_data['water_level'] = session.pop('session_water_level')
-                if 'tide_direction' in session:
-                    tide_data['direction'] = session.pop('tide_direction')
-                if 'next_tide_event_type' in session:
-                    tide_data['next_event_type'] = session.pop('next_tide_event_type')
-                if 'next_tide_event_at' in session:
-                    tide_data['next_event_at'] = session.pop('next_tide_event_at')
-                if 'next_tide_event_height' in session:
-                    tide_data['next_event_height'] = session.pop('next_tide_event_height')
-                
-                session['tide'] = tide_data
-
-                # Convert participants from JSONB array to Python list
-                if 'participants' in session and session['participants']:
-                    session['participants'] = session['participants']
-                else:
-                    session['participants'] = []
-                    
-            return session
+            return _format_session_response(session)
     except Exception as e:
         print(f"Error retrieving session: {e}")
         raise  # Re-raise to see the actual error
@@ -387,15 +335,8 @@ def create_session(session_data, user_id):
             cur.execute(query, list(session_data.values()))
             conn.commit()
             
-            # Handle serialization for time objects after fetching
             new_session = cur.fetchone()
-            if new_session:
-                # Standardize all timestamp fields to ISO 8601 format
-                for field in ['created_at', 'session_started_at', 'session_ended_at', 'next_tide_event_at']:
-                    if field in new_session and isinstance(new_session[field], datetime):
-                        new_session[field] = new_session[field].isoformat()
-                    
-            return new_session
+            return _format_session_response(new_session)
     except Exception as e:
         print(f"Error creating session: {e}")
         conn.rollback()
@@ -454,15 +395,8 @@ def update_session(session_id, update_data, user_id):
             cur.execute(query, values)
             conn.commit()
             
-            # Handle serialization for time objects after fetching
             updated_session = cur.fetchone()
-            if updated_session:
-                # Standardize all timestamp fields to ISO 8601 format
-                for field in ['created_at', 'session_started_at', 'session_ended_at', 'next_tide_event_at']:
-                    if field in updated_session and isinstance(updated_session[field], datetime):
-                        updated_session[field] = updated_session[field].isoformat()
-                    
-            return updated_session
+            return _format_session_response(updated_session)
     except Exception as e:
         print(f"Error updating session: {e}")
         conn.rollback()
