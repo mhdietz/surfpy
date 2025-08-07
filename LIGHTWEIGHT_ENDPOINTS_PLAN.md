@@ -68,10 +68,8 @@ This view will return the complete session object, including all the detailed oc
 
 ## 3. Filtering Strategy (Server-Side)
 
-The lightweight list endpoints will support the following query parameters for filtering. The database will perform the filtering, and only the matching results will be returned.
+The lightweight list endpoints support the following query parameters for filtering. The database performs the filtering, and only the matching results are returned.
 
--   **Surf Region:**
-    -   `?region=<region-slug>` (e.g., `?region=east-coast`)
 -   **Swell Height (in feet):**
     -   `?min_swell_height=<number>`
     -   `?max_swell_height=<number>`
@@ -79,7 +77,13 @@ The lightweight list endpoints will support the following query parameters for f
     -   `?min_swell_period=<number>`
     -   `?max_swell_period=<number>`
 -   **Swell Direction:**
-    -   `?swell_direction=<cardinal>` (e.g., `N`, `SW`, `W`, `NNE`). The backend will map this to the correct degree range for the query.
+    -   `?swell_direction=<cardinal>` (e.g., `N`, `SW`, `W`, `NNE`). The backend maps this to the correct degree range for the query.
+
+### Outstanding Work: Regional Filter
+
+-   **Surf Region:**
+    -   `?region=<region-slug>` (e.g., `?region=east-coast`)
+    -   **Status:** This filter is currently not implemented. It requires joining the `surf_sessions_duplicate` table with the `surf_spots` table on `s.location = sp.name` and then filtering by `sp.region`. This will be addressed in a future iteration.
 
 ## 4. Backend Implementation Plan
 
