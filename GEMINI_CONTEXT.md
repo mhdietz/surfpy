@@ -32,7 +32,13 @@ The application is a full-stack surf logging and forecasting platform. The backe
 
 -   **Relational Data Model**: The session tagging feature was explicitly refactored from a data duplication model to a proper relational model using the `session_participants` table. This was done to ensure data integrity via foreign keys and to allow for efficient, scalable querying.
 
+-   **Timezone Handling**: All session timestamps are now stored in the database as timezone-aware UTC (`TIMESTAMP WITH TIME ZONE`). The API consistently returns these as ISO 8601 UTC strings, with the client responsible for local time display. This ensures unambiguous time representation across the system.
+
 -   **Backward Compatibility**: The use of a `LEGACY_LOCATION_MAP` in `ocean_data/location.py` ensures that older API clients or bookmarks still function even though the location management system has been updated.
+
+### c. Lightweight Session Endpoints & Filtering
+-   **Performance Optimization**: Session list views (main feed, user journals) now utilize lightweight API responses, excluding large `raw_swell`, `raw_met`, and detailed tide data. This significantly improves frontend performance.
+-   **Server-Side Filtering**: These lightweight endpoints support server-side filtering by swell height, period, and direction, ensuring only relevant data is transferred. The regional filter is planned for a future iteration.
 
 ## 4. Archived Features
 
