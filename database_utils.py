@@ -775,19 +775,19 @@ def get_session_summary_list(viewer_id, profile_user_id_filter=None, filters={})
                 params.append(profile_user_id_filter)
 
             if 'min_swell_height' in filters:
-                where_clauses.append("(s.raw_swell->'swell_components'->'swell_1'->>'height')::numeric >= %s")
+                where_clauses.append("(s.raw_swell->0->'swell_components'->'swell_1'->>'height')::numeric >= %s")
                 params.append(filters['min_swell_height'])
             
             if 'max_swell_height' in filters:
-                where_clauses.append("(s.raw_swell->'swell_components'->'swell_1'->>'height')::numeric <= %s")
+                where_clauses.append("(s.raw_swell->0->'swell_components'->'swell_1'->>'height')::numeric <= %s")
                 params.append(filters['max_swell_height'])
 
             if 'min_swell_period' in filters:
-                where_clauses.append("(s.raw_swell->'swell_components'->'swell_1'->>'period')::numeric >= %s")
+                where_clauses.append("(s.raw_swell->0->'swell_components'->'swell_1'->>'period')::numeric >= %s")
                 params.append(filters['min_swell_period'])
 
             if 'max_swell_period' in filters:
-                where_clauses.append("(s.raw_swell->'swell_components'->'swell_1'->>'period')::numeric <= %s")
+                where_clauses.append("(s.raw_swell->0->'swell_components'->'swell_1'->>'period')::numeric <= %s")
                 params.append(filters['max_swell_period'])
 
             if 'swell_direction' in filters:
@@ -813,9 +813,9 @@ def get_session_summary_list(viewer_id, profile_user_id_filter=None, filters={})
                 if direction in direction_map:
                     min_dir, max_dir = direction_map[direction]
                     if direction == 'N':
-                        where_clauses.append("((s.raw_swell->'swell_components'->'swell_1'->>'direction')::numeric >= %s OR (s.raw_swell->'swell_components'->'swell_1'->>'direction')::numeric < %s)")
+                        where_clauses.append("((s.raw_swell->0->'swell_components'->'swell_1'->>'direction')::numeric >= %s OR (s.raw_swell->0->'swell_components'->'swell_1'->>'direction')::numeric < %s)")
                     else:
-                        where_clauses.append("(s.raw_swell->'swell_components'->'swell_1'->>'direction')::numeric BETWEEN %s AND %s")
+                        where_clauses.append("(s.raw_swell->0->'swell_components'->'swell_1'->>'direction')::numeric BETWEEN %s AND %s")
                     params.extend([min_dir, max_dir])
 
             if where_clauses:
