@@ -766,6 +766,7 @@ def get_session_summary_list(viewer_id, profile_user_id_filter=None, filters={})
                     ) as shakas
                 FROM surf_sessions_duplicate s
                 LEFT JOIN auth.users u ON s.user_id = u.id
+                LEFT JOIN surf_spots sp ON s.location = sp.name
             """
             params = [viewer_id]
             where_clauses = []
@@ -817,6 +818,10 @@ def get_session_summary_list(viewer_id, profile_user_id_filter=None, filters={})
                     else:
                         where_clauses.append("(s.raw_swell->0->'swell_components'->'swell_1'->>'direction')::numeric BETWEEN %s AND %s")
                     params.extend([min_dir, max_dir])
+
+            if 'region' in filters:
+                where_clauses.append("sp.region ILIKE %s")
+                params.append(filters['region'])
 
             if where_clauses:
                 query += " WHERE " + " AND ".join(where_clauses)
