@@ -36,18 +36,21 @@ def _format_session_response(session):
 
     # Group tide data into a single object
     tide_data = {}
-    if 'session_water_level' in session:
+    if 'session_water_level' in session and session.get('session_water_level') is not None:
         tide_data['water_level'] = session.pop('session_water_level')
-    if 'tide_direction' in session:
+    if 'tide_direction' in session and session.get('tide_direction') is not None:
         tide_data['direction'] = session.pop('tide_direction')
-    if 'next_tide_event_type' in session:
+    if 'next_tide_event_type' in session and session.get('next_tide_event_type') is not None:
         tide_data['next_event_type'] = session.pop('next_tide_event_type')
-    if 'next_tide_event_at' in session:
+    if 'next_tide_event_at' in session and session.get('next_tide_event_at') is not None:
         tide_data['next_event_at'] = session.pop('next_tide_event_at')
-    if 'next_tide_event_height' in session:
+    if 'next_tide_event_height' in session and session.get('next_tide_event_height') is not None:
         tide_data['next_event_height'] = session.pop('next_tide_event_height')
     
-    session['tide'] = tide_data
+    if tide_data:
+        session['tide'] = tide_data
+    else:
+        session.pop('tide', None)
 
     # Convert participants from JSONB array to Python list
     if 'participants' in session and session['participants']:
