@@ -261,32 +261,26 @@ def create_surf_session(user_id):
 
         # Combine date and time to create a datetime object, localized to the spot's timezone
         try:
-            datetime_str = f"{session_date}T{session_time}"
-            naive_datetime = datetime.fromisoformat(datetime_str)
+            start_datetime_str = f"{session_date}T{session_time}"
+            end_datetime_str = f"{session_date}T{end_time}"
+            naive_start_datetime = datetime.fromisoformat(start_datetime_str)
+            naive_end_datetime = datetime.fromisoformat(end_datetime_str)
             
             # Get the spot's timezone from the configuration
             spot_timezone_str = spot_config.get('timezone', 'UTC') # Default to UTC if not found
             spot_tz = pytz.timezone(spot_timezone_str)
             
             # Localize to the spot's timezone
-            localized_datetime = spot_tz.localize(naive_datetime)
-            # Convert to UTC for data retrieval
-            target_datetime = localized_datetime.astimezone(timezone.utc)
+            localized_start_datetime = spot_tz.localize(naive_start_datetime)
+            localized_end_datetime = spot_tz.localize(naive_end_datetime)
 
-            # Get the start and end of the day in the local timezone
-            local_start_of_day = spot_tz.localize(datetime.combine(naive_datetime.date(), datetime.min.time()))
-            local_end_of_day = spot_tz.localize(datetime.combine(naive_datetime.date(), datetime.max.time()))
+            # Convert to UTC for data retrieval and storage
+            utc_start_datetime = localized_start_datetime.astimezone(timezone.utc)
+            utc_end_datetime = localized_end_datetime.astimezone(timezone.utc)
 
-            # Convert to UTC for fetching historical data
-            utc_start_of_day = local_start_of_day.astimezone(pytz.utc)
-            utc_end_of_day = local_end_of_day.astimezone(pytz.utc)
-
-            # Logging for verification
-            print(f"Spot: {location}, Timezone: {spot_timezone_str}")
-            print(f"Local Start of Day: {local_start_of_day}")
-            print(f"Local End of Day: {local_end_of_day}")
-            print(f"UTC Start of Day for Fetch: {utc_start_of_day}")
-            print(f"UTC End of Day for Fetch: {utc_end_of_day}")
+            # Add to session_data for database insertion
+            session_data['session_started_at'] = utc_start_datetime
+            session_data['session_ended_at'] = utc_end_datetime
             
         except ValueError:
             return jsonify({
@@ -295,15 +289,15 @@ def create_surf_session(user_id):
             }), 400
 
         # 1. Fetch swell buoy data using the ocean_data module
-        swell_data = fetch_swell_data(swell_buoy_id, target_datetime, count=500)
+        swell_data = fetch_swell_data(swell_buoy_id, utc_start_datetime, count=500)
         session_data['raw_swell'] = swell_data
         
         # 2. Fetch meteorological buoy data using the ocean_data module
-        met_data = fetch_meteorological_data(met_buoy_id, target_datetime, count=500, use_imperial_units=True)
+        met_data = fetch_meteorological_data(met_buoy_id, utc_start_datetime, count=500, use_imperial_units=True)
         session_data['raw_met'] = met_data
 
         # 3. Fetch tide data
-        detailed_tide_data = fetch_tide_data(tide_station_id, target_datetime, use_imperial_units=True)
+        detailed_tide_data = fetch_tide_data(tide_station_id, utc_start_datetime, use_imperial_units=True)
         
         if detailed_tide_data:
             session_data['session_water_level'] = detailed_tide_data.get('water_level')
@@ -312,15 +306,12 @@ def create_surf_session(user_id):
             session_data['next_tide_event_at'] = detailed_tide_data.get('next_event_at')
             session_data['next_tide_event_height'] = detailed_tide_data.get('next_event_height')
         
-        
-
         # Add buoy IDs to session data
         session_data['swell_buoy_id'] = swell_buoy_id
         session_data['met_buoy_id'] = met_buoy_id
         session_data['tide_station_id'] = tide_station_id
         
         # Remove tagged_users from session_data before database operations
-        # (tagged_users is only for API logic, not database storage)
         if 'tagged_users' in session_data:
             del session_data['tagged_users']
         
@@ -340,17 +331,7 @@ def create_surf_session(user_id):
                 return jsonify({
                     "status": "success",
                     "message": f"Surf session created successfully with {len(participants) - 1} tagged participants",
-                    "data": {
-                        "session_id": created_session["id"],
-                        "location": created_session['location'],
-                        "date": session_date,
-                        "time": session_time,
-                        "end_time": end_time,
-                        "swell_buoy_id": session_data.get('swell_buoy_id'),
-                        "met_buoy_id": session_data.get('met_buoy_id'),
-                        "tide_station_id": session_data.get('tide_station_id'),
-                        "participants": [p['user_id'] for p in participants]
-                    }
+                    "data": created_session
                 }), 200
             else:
                 return jsonify({
@@ -365,16 +346,7 @@ def create_surf_session(user_id):
             return jsonify({
                 "status": "success",
                 "message": "Surf session created successfully",
-                "data": {
-                    "session_id": created_session["id"],
-                    "location": created_session['location'],
-                    "date": session_date,
-                    "time": session_time,
-                    "end_time": end_time,
-                    "swell_buoy_id": session_data.get('swell_buoy_id'),
-                    "met_buoy_id": session_data.get('met_buoy_id'),
-                    "tide_station_id": session_data.get('tide_station_id')
-                }
+                "data": created_session
             }), 200
 
     except Exception as e:
@@ -460,34 +432,29 @@ def update_surf_session(user_id, session_id):
             return jsonify({"status": "fail", "message": f"Session with id {session_id} not found"}), 404
         
         # Extract fields that might need to be updated
-        session_date = session_data.get('date', existing_session.get('date'))
-        session_time = session_data.get('time', existing_session.get('time'))
-        end_time = session_data.get('end_time', existing_session.get('end_time'))
+        session_date = session_data.get('date')
+        session_time = session_data.get('time')
+        end_time = session_data.get('end_time')
         location = session_data.get('location', existing_session.get('location'))
         
         # Validate end_time if provided in update
-        if 'time' in session_data or 'end_time' in session_data:
-            # Use updated values or fall back to existing values
-            start_time_to_check = session_data.get('time', existing_session.get('time'))
-            end_time_to_check = session_data.get('end_time', existing_session.get('end_time'))
-            
-            if start_time_to_check and end_time_to_check:
-                try:
-                    from datetime import time as time_obj
-                    start_time_obj = time_obj.fromisoformat(start_time_to_check)
-                    end_time_obj = time_obj.fromisoformat(end_time_to_check)
-                    
-                    if end_time_obj <= start_time_obj:
-                        return jsonify({
-                            "status": "fail", 
-                            "message": "end_time must be after start time"
-                        }), 400
-                        
-                except ValueError:
+        if session_time and end_time:
+            try:
+                from datetime import time as time_obj
+                start_time_obj = time_obj.fromisoformat(session_time)
+                end_time_obj = time_obj.fromisoformat(end_time)
+                
+                if end_time_obj <= start_time_obj:
                     return jsonify({
                         "status": "fail", 
-                        "message": "Invalid time format. Use HH:MM:SS format for both time and end_time"
+                        "message": "end_time must be after start time"
                     }), 400
+                    
+            except ValueError:
+                return jsonify({
+                    "status": "fail", 
+                    "message": "Invalid time format. Use HH:MM:SS format for both time and end_time"
+                }), 400
         
         # Validate location and get spot configuration
         spot_config = get_spot_config(location)
@@ -504,22 +471,31 @@ def update_surf_session(user_id, session_id):
         session_data['tide_station_id'] = spot_config["tide_station_id"]
         
         # If date or time changed, update oceanographic data
-        if (session_date != existing_session.get('date') or 
-            session_time != existing_session.get('time')):
+        if session_date and session_time:
             
             # Create a datetime object from the date and time
             try:
-                datetime_str = f"{session_date}T{session_time}"
-                naive_datetime = datetime.fromisoformat(datetime_str)
+                start_datetime_str = f"{session_date}T{session_time}"
+                end_datetime_str = f"{session_date}T{end_time}"
+                naive_start_datetime = datetime.fromisoformat(start_datetime_str)
+                naive_end_datetime = datetime.fromisoformat(end_datetime_str)
                 
                 # Get the spot's timezone from the configuration
                 spot_timezone_str = spot_config.get('timezone', 'UTC') # Default to UTC if not found
                 spot_tz = pytz.timezone(spot_timezone_str)
                 
                 # Localize to the spot's timezone
-                localized_datetime = spot_tz.localize(naive_datetime)
-                # Convert to UTC for data retrieval
-                target_datetime = localized_datetime.astimezone(timezone.utc)
+                localized_start_datetime = spot_tz.localize(naive_start_datetime)
+                localized_end_datetime = spot_tz.localize(naive_end_datetime)
+
+                # Convert to UTC for data retrieval and storage
+                utc_start_datetime = localized_start_datetime.astimezone(timezone.utc)
+                utc_end_datetime = localized_end_datetime.astimezone(timezone.utc)
+
+                # Add to session_data for database insertion
+                session_data['session_started_at'] = utc_start_datetime
+                session_data['session_ended_at'] = utc_end_datetime
+
             except ValueError:
                 return jsonify({
                     "status": "fail", 
@@ -529,28 +505,26 @@ def update_surf_session(user_id, session_id):
             # 1. Fetch updated swell data using the ocean_data module
             swell_buoy_id = session_data.get('swell_buoy_id', existing_session.get('swell_buoy_id'))
             if swell_buoy_id:
-                swell_data = fetch_swell_data(swell_buoy_id, target_datetime, count=500)
+                swell_data = fetch_swell_data(swell_buoy_id, utc_start_datetime, count=500)
                 session_data['raw_swell'] = swell_data
             
             # 2. Fetch updated meteorological data using the ocean_data module
             met_buoy_id = session_data.get('met_buoy_id', existing_session.get('met_buoy_id'))
             if met_buoy_id:
-                met_data = fetch_meteorological_data(met_buoy_id, target_datetime, count=500, use_imperial_units=True)
+                met_data = fetch_meteorological_data(met_buoy_id, utc_start_datetime, count=500, use_imperial_units=True)
                 session_data['raw_met'] = met_data
                         
             # 3. Fetch updated tide data using the ocean_data module
             tide_station_id = session_data.get('tide_station_id', existing_session.get('tide_station_id'))
             if tide_station_id:
-                detailed_tide_data = fetch_tide_data(tide_station_id, target_datetime, use_imperial_units=True)
+                detailed_tide_data = fetch_tide_data(tide_station_id, utc_start_datetime, use_imperial_units=True)
                 if detailed_tide_data:
                     session_data['session_water_level'] = detailed_tide_data.get('water_level')
                     session_data['tide_direction'] = detailed_tide_data.get('direction')
                     session_data['next_tide_event_type'] = detailed_tide_data.get('next_event_type')
                     session_data['next_tide_event_at'] = detailed_tide_data.get('next_event_at')
                     session_data['next_tide_event_height'] = detailed_tide_data.get('next_event_height')
-                
-                
-        
+
         # Update the session in the database
         updated_session = update_session(session_id, session_data, user_id)
         
@@ -558,16 +532,7 @@ def update_surf_session(user_id, session_id):
             return jsonify({
                 "status": "success",
                 "message": "Surf session updated successfully",
-                "data": {
-                    "session_id": session_id,
-                    "location": session_data['location'],
-                    "date": updated_session.get('date'),
-                    "time": updated_session.get('time'),
-                    "end_time": updated_session.get('end_time'),
-                    "swell_buoy_id": updated_session.get('swell_buoy_id'),
-                    "met_buoy_id": updated_session.get('met_buoy_id'),
-                    "tide_station_id": updated_session.get('tide_station_id')
-                }
+                "data": updated_session
             }), 200
         else:
             return jsonify({"status": "fail", "message": "Failed to update surf session"}), 500
