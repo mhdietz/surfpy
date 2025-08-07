@@ -57,154 +57,16 @@ def _format_session_response(session):
     
     return session
 
-def get_all_sessions(current_user_id):
+def get_all_sessions(current_user_id, filters={}):
     """Retrieve all surf sessions with user display name, participants, and shaka data"""
-    conn = get_db_connection()
-    if not conn:
-        return []
-    
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Get all session data plus participants and shaka data
-            cur.execute("""
-                SELECT 
-                    s.id, s.created_at, s.session_name, s.location, s.fun_rating, s.session_notes,
-                    s.raw_swell, s.swell_buoy_id, s.raw_met, s.met_buoy_id,
-                    s.tide_station_id, s.user_id, s.session_group_id,
-                    s.session_water_level, s.tide_direction, s.next_tide_event_type, s.next_tide_event_at, s.next_tide_event_height,
-                    s.session_started_at, s.session_ended_at,
-                    u.email as user_email,
-                    COALESCE(
-                        u.raw_user_meta_data->>'display_name',
-                        NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
-                        split_part(u.email, '@', 1)
-                    ) as display_name,
-                    COALESCE((
-                        SELECT jsonb_agg(jsonb_build_object(
-                            'user_id', p_u.id,
-                            'display_name', COALESCE(
-                                p_u.raw_user_meta_data->>'display_name',
-                                NULLIF(TRIM(COALESCE(p_u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(p_u.raw_user_meta_data->>'last_name', '')), ''),
-                                split_part(p_u.email, '@', 1)
-                            )
-                        ))
-                        FROM session_participants sp
-                        JOIN auth.users p_u ON sp.user_id = p_u.id
-                        WHERE sp.session_id = s.id
-                    ), '[]'::jsonb) as participants,
-                    jsonb_build_object(
-                        'count', (SELECT COUNT(*) FROM session_shakas WHERE session_id = s.id),
-                        'viewer_has_shakaed', EXISTS(SELECT 1 FROM session_shakas WHERE session_id = s.id AND user_id = %s),
-                        'preview', COALESCE((
-                            SELECT jsonb_agg(shaka_user.data)
-                            FROM (
-                                SELECT
-                                    jsonb_build_object(
-                                        'user_id', u_shaka.id,
-                                        'display_name', COALESCE(
-                                            u_shaka.raw_user_meta_data->>'display_name',
-                                            NULLIF(TRIM(COALESCE(u_shaka.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u_shaka.raw_user_meta_data->>'last_name', '')), ''),
-                                            split_part(u_shaka.email, '@', 1)
-                                        )
-                                    ) as data
-                                FROM session_shakas ss
-                                JOIN auth.users u_shaka ON ss.user_id = u_shaka.id
-                                WHERE ss.session_id = s.id
-                                ORDER BY ss.created_at DESC
-                                LIMIT 2
-                            ) as shaka_user
-                        ), '[]'::jsonb)
-                    ) as shakas
-                FROM surf_sessions_duplicate s
-                LEFT JOIN auth.users u ON s.user_id = u.id
-                ORDER BY s.created_at DESC
-            """, (current_user_id,))
-            sessions = cur.fetchall()
-            
-            # Process each session using the helper function
-            return [_format_session_response(s) for s in sessions]
-    except Exception as e:
-        print(f"Error retrieving sessions: {e}")
-        raise  # Re-raise to see the actual error
-    finally:
-        conn.close()
+    return get_session_summary_list(current_user_id, filters=filters)
 
 # This function is now modified to accept a profile_user_id and a viewer_user_id
-def get_user_sessions(profile_user_id, viewer_user_id):
+def get_user_sessions(profile_user_id, viewer_user_id, filters={}):
     """Retrieve surf sessions created by a specific user, with shaka data relative to the viewer."""
-    conn = get_db_connection()
-    if not conn:
-        return []
-    
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # The query is filtered by the profile_user_id, but shaka status is checked against the viewer_user_id
-            cur.execute("""
-                SELECT 
-                    s.id, s.created_at, s.session_name, s.location, s.fun_rating, s.session_notes,
-                    s.raw_swell, s.swell_buoy_id, s.raw_met, s.met_buoy_id,
-                    s.tide_station_id, s.user_id, s.session_group_id,
-                    s.session_water_level, s.tide_direction, s.next_tide_event_type, s.next_tide_event_at, s.next_tide_event_height,
-                    s.session_started_at, s.session_ended_at,
-                    u.email as user_email,
-                    COALESCE(
-                        u.raw_user_meta_data->>'display_name',
-                        NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
-                        split_part(u.email, '@', 1)
-                    ) as display_name,
-                    COALESCE((
-                        SELECT jsonb_agg(jsonb_build_object(
-                            'user_id', p_u.id,
-                            'display_name', COALESCE(
-                                p_u.raw_user_meta_data->>'display_name',
-                                NULLIF(TRIM(COALESCE(p_u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(p_u.raw_user_meta_data->>'last_name', '')), ''),
-                                split_part(p_u.email, '@', 1)
-                            )
-                        ))
-                        FROM session_participants sp
-                        JOIN auth.users p_u ON sp.user_id = p_u.id
-                        WHERE sp.session_id = s.id
-                    ), '[]'::jsonb) as participants,
-                    jsonb_build_object(
-                        'count', (SELECT COUNT(*) FROM session_shakas WHERE session_id = s.id),
-                        'viewer_has_shakaed', EXISTS(SELECT 1 FROM session_shakas WHERE session_id = s.id AND user_id = %s),
-                        'preview', COALESCE((
-                            SELECT jsonb_agg(shaka_user.data)
-                            FROM (
-                                SELECT
-                                    jsonb_build_object(
-                                        'user_id', u_shaka.id,
-                                        'display_name', COALESCE(
-                                            u_shaka.raw_user_meta_data->>'display_name',
-                                            NULLIF(TRIM(COALESCE(u_shaka.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u_shaka.raw_user_meta_data->>'last_name', '')), ''),
-                                            split_part(u_shaka.email, '@', 1)
-                                        )
-                                    ) as data
-                                FROM session_shakas ss
-                                JOIN auth.users u_shaka ON ss.user_id = u_shaka.id
-                                WHERE ss.session_id = s.id
-                                ORDER BY ss.created_at DESC
-                                LIMIT 2
-                            ) as shaka_user
-                        ), '[]'::jsonb)
-                    ) as shakas
-                FROM surf_sessions_duplicate s
-                LEFT JOIN auth.users u ON s.user_id = u.id
-                WHERE s.user_id = %s
-                ORDER BY s.created_at DESC
-            """, (viewer_user_id, profile_user_id))
-            
-            sessions = cur.fetchall()
-            
-            # Process each session using the helper function
-            return [_format_session_response(s) for s in sessions]
-    except Exception as e:
-        print(f"Error retrieving user sessions: {e}")
-        raise  # Re-raise to see the actual error
-    finally:
-        conn.close()
+    return get_session_summary_list(viewer_user_id, profile_user_id_filter=profile_user_id, filters=filters)
 
-def get_session(session_id, current_user_id):
+def get_session_detail(session_id, current_user_id):
     """Retrieve a single surf session including user display name, participants, and shaka data"""
     conn = get_db_connection()
     if not conn:
@@ -840,6 +702,132 @@ def get_session_participants(session_id):
     except Exception as e:
         print(f"Error getting session participants: {e}")
         return []
+    finally:
+        conn.close()
+
+def get_session_summary_list(viewer_id, profile_user_id_filter=None, filters={}):
+    """Retrieve a filtered list of lightweight session summaries."""
+    conn = get_db_connection()
+    if not conn:
+        return []
+
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # Base query with lightweight fields
+            query = """
+                SELECT 
+                    s.id, s.created_at, s.session_name, s.location, s.fun_rating, s.session_notes,
+                    s.swell_buoy_id, s.met_buoy_id, s.tide_station_id, s.user_id, s.session_group_id,
+                    s.session_started_at, s.session_ended_at,
+                    u.email as user_email,
+                    COALESCE(
+                        u.raw_user_meta_data->>'display_name',
+                        NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
+                        split_part(u.email, '@', 1)
+                    ) as display_name,
+                    COALESCE((
+                        SELECT jsonb_agg(jsonb_build_object(
+                            'user_id', p_u.id,
+                            'display_name', COALESCE(
+                                p_u.raw_user_meta_data->>'display_name',
+                                NULLIF(TRIM(COALESCE(p_u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(p_u.raw_user_meta_data->>'last_name', '')), ''),
+                                split_part(p_u.email, '@', 1)
+                            )
+                        ))
+                        FROM session_participants sp
+                        JOIN auth.users p_u ON sp.user_id = p_u.id
+                        WHERE sp.session_id = s.id
+                    ), '[]'::jsonb) as participants,
+                    jsonb_build_object(
+                        'count', (SELECT COUNT(*) FROM session_shakas WHERE session_id = s.id),
+                        'viewer_has_shakaed', EXISTS(SELECT 1 FROM session_shakas WHERE session_id = s.id AND user_id = %s),
+                        'preview', COALESCE((
+                            SELECT jsonb_agg(shaka_user.data)
+                            FROM (
+                                SELECT
+                                    jsonb_build_object(
+                                        'user_id', u_shaka.id,
+                                        'display_name', COALESCE(
+                                            u_shaka.raw_user_meta_data->>'display_name',
+                                            NULLIF(TRIM(COALESCE(u_shaka.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u_shaka.raw_user_meta_data->>'last_name', '')), ''),
+                                            split_part(u_shaka.email, '@', 1)
+                                        )
+                                    ) as data
+                                FROM session_shakas ss
+                                JOIN auth.users u_shaka ON ss.user_id = u_shaka.id
+                                WHERE ss.session_id = s.id
+                                ORDER BY ss.created_at DESC
+                                LIMIT 2
+                            ) as shaka_user
+                        ), '[]'::jsonb)
+                    ) as shakas
+                FROM surf_sessions_duplicate s
+                LEFT JOIN auth.users u ON s.user_id = u.id
+            """
+            params = [viewer_id]
+            where_clauses = []
+
+            if profile_user_id_filter:
+                where_clauses.append("s.user_id = %s")
+                params.append(profile_user_id_filter)
+
+            if 'min_swell_height' in filters:
+                where_clauses.append("(s.raw_swell->'swell_components'->'swell_1'->>'height')::numeric >= %s")
+                params.append(filters['min_swell_height'])
+            
+            if 'max_swell_height' in filters:
+                where_clauses.append("(s.raw_swell->'swell_components'->'swell_1'->>'height')::numeric <= %s")
+                params.append(filters['max_swell_height'])
+
+            if 'min_swell_period' in filters:
+                where_clauses.append("(s.raw_swell->'swell_components'->'swell_1'->>'period')::numeric >= %s")
+                params.append(filters['min_swell_period'])
+
+            if 'max_swell_period' in filters:
+                where_clauses.append("(s.raw_swell->'swell_components'->'swell_1'->>'period')::numeric <= %s")
+                params.append(filters['max_swell_period'])
+
+            if 'swell_direction' in filters:
+                direction_map = {
+                    'N': (337.5, 22.5),
+                    'NNE': (11.25, 33.75),
+                    'NE': (33.75, 56.25),
+                    'ENE': (56.25, 78.75),
+                    'E': (78.75, 101.25),
+                    'ESE': (101.25, 123.75),
+                    'SE': (123.75, 146.25),
+                    'SSE': (146.25, 168.75),
+                    'S': (168.75, 191.25),
+                    'SSW': (191.25, 213.75),
+                    'SW': (213.75, 236.25),
+                    'WSW': (236.25, 258.75),
+                    'W': (258.75, 281.25),
+                    'WNW': (281.25, 303.75),
+                    'NW': (303.75, 326.25),
+                    'NNW': (326.25, 348.75)
+                }
+                direction = filters['swell_direction'].upper()
+                if direction in direction_map:
+                    min_dir, max_dir = direction_map[direction]
+                    if direction == 'N':
+                        where_clauses.append("((s.raw_swell->'swell_components'->'swell_1'->>'direction')::numeric >= %s OR (s.raw_swell->'swell_components'->'swell_1'->>'direction')::numeric < %s)")
+                    else:
+                        where_clauses.append("(s.raw_swell->'swell_components'->'swell_1'->>'direction')::numeric BETWEEN %s AND %s")
+                    params.extend([min_dir, max_dir])
+
+            if where_clauses:
+                query += " WHERE " + " AND ".join(where_clauses)
+
+            query += " ORDER BY s.created_at DESC"
+
+            cur.execute(query, tuple(params))
+            sessions = cur.fetchall()
+
+            return [_format_session_response(s) for s in sessions]
+
+    except Exception as e:
+        print(f"Error retrieving lightweight sessions: {e}")
+        raise
     finally:
         conn.close()
 

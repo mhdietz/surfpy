@@ -4,7 +4,7 @@ from flask_caching import Cache
 from datetime import datetime, timezone, timedelta
 import surfpy
 import database_utils
-from database_utils import get_db_connection, create_session, update_session, get_session, get_all_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location
+from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location
 import json
 from json_utils import CustomJSONEncoder
 import math
@@ -361,17 +361,19 @@ def create_surf_session(user_id):
 @token_required
 def get_surf_sessions(user_id):
     try:
-        # Check for user_only query parameter
-        user_only = request.args.get('user_only', 'false').lower() == 'true'
-        
-        if user_only:
-            # DEPRECATED: This will be removed in a future version.
-            # Use the /api/users/me/sessions endpoint instead.
-            from database_utils import get_user_sessions
-            sessions = get_user_sessions(user_id, user_id) # Pass user_id for both profile and viewer
-        else:
-            # Existing behavior - get all sessions from all users
-            sessions = get_all_sessions(user_id)
+        # Extract filter parameters from the request
+        filters = {
+            'min_swell_height': request.args.get('min_swell_height', type=float),
+            'max_swell_height': request.args.get('max_swell_height', type=float),
+            'min_swell_period': request.args.get('min_swell_period', type=float),
+            'max_swell_period': request.args.get('max_swell_period', type=float),
+            'swell_direction': request.args.get('swell_direction'),
+            'region': request.args.get('region')
+        }
+        # Remove None values
+        filters = {k: v for k, v in filters.items() if v is not None}
+
+        sessions = get_all_sessions(user_id, filters)
             
         return jsonify({"status": "success", "data": sessions}), 200
     except Exception as e:
@@ -382,10 +384,10 @@ def get_surf_sessions(user_id):
 # Get a specific surf session
 @app.route('/api/surf-sessions/<int:session_id>', methods=['GET'])
 @token_required
-def get_surf_session(user_id, session_id):
+def get_surf_session_detail(user_id, session_id):
     try:
         # Get session regardless of user, passing user_id for shaka status
-        session = get_session(session_id, user_id)
+        session = get_session_detail(session_id, user_id)
         if not session:
             return jsonify({"status": "fail", "message": f"Session with id {session_id} not found"}), 404
         return jsonify({"status": "success", "data": session}), 200
@@ -701,9 +703,19 @@ def get_user_journal_sessions(viewer_user_id, profile_user_id):
         if profile_user_id == 'me':
             profile_user_id = viewer_user_id
 
-        # Import and use the modified user-specific function
-        from database_utils import get_user_sessions
-        sessions = get_user_sessions(profile_user_id, viewer_user_id)
+        # Extract filter parameters from the request
+        filters = {
+            'min_swell_height': request.args.get('min_swell_height', type=float),
+            'max_swell_height': request.args.get('max_swell_height', type=float),
+            'min_swell_period': request.args.get('min_swell_period', type=float),
+            'max_swell_period': request.args.get('max_swell_period', type=float),
+            'swell_direction': request.args.get('swell_direction'),
+            'region': request.args.get('region')
+        }
+        # Remove None values
+        filters = {k: v for k, v in filters.items() if v is not None}
+
+        sessions = get_user_sessions(profile_user_id, viewer_user_id, filters)
             
         return jsonify({"status": "success", "data": sessions}), 200
     except Exception as e:
