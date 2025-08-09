@@ -30,7 +30,7 @@ The `SessionsList` component will be responsible for fetching a list of surf ses
         -   If `loading` is `false` and the `sessions` array is empty, display a "No sessions found" message.
         -   If sessions are successfully loaded, map over the `sessions` array and render a `SessionTile` for each session, passing the session object as a prop.
 
--   **Step 3: Integrate into the Feed Page (Queued)**:
+-   **Step 3: Integrate into the Feed Page (Completed)**:
     -   **Action**: Modify `frontend/src/pages/Feed.jsx`.
     -   **Details**:
         -   Remove the temporary `SessionTile` that uses mock data.

@@ -173,10 +173,10 @@ The following foundational tasks have been completed, ensuring consistency, reus
     - **Shaka API Integration**: The shaka button is not yet connected to the backend API. This will be handled as part of the "Shaka Reactions System" in Phase 4.
     - **UI Polish**: Advanced styling and the use of icons are deferred.
 
-- **SessionsList**: 🟡 **Up Next**
-  - This is the next component to be built.
-  - It will be responsible for fetching and displaying a list of `SessionTile` components.
-  - The overall page layout for the feed will be addressed during its development.
+- **SessionsList**: ✅ **Complete**
+  - Fetches and displays a list of surf sessions from the backend API.
+  - Implements conditional rendering for loading, error, and empty states.
+  - Integrated into the `Feed` page to display real session data.
 
 - **Navigation**: ⏳ **Pending**
   - App shell and routing.
@@ -394,7 +394,7 @@ const apiCall = async (endpoint, options = {}) => {
 
 ### Core Component Library ✅
 - [x] SessionTile component
-- [ ] SessionsList component
+- [x] SessionsList component
 - [ ] Navigation and layout
 - [ ] Design system foundation
 
