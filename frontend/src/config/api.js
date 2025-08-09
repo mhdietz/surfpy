@@ -1,1 +1,1 @@
-export const API_BASE_URL = 'https://surfdata-fyurs7rku-martins-projects-383d438b.vercel.app';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
