@@ -40,7 +40,7 @@ const SessionTile = ({ session }) => {
   };
 
   return (
-    <div onClick={handleNavigateToSession} className="space-y-4 p-1 cursor-pointer hover:bg-gray-50 rounded-lg">
+    <div onClick={handleNavigateToSession} className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-200 space-y-4 cursor-pointer hover:shadow-lg transition-shadow">
       {/* Header */}
       <div className="flex justify-between items-center">
         <p onClick={(e) => handleNavigateToJournal(e, user_id)} className="font-bold text-lg text-gray-800 hover:underline">

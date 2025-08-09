@@ -16,11 +16,11 @@ const Feed = () => {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
-      <Card>
+    <div className="bg-gray-100 min-h-screen py-8">
+      <main className="max-w-2xl mx-auto space-y-6 px-4">
         <SessionTile session={mockSession} />
-      </Card>
-      <Card>
+
+        <Card>
         <div className="text-center">
           <h2 className="text-3xl font-bold">Welcome!</h2>
           {user && <p className="mt-2 text-gray-600">You are logged in.</p>}
@@ -32,6 +32,7 @@ const Feed = () => {
           Logout
         </Button>
       </Card>
+      </main>
     </div>
   );
 };
