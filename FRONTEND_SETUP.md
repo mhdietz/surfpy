@@ -16,9 +16,23 @@
 4. Start development server: npm run dev
 5. Open http://localhost:5173
 
+## Local Mobile Testing
+To test on your phone while developing locally:
+1. **Configure Vite for network access** (already configured in `vite.config.js`):
+   ```javascript
+   server: {
+     host: '0.0.0.0',  // Allow external connections
+     port: 5173
+   }
+
+2. Start dev server: npm run dev
+3. Use the Network URL on your phone:
+- Terminal will show: Network: http://192.168.1.XXX:5173/
+- Open that URL in your phone's browser (same WiFi network)
+4. Both devices must be on the same WiFi network
+
 # Tailwind CSS Setup
 ✅ Already configured - should work out of the box after npm install
-
 - Config files: tailwind.config.js and postcss.config.js
 - CSS directives added to src/index.css
 - Content paths configured for React components
