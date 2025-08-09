@@ -1059,3 +1059,24 @@ def get_surf_spot_by_name(name):
         return None
     finally:
         conn.close()
+
+def get_all_regions():
+    """Retrieve all unique surf regions from the database."""
+    conn = get_db_connection()
+    if not conn:
+        return []
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT DISTINCT region 
+                FROM surf_spots 
+                WHERE region IS NOT NULL AND region <> '' 
+                ORDER BY region;
+            """)
+            regions = [item[0] for item in cur.fetchall()]
+            return regions
+    except Exception as e:
+        print(f"Error retrieving all regions: {e}")
+        return []
+    finally:
+        conn.close()

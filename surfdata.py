@@ -4,7 +4,7 @@ from flask_caching import Cache
 from datetime import datetime, timezone, timedelta
 import surfpy
 import database_utils
-from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location
+from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location, get_all_regions
 import json
 from json_utils import CustomJSONEncoder
 import math
@@ -776,6 +776,21 @@ def get_surf_spots_by_region():
         return jsonify({"status": "success", "data": formatted_regions}), 200
     except Exception as e:
         print(f"Error retrieving surf spots by region: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/api/regions', methods=['GET'])
+@token_required
+def get_regions(user_id):
+    """
+    API endpoint to get a list of all unique surf regions.
+    """
+    try:
+        regions = get_all_regions()
+        return jsonify({"status": "success", "data": regions}), 200
+    except Exception as e:
+        print(f"Error retrieving regions: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
