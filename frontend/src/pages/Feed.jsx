@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/UI/Button';
 import Card from '../components/UI/Card';
+import SessionTile from '../components/SessionTile';
+import { mockSession } from '../utils/mockData.js';
 
 const Feed = () => {
   const { user, logout } = useAuth();
@@ -15,6 +17,9 @@ const Feed = () => {
 
   return (
     <div className="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+      <Card>
+        <SessionTile session={mockSession} />
+      </Card>
       <Card>
         <div className="text-center">
           <h2 className="text-3xl font-bold">Welcome!</h2>
