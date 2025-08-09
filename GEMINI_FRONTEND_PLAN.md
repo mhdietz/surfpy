@@ -94,45 +94,32 @@ Filtering Support:
 ### API Configuration
 ```javascript
 // src/config/api.js - Single source of truth for backend URL
-export const API_BASE_URL = process.env.REACT_APP_API_URL || '[BACKEND_URL_TO_BE_CONFIGURED]';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// The VITE_API_URL is read from the .env file in the frontend directory.
+// Example: VITE_API_URL=https://your-deployed-backend.vercel.app
 ```
 
 ---
 
-## Phase 0: Foundational Improvements (Immediate Priority)
+## Phase 0: Foundational Improvements (Immediate Priority) - Complete ✅
 
-Before building new features, the following foundational tasks should be completed to ensure consistency, reusability, and maintainability.
+The following foundational tasks have been completed, ensuring consistency, reusability, and maintainability for future development.
 
-### 1. Centralize API Service
-- **Task**: Implement the generic `apiCall` function outlined in the "API Integration Pattern" section and place it in `services/api.js`.
-- **Goal**: Create a single, reusable function for making authenticated API requests. This will simplify all future data fetching.
-- **Acceptance Criteria**:
-  - `services/api.js` exports a generic `apiCall` function.
-  - The `apiCall` function automatically includes the `Authorization` header with the JWT from `localStorage`.
-  - The existing `login` and `signup` functions in `services/auth.js` are refactored to use this new `apiCall` function instead of `fetch` directly.
+### 1. Centralize API Service ✅
+- **Task**: Implemented the generic `apiCall` function in `services/api.js`.
+- **Outcome**: All API requests now go through a centralized function that automatically includes the `Authorization` header. `login` and `signup` functions in `services/auth.js` have been refactored to use `apiCall`.
 
-### 2. Build Reusable UI Components
-- **Task**: Create a set of basic, reusable UI components in the `frontend/src/components/UI/` directory.
-- **Goal**: Enforce a consistent design system, reduce code duplication, and speed up future development.
-- **Components to Build**:
-  - `Button.jsx`: A generic button that can be styled with props (e.g., `variant='primary'`, `variant='destructive'`).
-  - `Input.jsx`: A standardized form input component.
-  - `Card.jsx`: A reusable card component for consistent layout of content blocks.
+### 2. Build Reusable UI Components ✅
+- **Task**: Created a set of basic, reusable UI components in the `frontend/src/components/UI/` directory.
+- **Outcome**: `Button.jsx`, `Input.jsx`, `Card.jsx`, and `Spinner.jsx` components are available and have been integrated into `Auth.jsx` and `Feed.jsx`.
 
-### 3. Standardize User Feedback
-- **Task**: Decide on and implement a standard pattern for notifying the user of loading states and errors.
-- **Goal**: Provide a consistent and clear user experience across the application.
-- **Recommendations**:
-  - Create a `Spinner.jsx` component for loading states.
-  - Consider adding a library like `react-hot-toast` for non-blocking error notifications.
+### 3. Standardize User Feedback ✅
+- **Task**: Implemented a standard pattern for notifying the user of loading states and errors.
+- **Outcome**: `Spinner.jsx` component is available for loading states. `react-hot-toast` has been integrated for non-blocking error and success notifications, used in `Auth.jsx`.
 
-### 4. Use Environment Variables for API URL
-- **Task**: Move the hardcoded `API_BASE_URL` from `config/api.js` to an environment variable.
-- **Goal**: Follow best practices for configuration and easily switch between development and production environments.
-- **Implementation**:
-  - Create a `.env` file in the `frontend` directory.
-  - Add `VITE_API_URL=http://localhost:5000` to the `.env` file.
-  - Update `config/api.js` to read the variable using `import.meta.env.VITE_API_URL`.
+### 4. Use Environment Variables for API URL ✅
+- **Task**: Moved the `API_BASE_URL` to an environment variable.
+- **Outcome**: A `.env` file has been created in the `frontend` directory (`VITE_API_URL`). `config/api.js` now reads the API URL from this environment variable, allowing for easy switching between development and production environments.
 
 ---
 

@@ -16,13 +16,14 @@ The application is a full-stack surf logging and forecasting platform. The backe
 -   **Core Data Engine (`surfpy/`)**: This is a powerful, low-level library that acts as the engine for all data fetching and processing. It interfaces directly with external data sources like NOAA buoys and tide stations.
 
 ### Frontend
--   **Core Libraries**: React 19.1.1, Vite 7.1.1, Tailwind CSS v3.4.0, and **React Router DOM** for client-side routing.
+-   **Core Libraries**: React 19.1.1, Vite 7.1.1, Tailwind CSS v3.4.0, **React Router DOM** for client-side routing, and **react-hot-toast** for notifications.
 
 -   **Architecture**: The frontend follows a modern React structure, separating concerns into distinct directories:
     -   `pages/`: For top-level page components (e.g., `AuthPage`, `Feed`).
     -   `components/`: For reusable components, including route guards like `ProtectedRoute`.
+    -   `components/UI/`: For generic, reusable UI components (e.g., `Button`, `Input`, `Card`, `Spinner`).
     -   `context/`: For global state management via React Context (e.g., `AuthContext`).
-    -   `services/`: For communication with the backend API (e.g., `auth.js`).
+    -   `services/`: For communication with the backend API (e.g., `auth.js`, `api.js`).
     -   `config/`: For application-level configuration, like the API base URL.
 
 -   **Authentication Flow**: Implemented via the `AuthContext`, which provides global state for the current user and authentication status. A `ProtectedRoute` component wraps all authenticated routes, redirecting unauthenticated users to the login page. JWTs are stored in `localStorage` to persist sessions.
@@ -80,7 +81,7 @@ The application is a full-stack surf logging and forecasting platform. The backe
 
 ### Frontend Setup
 -   **Prerequisites**: Node.js 18+, npm
--   **Dependencies**: The project uses `react-router-dom` for routing. If starting from a fresh clone, this will be installed with `npm install`.
+-   **Dependencies**: The project uses `react-router-dom` for routing and `react-hot-toast` for notifications. If starting from a fresh clone, these will be installed with `npm install`.
 -   **Local Development**: `cd frontend && npm install && npm run dev`
 -   **Mobile Testing**: Vite configured for network access at `http://192.168.1.XXX:5173`
 -   **Documentation**: See `FRONTEND_SETUP.md` and `GEMINI_FRONTEND_PLAN.md` for detailed setup and architectural plans.
