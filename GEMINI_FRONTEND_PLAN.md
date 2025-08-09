@@ -393,7 +393,7 @@ const apiCall = async (endpoint, options = {}) => {
 - [x] Route protection (`components/ProtectedRoute.jsx`)
 
 ### Core Component Library ✅
-- [ ] SessionTile component
+- [x] SessionTile component
 - [ ] SessionsList component
 - [ ] Navigation and layout
 - [ ] Design system foundation
