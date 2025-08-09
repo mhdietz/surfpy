@@ -2,25 +2,26 @@
 
 ## 1. Objective
 
-The goal is to create a minimal `SessionTile` component that correctly displays all key information for a surf session. The component's completion will be judged by the visible presence of the following fields from the mock data:
-
--   User's display name
--   Session date
--   Session notes
--   Fun rating
--   A count of other participants
--   A count of shaka reactions
+The goal is to create a `SessionTile` component that is both data-complete and interactive. The component's completion will be judged by two criteria:
+1.  All key data fields are correctly displayed.
+2.  The component correctly navigates to other pages.
 
 ## 2. Development Plan
 
--   **Step 1: Update Mock Data (Completed)**:
-    -   **Action**: Modified the `mockSession` object in `frontend/src/utils/mockData.js`.
-    -   **Change**: Added a `session_notes` field.
+-   **Step 1: Display All Data (Completed)**: The component now correctly renders the user's name, date, notes, rating, and participant names from the mock data.
 
--   **Step 2: Update SessionTile Component (Completed)**:
-    -   **Action**: Modified `frontend/src/components/SessionTile.jsx`.
-    -   **Changes**: Ensured the component's JSX explicitly renders the `display_name`, the formatted `session_date`, `session_notes`, `fun_rating`, the number of `participants`, and the `shakas.count`.
+-   **Step 2: Implement Navigation (Queued)**:
+    -   **Action**: Modify `frontend/src/components/SessionTile.jsx`.
+    -   **Changes**:
+        -   (Completed) Make the entire tile clickable to navigate to the session detail page (e.g., `/session/123`).
+        -   (Completed) Make the creator's display name clickable to navigate to their journal page.
+        -   (Completed) Make the participant's display names clickable to navigate to their respective journal pages.
 
 ## 3. Definition of Done
 
-The `SessionTile` is now considered complete for this stage, as all fields listed in the objective are rendered from the mock data. All other work (interactivity, icons, layout) is deferred.
+The `SessionTile` will be considered complete for this phase when it both displays all data and all navigation paths are functional.
+
+## 4. Deferred Items
+
+-   **Shaka API Toggle**: The logic for making the shaka button call the backend API is deferred.
+-   **UI Polish**: The addition of icons and other design improvements are deferred.

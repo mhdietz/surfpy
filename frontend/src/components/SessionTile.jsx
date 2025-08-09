@@ -1,13 +1,17 @@
 import React from 'react';
-import Button from './UI/Button';
+import { useNavigate } from 'react-router-dom';
 
 // Final minimal version of SessionTile
 const SessionTile = ({ session }) => {
+  const navigate = useNavigate();
+
   if (!session) {
     return null;
   }
 
   const {
+    id, // Needed for navigation
+    user_id, // Needed for navigation
     session_name,
     location,
     fun_rating,
@@ -15,7 +19,7 @@ const SessionTile = ({ session }) => {
     display_name,
     participants,
     shakas,
-    session_notes, // Added session_notes
+    session_notes,
   } = session;
 
   const sessionDate = new Date(session_started_at).toLocaleDateString('en-US', {
@@ -24,11 +28,24 @@ const SessionTile = ({ session }) => {
     day: 'numeric',
   });
 
+  const handleNavigateToSession = () => {
+    console.log(`Navigating to session: ${id}`);
+    navigate(`/session/${id}`);
+  };
+
+  const handleNavigateToJournal = (e, userId) => {
+    e.stopPropagation(); // Prevent the parent div's onClick from firing
+    console.log(`Navigating to journal for user: ${userId}`);
+    navigate(`/journal/${userId}`);
+  };
+
   return (
-    <div className="space-y-4 p-1">
+    <div onClick={handleNavigateToSession} className="space-y-4 p-1 cursor-pointer hover:bg-gray-50 rounded-lg">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <p className="font-bold text-lg text-gray-800">{display_name}</p>
+        <p onClick={(e) => handleNavigateToJournal(e, user_id)} className="font-bold text-lg text-gray-800 hover:underline">
+          {display_name}
+        </p>
         <p className="text-sm text-gray-500">{sessionDate}</p>
       </div>
 
@@ -48,7 +65,11 @@ const SessionTile = ({ session }) => {
             <p className="font-semibold text-gray-700">With:</p>
             <div className="flex flex-wrap gap-2 mt-1">
               {participants.map(p => (
-                <span key={p.user_id} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
+                <span 
+                  key={p.user_id} 
+                  onClick={(e) => handleNavigateToJournal(e, p.user_id)}
+                  className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium hover:bg-blue-200 hover:text-blue-900"
+                >
                   {p.display_name}
                 </span>
               ))}
