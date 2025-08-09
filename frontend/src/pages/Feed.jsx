@@ -5,6 +5,7 @@ import Button from '../components/UI/Button';
 import Card from '../components/UI/Card';
 import SessionTile from '../components/SessionTile';
 import { mockSession } from '../utils/mockData.js';
+import SessionsList from '../components/SessionsList';
 
 const Feed = () => {
   const { user, logout } = useAuth();
@@ -18,7 +19,7 @@ const Feed = () => {
   return (
     <div className="bg-gray-100 min-h-screen py-8">
       <main className="max-w-2xl mx-auto space-y-6 px-4">
-        <SessionTile session={mockSession} />
+        <SessionsList />
 
         <Card>
         <div className="text-center">
