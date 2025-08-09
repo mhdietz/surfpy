@@ -99,6 +99,43 @@ export const API_BASE_URL = process.env.REACT_APP_API_URL || '[BACKEND_URL_TO_BE
 
 ---
 
+## Phase 0: Foundational Improvements (Immediate Priority)
+
+Before building new features, the following foundational tasks should be completed to ensure consistency, reusability, and maintainability.
+
+### 1. Centralize API Service
+- **Task**: Implement the generic `apiCall` function outlined in the "API Integration Pattern" section and place it in `services/api.js`.
+- **Goal**: Create a single, reusable function for making authenticated API requests. This will simplify all future data fetching.
+- **Acceptance Criteria**:
+  - `services/api.js` exports a generic `apiCall` function.
+  - The `apiCall` function automatically includes the `Authorization` header with the JWT from `localStorage`.
+  - The existing `login` and `signup` functions in `services/auth.js` are refactored to use this new `apiCall` function instead of `fetch` directly.
+
+### 2. Build Reusable UI Components
+- **Task**: Create a set of basic, reusable UI components in the `frontend/src/components/UI/` directory.
+- **Goal**: Enforce a consistent design system, reduce code duplication, and speed up future development.
+- **Components to Build**:
+  - `Button.jsx`: A generic button that can be styled with props (e.g., `variant='primary'`, `variant='destructive'`).
+  - `Input.jsx`: A standardized form input component.
+  - `Card.jsx`: A reusable card component for consistent layout of content blocks.
+
+### 3. Standardize User Feedback
+- **Task**: Decide on and implement a standard pattern for notifying the user of loading states and errors.
+- **Goal**: Provide a consistent and clear user experience across the application.
+- **Recommendations**:
+  - Create a `Spinner.jsx` component for loading states.
+  - Consider adding a library like `react-hot-toast` for non-blocking error notifications.
+
+### 4. Use Environment Variables for API URL
+- **Task**: Move the hardcoded `API_BASE_URL` from `config/api.js` to an environment variable.
+- **Goal**: Follow best practices for configuration and easily switch between development and production environments.
+- **Implementation**:
+  - Create a `.env` file in the `frontend` directory.
+  - Add `VITE_API_URL=http://localhost:5000` to the `.env` file.
+  - Update `config/api.js` to read the variable using `import.meta.env.VITE_API_URL`.
+
+---
+
 ## Phase 1: Authentication System (Developer A) - In Progress
 
 ### Objectives
