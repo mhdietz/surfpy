@@ -7,6 +7,7 @@ export const mockSession = {
   session_name: "Fun morning waves",
   location: "Ocean Beach",
   fun_rating: 5,
+  session_notes: "A few fun ones on the inside bar. A bit crowded but managed to find a few corners.",
   session_started_at: "2025-08-15T10:00:00Z",
   user_id: "a1b2c3d4-e5f6-7890-1234-567890abcdef",
   display_name: "John Doe",
