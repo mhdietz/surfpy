@@ -10,6 +10,7 @@ import AuthPage from './pages/Auth.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
 import Feed from './pages/Feed.jsx';
 import { Toaster } from 'react-hot-toast';
+import Navigation from './components/Navigation'; // Import Navigation component
 
 // A component to handle the root URL path, redirecting based on auth state.
 const Home = () => {
@@ -22,6 +23,7 @@ function App() {
     <AuthProvider>
       <Toaster position="top-center" reverseOrder={false} />
       <Router>
+        <Navigation /> {/* Render Navigation component here */}
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth/login" element={<AuthPage />} />
