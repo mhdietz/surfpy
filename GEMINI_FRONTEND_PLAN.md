@@ -37,6 +37,7 @@ This document provides a systematic plan for building the SLAPP frontend using G
 ```
 /frontend/src/
 ├── components/          # Shared component library
+│   ├── ProtectedRoute.jsx  # Route guard for authenticated pages
 │   ├── SessionTile.jsx     # Used across all session views
 │   ├── SessionsList.jsx    # Used in feed, journals
 │   ├── Navigation.jsx      # App navigation with bottom nav
@@ -44,14 +45,16 @@ This document provides a systematic plan for building the SLAPP frontend using G
 │   ├── ShakaModal.jsx      # Users who reacted modal
 │   └── UI/                 # Basic UI components (buttons, inputs, filters)
 ├── pages/              # Main application pages
-│   ├── Auth.jsx           # Login/signup (Developer A)
-│   ├── Feed.jsx           # Social feed with tabs (Developer B)
+│   ├── Auth.jsx           # Login/signup page
+│   ├── Feed.jsx           # Main feed after login
 │   ├── Journal.jsx        # Session journal (any user) (Developer A)
 │   ├── SessionDetail.jsx  # Individual session view (Developer A)
 │   └── CreateSession.jsx  # Session creation form (Developer A)
 ├── services/           # API integration
 │   ├── api.js             # Centralized API service
-│   └── auth.js            # Token management
+│   └── auth.js            # Token management (login, signup, logout)
+├── context/            # Global React Context providers
+│   └── AuthContext.jsx    # Manages global auth state and user data
 ├── config/             # Configuration
 │   └── api.js             # Single API URL definition
 └── utils/              # Helpers and mock data
@@ -91,23 +94,47 @@ Filtering Support:
 ### API Configuration
 ```javascript
 // src/config/api.js - Single source of truth for backend URL
-export const API_BASE_URL = process.env.REACT_APP_API_URL || '[BACKEND_URL_TO_BE_CONFIGURED]';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// The VITE_API_URL is read from the .env file in the frontend directory.
+// Example: VITE_API_URL=https://your-deployed-backend.vercel.app
 ```
 
 ---
 
-## Phase 1: Authentication System (Developer A)
+## Phase 0: Foundational Improvements (Immediate Priority) - Complete ✅
+
+The following foundational tasks have been completed, ensuring consistency, reusability, and maintainability for future development.
+
+### 1. Centralize API Service ✅
+- **Task**: Implemented the generic `apiCall` function in `services/api.js`.
+- **Outcome**: All API requests now go through a centralized function that automatically includes the `Authorization` header. `login` and `signup` functions in `services/auth.js` have been refactored to use `apiCall`.
+
+### 2. Build Reusable UI Components ✅
+- **Task**: Created a set of basic, reusable UI components in the `frontend/src/components/UI/` directory.
+- **Outcome**: `Button.jsx`, `Input.jsx`, `Card.jsx`, and `Spinner.jsx` components are available and have been integrated into `Auth.jsx` and `Feed.jsx`.
+
+### 3. Standardize User Feedback ✅
+- **Task**: Implemented a standard pattern for notifying the user of loading states and errors.
+- **Outcome**: `Spinner.jsx` component is available for loading states. `react-hot-toast` has been integrated for non-blocking error and success notifications, used in `Auth.jsx`.
+
+### 4. Use Environment Variables for API URL ✅
+- **Task**: Moved the `API_BASE_URL` to an environment variable.
+- **Outcome**: A `.env` file has been created in the `frontend` directory (`VITE_API_URL`). `config/api.js` now reads the API URL from this environment variable, allowing for easy switching between development and production environments.
+
+---
+
+## Phase 1: Authentication System (Developer A) - In Progress
 
 ### Objectives
 - Solve token management complexity from v0 experience
 - Create reliable auth flow foundation
 - Establish secure API communication patterns
 
-### Components to Build
-- **Login/Signup Pages**: Form handling with validation
-- **Auth Service**: Token storage, refresh, and management
-- **API Service Foundation**: Authenticated request handling
-- **Route Guards**: Protected route authentication
+### Components Built
+- **`pages/Auth.jsx`**: A mobile-first component containing the login and signup forms, styled with Tailwind CSS.
+- **`services/auth.js`**: A service that handles API calls to `/login` and `/signup`, and manages the JWT in `localStorage`.
+- **`context/AuthContext.jsx`**: A React Context provider that manages global authentication state (`isAuthenticated`, `user`) and exposes auth functions (`login`, `signup`, `logout`) to the entire app.
+- **`components/ProtectedRoute.jsx`**: A route guard component that redirects unauthenticated users to the login page.
 
 ### Key Challenges to Address
 - Token persistence across browser sessions
@@ -323,6 +350,11 @@ feature/mobile-optimization  # Both - Final polish
 - **Accessibility**: Proper ARIA labels and keyboard navigation
 - **Testing**: Component works with various data scenarios
 
+### Styling and Design
+- **Mobile-First with Tailwind CSS**: All new components MUST be built mobile-first using Tailwind CSS utility classes.
+- **No Inline Styles**: Avoid using inline `style` attributes. All styling should be handled by Tailwind classes to ensure consistency and maintainability.
+- **Reference Components**: Use `pages/Auth.jsx` and `pages/Feed.jsx` as examples of the expected coding and styling standard.
+
 ### API Integration Pattern
 ```javascript
 // Consistent pattern across all API calls
@@ -360,10 +392,10 @@ const apiCall = async (endpoint, options = {}) => {
 ## Progress Tracking
 
 ### Authentication System ✅
-- [ ] Auth pages and forms
-- [ ] Token management service  
-- [ ] API service foundation
-- [ ] Route protection
+- [x] Auth pages and forms (`pages/Auth.jsx`)
+- [x] Token management service (`services/auth.js`)
+- [x] Global auth state (`context/AuthContext.jsx`)
+- [x] Route protection (`components/ProtectedRoute.jsx`)
 
 ### Core Component Library ✅
 - [ ] SessionTile component

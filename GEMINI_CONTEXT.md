@@ -16,13 +16,19 @@ The application is a full-stack surf logging and forecasting platform. The backe
 -   **Core Data Engine (`surfpy/`)**: This is a powerful, low-level library that acts as the engine for all data fetching and processing. It interfaces directly with external data sources like NOAA buoys and tide stations.
 
 ### Frontend
--   **Frontend (`/frontend`)**: React 19.1.1 + Vite 7.1.1 application with Tailwind CSS v3.4.0 for styling. Mobile-first responsive design optimized for surf logging on mobile devices.
+-   **Core Libraries**: React 19.1.1, Vite 7.1.1, Tailwind CSS v3.4.0, **React Router DOM** for client-side routing, and **react-hot-toast** for notifications.
 
--   **Build System**: Vite development server with hot module replacement. Configured for network access (`host: '0.0.0.0'`) to support mobile testing on local network.
+-   **Architecture**: The frontend follows a modern React structure, separating concerns into distinct directories:
+    -   `pages/`: For top-level page components (e.g., `AuthPage`, `Feed`).
+    -   `components/`: For reusable components, including route guards like `ProtectedRoute`.
+    -   `components/UI/`: For generic, reusable UI components (e.g., `Button`, `Input`, `Card`, `Spinner`).
+    -   `context/`: For global state management via React Context (e.g., `AuthContext`).
+    -   `services/`: For communication with the backend API (e.g., `auth.js`, `api.js`).
+    -   `config/`: For application-level configuration, like the API base URL.
 
--   **Authentication Flow**: JWT token-based authentication with centralized API service. Stores access tokens for protected endpoint calls using `Authorization: Bearer <token>` header format.
+-   **Authentication Flow**: Implemented via the `AuthContext`, which provides global state for the current user and authentication status. A `ProtectedRoute` component wraps all authenticated routes, redirecting unauthenticated users to the login page. JWTs are stored in `localStorage` to persist sessions.
 
--   **Component Architecture**: Page-based routing structure with three main sections: Session Feed, Create Session, and My Journal. Navigation via bottom nav bar following mobile app conventions.
+-   **Styling**: All components are built **mobile-first** using **Tailwind CSS** utility classes. Inline styles are discouraged.
 
 ## 2. Deployment Architecture
 
@@ -75,9 +81,10 @@ The application is a full-stack surf logging and forecasting platform. The backe
 
 ### Frontend Setup
 -   **Prerequisites**: Node.js 18+, npm
+-   **Dependencies**: The project uses `react-router-dom` for routing and `react-hot-toast` for notifications. If starting from a fresh clone, these will be installed with `npm install`.
 -   **Local Development**: `cd frontend && npm install && npm run dev`
 -   **Mobile Testing**: Vite configured for network access at `http://192.168.1.XXX:5173`
--   **Documentation**: See `FRONTEND_SETUP.md` for detailed setup instructions
+-   **Documentation**: See `FRONTEND_SETUP.md` and `GEMINI_FRONTEND_PLAN.md` for detailed setup and architectural plans.
 
 ### Collaboration Workflow
 -   **Feature Branches**: Work on separate branches to avoid merge conflicts

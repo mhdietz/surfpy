@@ -1,0 +1,39 @@
+import { API_BASE_URL } from '../config/api';
+import { getToken } from './auth';
+
+/**
+ * A centralized API call function.
+ * @param {string} endpoint - The API endpoint to call (e.g., '/api/surf-sessions').
+ * @param {object} [options={}] - The options for the fetch call (e.g., method, body, headers).
+ * @returns {Promise<any>} The JSON response from the API.
+ * @throws {Error} Throws an error if the API response is not ok.
+ */
+export const apiCall = async (endpoint, options = {}) => {
+  const token = getToken();
+
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+  };
+
+  if (token) {
+    defaultHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
+  const config = {
+    ...options,
+    headers: {
+      ...defaultHeaders,
+      ...options.headers,
+    },
+  };
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || `API Error: ${response.status}`);
+  }
+
+  return data;
+};
