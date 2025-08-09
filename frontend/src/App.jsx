@@ -8,7 +8,8 @@ import {
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthPage from './pages/Auth.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
-import Feed from './pages/Feed.jsx'; // Import the new Feed component
+import Feed from './pages/Feed.jsx';
+import { Toaster } from 'react-hot-toast';
 
 // A component to handle the root URL path, redirecting based on auth state.
 const Home = () => {
@@ -19,6 +20,7 @@ const Home = () => {
 function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-center" reverseOrder={false} />
       <Router>
         <Routes>
           <Route path="/" element={<Home />} />

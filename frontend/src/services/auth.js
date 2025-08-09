@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config/api';
+import { apiCall } from './api';
 
 /**
  * Logs a user in by sending their credentials to the backend.
@@ -7,19 +7,10 @@ import { API_BASE_URL } from '../config/api';
  * @returns {Promise<object>} The user data from the backend.
  */
 export const login = async (email, password) => {
-  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+  const data = await apiCall('/api/auth/login', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify({ email, password }),
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to login');
-  }
 
   if (data.data.access_token) {
     localStorage.setItem('access_token', data.data.access_token);
@@ -37,11 +28,8 @@ export const login = async (email, password) => {
  * @returns {Promise<object>} The user data from the backend after login.
  */
 export const signup = async (email, password, firstName, lastName) => {
-  const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+  await apiCall('/api/auth/signup', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify({ 
       email, 
       password, 
@@ -49,12 +37,6 @@ export const signup = async (email, password, firstName, lastName) => {
       last_name: lastName 
     }),
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to sign up');
-  }
 
   // Automatically log the user in after successful signup
   return await login(email, password);
