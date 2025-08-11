@@ -20,14 +20,14 @@ const Home = () => {
   return isAuthenticated ? <Navigate to="/feed" /> : <Navigate to="/auth/login" />;
 };
 
-function App() {
+const AppContent = () => {
+  const { isAuthenticated } = useAuth();
+
   return (
-    <AuthProvider>
-      <Toaster position="top-center" reverseOrder={false} />
-      <Router>
-        <Navigation /> {/* Render Navigation component here */}
-        <div className="pt-16"> {/* Add padding for fixed header */}
-          <Routes>
+    <Router>
+      {isAuthenticated && <Navigation />}
+      <div className={isAuthenticated ? "pt-16 pb-16" : ""}>
+        <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth/login" element={<AuthPage />} />
           <Route
@@ -57,8 +57,16 @@ function App() {
           {/* Redirect any other path to home */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-        </div>
-      </Router>
+      </div>
+    </Router>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <Toaster position="top-center" reverseOrder={false} />
+      <AppContent />
     </AuthProvider>
   );
 }

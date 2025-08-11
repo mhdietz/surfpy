@@ -20,7 +20,7 @@ const Navigation = () => {
   return (
     <>
       {/* Top Header */}
-      <header className="fixed top-0 left-0 w-full bg-white shadow-md p-4 z-10">
+      <header className="fixed top-0 left-0 w-full bg-white shadow-md p-4 z-20">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-xl font-bold text-blue-600">Surf App</h1>
           {/* User Search and Profile Dropdown */}
@@ -30,7 +30,7 @@ const Navigation = () => {
 
             {/* Profile Dropdown Placeholder */}
             {isAuthenticated ? (
-              <div className="relative group">
+              <div className="relative group pb-2">
                 <span className="text-gray-600 cursor-pointer hover:text-blue-600">
                   Hello, {user?.email?.split('@')[0] || 'User'} ▼
                 </span>
