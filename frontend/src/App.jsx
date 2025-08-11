@@ -11,6 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Feed from './pages/Feed.jsx';
 import CreateSessionPage from './pages/CreateSessionPage.jsx'; // Import CreateSessionPage
 import JournalPage from './pages/JournalPage.jsx'; // Import JournalPage
+import SessionDetail from './pages/SessionDetail.jsx'; // Import SessionDetail
 import { Toaster } from 'react-hot-toast';
 import Navigation from './components/Navigation'; // Import Navigation component
 
@@ -51,6 +52,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <JournalPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/session/:id"
+            element={
+              <ProtectedRoute>
+                <SessionDetail />
               </ProtectedRoute>
             }
           />
