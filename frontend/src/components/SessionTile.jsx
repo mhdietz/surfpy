@@ -1,49 +1,52 @@
-import React, { useState } from 'react'; // Import useState
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ShakaModal from './ShakaModal'; // Import ShakaModal
+import ShakaModal from './ShakaModal';
 
-// Final minimal version of SessionTile
 const SessionTile = ({ session }) => {
   const navigate = useNavigate();
-  const [isShakaModalOpen, setIsShakaModalOpen] = useState(false); // State for modal
+  const [isShakaModalOpen, setIsShakaModalOpen] = useState(false);
+
+  const [shakaCount, setShakaCount] = useState(0);
+  const [hasViewerShakaed, setHasViewerShakaed] = useState(false);
+
+  const {
+    id, user_id, session_name, location, fun_rating,
+    session_started_at, display_name, participants, shakas, session_notes,
+  } = session || {};
+
+  useEffect(() => {
+    if (shakas) {
+      setShakaCount(shakas.count || 0);
+      setHasViewerShakaed(shakas.viewer_has_shakaed || false);
+    }
+  }, [shakas]);
 
   if (!session) {
     return null;
   }
 
-  const {
-    id, // Needed for navigation
-    user_id, // Needed for navigation
-    session_name,
-    location,
-    fun_rating,
-    session_started_at,
-    display_name,
-    participants,
-    shakas,
-    session_notes,
-  } = session;
-
   const sessionDate = new Date(session_started_at).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+    year: 'numeric', month: 'long', day: 'numeric',
   });
 
-  const handleNavigateToSession = () => {
-    console.log(`Navigating to session: ${id}`);
-    navigate(`/session/${id}`);
-  };
+  const handleNavigateToSession = () => navigate(`/session/${id}`);
 
   const handleNavigateToJournal = (e, userId) => {
-    e.stopPropagation(); // Prevent the parent div's onClick from firing
-    console.log(`Navigating to journal for user: ${userId}`);
+    e.stopPropagation();
     navigate(`/journal/${userId}`);
   };
 
-  const handleShakaClick = (e) => {
-    e.stopPropagation(); // Prevent navigation
-    setIsShakaModalOpen(true);
+  const handleOpenShakaModal = (e) => {
+    e.stopPropagation();
+    if (shakaCount > 0) {
+      setIsShakaModalOpen(true);
+    }
+  };
+
+  // Toggles the visual state locally without changing the count
+  const handleToggleShaka = (e) => {
+    e.stopPropagation();
+    setHasViewerShakaed(prev => !prev);
   };
 
   return (
@@ -62,12 +65,8 @@ const SessionTile = ({ session }) => {
           <h3 className="text-2xl font-bold text-gray-900">{session_name || 'Untitled Session'}</h3>
           <p className="text-md font-semibold text-gray-700">{location}</p>
           
-          {/* Session Notes */}
-          {session_notes && (
-            <p className="text-gray-600 bg-gray-50 p-3 rounded-md">{session_notes}</p>
-          )}
+          {session_notes && <p className="text-gray-600 bg-gray-50 p-3 rounded-md">{session_notes}</p>}
 
-          {/* Participant Names */}
           {participants && participants.length > 0 && (
             <div className="pt-2">
               <p className="font-semibold text-gray-700">With:</p>
@@ -94,10 +93,17 @@ const SessionTile = ({ session }) => {
             <span className="font-bold text-blue-600 text-lg">{fun_rating} / 5</span>
           </div>
 
-          {/* Shaka Count */}
-          <div onClick={handleShakaClick} className="flex items-center gap-2 cursor-pointer">
-              <span className="font-bold text-gray-800">Shakas:</span>
-              <span className="font-bold text-blue-600 text-lg">{shakas?.count || 0}</span>
+          {/* Shaka Count & Toggle */}
+          <div className="flex items-center gap-2">
+            <span 
+              onClick={handleToggleShaka} 
+              className={`text-xl cursor-pointer transition-all ${hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}
+            >
+              🤙
+            </span>
+            <div onClick={handleOpenShakaModal} className="cursor-pointer">
+              <span className="font-bold text-blue-600 text-lg">{shakaCount}</span>
+            </div>
           </div>
         </div>
       </div>

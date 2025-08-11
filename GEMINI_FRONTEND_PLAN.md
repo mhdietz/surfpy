@@ -164,14 +164,15 @@ The following foundational tasks have been completed, ensuring consistency, reus
 
 ### Component Status
 
-- **SessionTile**: ✅ **Complete for this phase**
+- **SessionTile**: ✅ **Complete**
   - **Completed**:
     - Displays all required session data (notes, rating, participants, etc.).
     - The entire tile is a clickable link to the session detail page.
     - The creator's name and participant names are clickable links to their journal pages.
+    - **Shaka Indicator**: Displays a shaka icon (🤙) that visually indicates if the current user has reacted to the session.
   - **Deferred for Later**:
-    - **Shaka API Integration**: The shaka button is not yet connected to the backend API. This will be handled as part of the "Shaka Reactions System" in Phase 4.
-    - **UI Polish**: Advanced styling and the use of icons are deferred.
+    - **Shaka API Integration**: The shaka icon is not yet clickable. The logic to call the toggle API will be handled as part of the "Shaka Reactions System" in Phase 4.
+    - **UI Polish**: Advanced styling and the use of more complex icons are deferred.
 
 - **SessionsList**: ✅ **Complete**
   - Fetches and displays a list of surf sessions from the backend API.
@@ -183,10 +184,10 @@ The following foundational tasks have been completed, ensuring consistency, reus
   - Includes user search placeholder and conditional profile dropdown.
   - Implements reusable fixed page tabs (`PageTabs.jsx`) for `Feed` and `Journal` pages, ensuring consistent sub-navigation.
 
-- **UserSearch**: ⏳ **Pending**
+- **UserSearch**: ✅ **Complete**
   - Search overlay/modal.
 
-- **ShakaModal**: ⏳ **Pending**
+- **ShakaModal**: ✅ **Complete**
   - Modal to show users who have reacted.
 
 ### Design System Foundations
