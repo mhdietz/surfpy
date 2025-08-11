@@ -3,11 +3,17 @@ import { apiCall } from '../services/api';
 import Card from '../components/UI/Card';
 import Input from '../components/UI/Input';
 import Button from '../components/UI/Button';
+import { toast } from 'react-hot-toast'; // Import toast for notifications
 
 function CreateSessionPage() {
   const [locations, setLocations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [taggedUsers, setTaggedUsers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
+  // Fetch locations on component mount
   useEffect(() => {
     const fetchLocations = async () => {
       try {
@@ -15,7 +21,7 @@ function CreateSessionPage() {
         setLocations(response.data || []);
       } catch (error) {
         console.error("Failed to fetch locations:", error);
-        // Optionally, set an error state and display a message to the user
+        toast.error("Failed to load surf spots.");
       } finally {
         setIsLoading(false);
       }
@@ -23,6 +29,48 @@ function CreateSessionPage() {
 
     fetchLocations();
   }, []);
+
+  // Debounced user search
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const debounceTimeout = setTimeout(async () => {
+      try {
+        const response = await apiCall(`/api/users/search?q=${searchQuery}`);
+        // Filter out already tagged users from search results
+        const filteredResults = response.data.filter(resultUser => 
+          !taggedUsers.some(taggedUser => taggedUser.user_id === resultUser.user_id)
+        );
+        setSearchResults(filteredResults || []);
+      } catch (error) {
+        console.error("Failed to search users:", error);
+        toast.error("Failed to search users.");
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(debounceTimeout);
+  }, [searchQuery, taggedUsers]); // Re-run when searchQuery or taggedUsers change
+
+  const handleSelectUser = (user) => {
+    // Add user if not already tagged
+    if (!taggedUsers.some(taggedUser => taggedUser.user_id === user.user_id)) {
+      setTaggedUsers([...taggedUsers, user]);
+      setSearchQuery(''); // Clear search input
+      setSearchResults([]); // Clear search results
+    }
+  };
+
+  const handleRemoveUser = (userId) => {
+    setTaggedUsers(taggedUsers.filter(user => user.user_id !== userId));
+  };
 
   return (
     <div className="max-w-2xl mx-auto p-4">
@@ -83,9 +131,41 @@ function CreateSessionPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300">Tag Surfers</label>
-            <Button type="button" className="mt-1">Search & Tag Friends</Button>
-            {/* Tagged users will be displayed here */}
+            <label htmlFor="user_search" className="block text-sm font-medium text-gray-300">Tag Surfers</label>
+            <Input 
+              type="text" 
+              id="user_search" 
+              name="user_search" 
+              placeholder="Search by name or email..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="mt-1"
+            />
+            {isSearching && <p className="text-gray-400 text-sm mt-1">Searching...</p>}
+            {searchResults.length > 0 && (
+              <div className="mt-2 bg-gray-700 border border-gray-600 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                {searchResults.map(user => (
+                  <button 
+                    key={user.user_id} 
+                    type="button" 
+                    onClick={() => handleSelectUser(user)}
+                    className="block w-full text-left px-4 py-2 text-white hover:bg-gray-600"
+                  >
+                    {user.display_name || user.email}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="mt-2 flex flex-wrap gap-2">
+              {taggedUsers.map(user => (
+                <div key={user.user_id} className="flex items-center bg-gray-600 text-white text-sm font-medium pl-2 pr-1 py-1 rounded-full">
+                  <span>{user.display_name}</span>
+                  <button type="button" onClick={() => handleRemoveUser(user.user_id)} className="ml-2 text-gray-300 hover:text-white">
+                    &times;
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="pt-4">
