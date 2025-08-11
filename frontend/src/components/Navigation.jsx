@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react'; // Import useState
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; // Import useAuth
+import UserSearch from './UserSearch'; // Import UserSearch
 
 const Navigation = () => {
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth(); // Get auth state
+  const [isSearchOpen, setIsSearchOpen] = useState(false); // State for search modal
 
   const getLinkClasses = (path) => {
     const baseClasses = "flex flex-col items-center text-gray-600 hover:text-blue-600";
@@ -25,8 +27,8 @@ const Navigation = () => {
           <h1 className="text-xl font-bold text-blue-600">Surf App</h1>
           {/* User Search and Profile Dropdown */}
           <div className="flex items-center space-x-4">
-            {/* User Search Icon Placeholder */}
-            <span className="text-gray-600 cursor-pointer hover:text-blue-600">🔍 Search</span>
+            {/* User Search Icon */}
+            <span onClick={() => setIsSearchOpen(true)} className="text-gray-600 cursor-pointer hover:text-blue-600">🔍 Search</span>
 
             {/* Profile Dropdown Placeholder */}
             {isAuthenticated ? (
@@ -63,6 +65,9 @@ const Navigation = () => {
           </Link>
         </div>
       </nav>
+
+      {/* User Search Modal */}
+      {isSearchOpen && <UserSearch onClose={() => setIsSearchOpen(false)} />}
     </>
   );
 };
