@@ -110,7 +110,7 @@ function CreateSessionPage() {
         session_name: sessionName,
         time: startTime,
         end_time: endTime,
-        fun_rating: parseInt(funRating, 10),
+        fun_rating: parseFloat(funRating), // Changed from parseInt to parseFloat
         session_notes: notes,
         tagged_users: taggedUsers.map(user => user.user_id) // Send only user IDs
       };
@@ -187,8 +187,8 @@ function CreateSessionPage() {
           </div>
 
           <div>
-            <label htmlFor="fun_rating" className="block text-sm font-medium text-gray-300">Fun Rating (1-5)</label>
-            <Input type="number" id="fun_rating" name="fun_rating" min="1" max="5" value={funRating} onChange={(e) => setFunRating(e.target.value)} />
+            <label htmlFor="fun_rating" className="block text-sm font-medium text-gray-300">Fun Rating (1-10, 2 decimal places)</label>
+            <Input type="number" id="fun_rating" name="fun_rating" min="1" max="10" step="0.01" value={funRating} onChange={(e) => setFunRating(e.target.value)} />
           </div>
 
           <div>
