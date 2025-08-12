@@ -53,9 +53,13 @@ This revised plan breaks down the Journal Page implementation into smaller, test
         *   **Action:** In `JournalPage.jsx`, implement the `useEffect` to call the `/users/:userId/profile` endpoint and update the `profileUser` state. Display `profileUser.display_name` in the `<h1>` tag.
         *   **Test:** Navigate to the Journal page. Confirm the correct user's display name appears at the top of the page. Check console for any errors.
 
-    4.  **Fetch and display sessions using `SessionsList` in `JournalPage.jsx`.**
+    4.  **Fetch and display sessions using `SessionsList` in `JournalPage.jsx`. ✅**
         *   **Action:** In `JournalPage.jsx`, implement the `useEffect` to call the `/users/:userId/sessions` endpoint and update the `sessions` state. Integrate the `SessionsList` component, passing `sessions`, `loading`, and `error` props.
         *   **Test:** Navigate to the Journal page. Confirm sessions load and display correctly. Verify loading and error states are handled.
+
+    5.  **Implement Journal Page Tabs (Log / My Stats).**
+        *   **Action:** Integrate `PageTabs.jsx` into `JournalPage.jsx`. Define "Log" and "My Stats" tabs, dynamically linking paths to the `userId`. Implement conditional rendering based on URL `tab` query parameter.
+        *   **Test:** Navigate to the Journal page. Verify tabs are visible and clickable. Confirm switching tabs changes content (Log shows sessions, My Stats shows placeholder).
 
 ---
 
