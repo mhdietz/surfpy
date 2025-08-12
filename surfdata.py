@@ -4,7 +4,7 @@ from flask_caching import Cache
 from datetime import datetime, timezone, timedelta
 import surfpy
 import database_utils
-from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location, get_all_regions
+from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location, get_all_regions, get_user_profile_by_id
 import json
 from json_utils import CustomJSONEncoder
 import math
@@ -689,6 +689,29 @@ def search_users(user_id):
             
     except Exception as e:
         print(f"Error in user search: {str(e)}")
+        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/api/users/<string:user_id>/profile', methods=['GET'])
+@token_required
+def get_user_profile(current_user_id, user_id):
+    """
+    Get a user's public profile information by user ID.
+    """
+    try:
+        # Allow 'me' as an alias for the current user
+        if user_id == 'me':
+            user_id = current_user_id
+
+        user_profile = database_utils.get_user_profile_by_id(user_id)
+        
+        if not user_profile:
+            return jsonify({"status": "fail", "message": "User not found"}), 404
+            
+        return jsonify({"status": "success", "data": user_profile}), 200
+    except Exception as e:
+        print(f"Error retrieving user profile: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
 
 @app.route('/api/users/<string:profile_user_id>/sessions', methods=['GET'])

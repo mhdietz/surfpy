@@ -353,6 +353,34 @@ def get_user_by_email(email):
     finally:
         conn.close()
 
+def get_user_profile_by_id(user_id):
+    """Get user profile details by user ID, including display name."""
+    conn = get_db_connection()
+    if not conn:
+        return None
+    
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT 
+                    id, 
+                    email,
+                    COALESCE(
+                        raw_user_meta_data->>'display_name',
+                        NULLIF(TRIM(COALESCE(raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(raw_user_meta_data->>'last_name', '')), ''),
+                        split_part(email, '@', 1)
+                    ) as display_name
+                FROM auth.users 
+                WHERE id = %s
+            """, (user_id,))
+            user_profile = cur.fetchone()
+            return user_profile
+    except Exception as e:
+        print(f"Error retrieving user profile: {e}")
+        return None
+    finally:
+        conn.close()
+
 def verify_user_session(access_token):
     """Verify a user's JWT token and return user_id if valid"""
     conn = get_db_connection()
