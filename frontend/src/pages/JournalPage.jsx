@@ -1,11 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useSearchParams } from 'react-router-dom';
 import { apiCall } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/UI/Spinner';
 import SessionsList from '../components/SessionsList';
 import PageTabs from '../components/PageTabs';
 import JournalFilter from '../components/JournalFilter';
+
+// Helper function to parse URL search params into filter state
+const parseSearchParams = (params) => {
+  const newFilters = {};
+  const filterKeys = [
+    'min_swell_height', 'max_swell_height',
+    'min_swell_period', 'max_swell_period',
+    'swell_direction', 'region'
+  ];
+  filterKeys.forEach(key => {
+    newFilters[key] = params.get(key) || '';
+  });
+  return newFilters;
+};
 
 function JournalPage() {
   const { userId } = useParams();
@@ -16,24 +30,26 @@ function JournalPage() {
   const [error, setError] = useState(null);
 
   const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const currentTab = queryParams.get('tab') || 'log'; // Default to 'log'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab') || 'log'; // Default to 'log'
 
-  const [filters, setFilters] = useState({
-    min_swell_height: '',
-    max_swell_height: '',
-    min_swell_period: '',
-    max_swell_period: '',
-    swell_direction: '',
-    region: '',
-  });
+  // Initialize filters from URL search params
+  const [filters, setFilters] = useState(() => parseSearchParams(searchParams));
+
+  // Effect to update filters state when searchParams change (e.g., browser back/forward)
+  useEffect(() => {
+    setFilters(parseSearchParams(searchParams));
+  }, [searchParams]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters((prevFilters) => ({
-      ...prevFilters,
-      [name]: value,
-    }));
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (value) {
+      newSearchParams.set(name, value);
+    } else {
+      newSearchParams.delete(name);
+    }
+    setSearchParams(newSearchParams);
   };
 
   useEffect(() => {
