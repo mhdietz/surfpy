@@ -59,7 +59,8 @@ function JournalPage() {
 
         // Fetch sessions data (only if on the 'log' tab)
         if (currentTab === 'log') {
-          const sessionsResponse = await apiCall(`/api/users/${effectiveUserId}/sessions`);
+          const queryString = new URLSearchParams(filters).toString();
+          const sessionsResponse = await apiCall(`/api/users/${effectiveUserId}/sessions?${queryString}`);
           setSessions(sessionsResponse.data);
         }
 
@@ -72,7 +73,7 @@ function JournalPage() {
     };
 
     fetchData();
-  }, [userId, currentUser, currentTab]); // Add currentTab to dependencies
+  }, [userId, currentUser, currentTab, filters]); // Add filters to dependencies
 
   if (loading && !profileUser) {
     return <Spinner />;
