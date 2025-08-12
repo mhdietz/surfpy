@@ -1,10 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useSearchParams } from 'react-router-dom';
 import { apiCall } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/UI/Spinner';
 import SessionsList from '../components/SessionsList';
 import PageTabs from '../components/PageTabs';
+import JournalFilter from '../components/JournalFilter';
+
+// Helper function to parse URL search params into filter state
+const parseSearchParams = (params) => {
+  const newFilters = {};
+  const filterKeys = [
+    'min_swell_height', 'max_swell_height',
+    'min_swell_period', 'max_swell_period',
+    'swell_direction', 'region'
+  ];
+  filterKeys.forEach(key => {
+    newFilters[key] = params.get(key) || '';
+  });
+  return newFilters;
+};
 
 function JournalPage() {
   const { userId } = useParams();
@@ -15,8 +30,27 @@ function JournalPage() {
   const [error, setError] = useState(null);
 
   const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const currentTab = queryParams.get('tab') || 'log'; // Default to 'log'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab') || 'log'; // Default to 'log'
+
+  // Initialize filters from URL search params
+  const [filters, setFilters] = useState(() => parseSearchParams(searchParams));
+
+  // Effect to update filters state when searchParams change (e.g., browser back/forward)
+  useEffect(() => {
+    setFilters(parseSearchParams(searchParams));
+  }, [searchParams]);
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (value) {
+      newSearchParams.set(name, value);
+    } else {
+      newSearchParams.delete(name);
+    }
+    setSearchParams(newSearchParams);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,7 +75,8 @@ function JournalPage() {
 
         // Fetch sessions data (only if on the 'log' tab)
         if (currentTab === 'log') {
-          const sessionsResponse = await apiCall(`/api/users/${effectiveUserId}/sessions`);
+          const queryString = new URLSearchParams(filters).toString();
+          const sessionsResponse = await apiCall(`/api/users/${effectiveUserId}/sessions?${queryString}`);
           setSessions(sessionsResponse.data);
         }
 
@@ -54,7 +89,7 @@ function JournalPage() {
     };
 
     fetchData();
-  }, [userId, currentUser, currentTab]); // Add currentTab to dependencies
+  }, [userId, currentUser, currentTab, filters]); // Add filters to dependencies
 
   if (loading && !profileUser) {
     return <Spinner />;
@@ -80,25 +115,28 @@ function JournalPage() {
   ];
 
   return (
-    <div className="container mx-auto p-4 pt-16">
-      <h1 className="text-2xl font-bold mb-4">
-        {profileUser ? `${profileUser.display_name}'s Journal` : 'Journal'}
-      </h1>
-      
-      <PageTabs tabs={journalTabs} />
+    <div className="bg-gray-100 min-h-screen py-8">
+      <main className="max-w-2xl mx-auto px-4 pt-16">
+        <h1 className="text-2xl font-bold mb-6">
+          {profileUser ? `${profileUser.display_name}'s Journal` : 'Journal'}
+        </h1>
+        
+        <PageTabs tabs={journalTabs} />
 
-      {currentTab === 'log' && (
-        <div>
-          <SessionsList sessions={sessions} loading={loading} error={error} />
-        </div>
-      )}
+        {currentTab === 'log' && (
+          <div className="w-full bg-white p-6 rounded-lg shadow-md">
+            <JournalFilter filters={filters} onFilterChange={handleFilterChange} />
+            <SessionsList sessions={sessions} loading={loading} error={error} />
+          </div>
+        )}
 
-      {currentTab === 'stats' && (
-        <div className="text-center p-4">
-          <p>This is the stats section for {profileUser ? profileUser.display_name : 'this user'}.</p>
-          {/* Stats component will go here eventually */}
-        </div>
-      )}
+        {currentTab === 'stats' && (
+          <div className="w-full bg-white p-6 rounded-lg shadow-md text-center">
+            <p>This is the stats section for {profileUser ? profileUser.display_name : 'this user'}.</p>
+            {/* Stats component will go here eventually */}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

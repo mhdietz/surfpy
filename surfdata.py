@@ -370,8 +370,12 @@ def get_surf_sessions(user_id):
             'swell_direction': request.args.get('swell_direction'),
             'region': request.args.get('region')
         }
-        # Remove None values
-        filters = {k: v for k, v in filters.items() if v is not None}
+        # Remove None values AND empty string values
+        cleaned_filters = {}
+        for k, v in filters.items():
+            if v is not None and v != '': # Add check for empty string
+                cleaned_filters[k] = v
+        filters = cleaned_filters # Use the cleaned filters
 
         sessions = get_all_sessions(user_id, filters)
             
@@ -737,8 +741,12 @@ def get_user_journal_sessions(viewer_user_id, profile_user_id):
             'swell_direction': request.args.get('swell_direction'),
             'region': request.args.get('region')
         }
-        # Remove None values
-        filters = {k: v for k, v in filters.items() if v is not None}
+        # Remove None values AND empty string values
+        cleaned_filters = {}
+        for k, v in filters.items():
+            if v is not None and v != '': # Add check for empty string
+                cleaned_filters[k] = v
+        filters = cleaned_filters # Use the cleaned filters
 
         sessions = get_user_sessions(profile_user_id, viewer_user_id, filters)
             
