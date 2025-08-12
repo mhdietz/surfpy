@@ -20,11 +20,11 @@ function JournalPage() {
   const currentTab = queryParams.get('tab') || 'log'; // Default to 'log'
 
   const [filters, setFilters] = useState({
-    minSwellHeight: '',
-    maxSwellHeight: '',
-    minSwellPeriod: '',
-    maxSwellPeriod: '',
-    swellDirection: '',
+    min_swell_height: '',
+    max_swell_height: '',
+    min_swell_period: '',
+    max_swell_period: '',
+    swell_direction: '',
     region: '',
   });
 
