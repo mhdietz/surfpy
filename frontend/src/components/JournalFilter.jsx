@@ -72,20 +72,20 @@ const JournalFilter = ({ filters, onFilterChange }) => {
             <div className="mt-1 flex space-x-2">
               <input
                 type="number"
-                id="minSwellHeight"
-                name="minSwellHeight"
+                id="min_swell_height"
+                name="min_swell_height"
                 className="block w-1/2 pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                 placeholder="Min"
-                value={filters.minSwellHeight}
+                value={filters.min_swell_height}
                 onChange={onFilterChange}
               />
               <input
                 type="number"
-                id="maxSwellHeight"
-                name="maxSwellHeight"
+                id="max_swell_height"
+                name="max_swell_height"
                 className="block w-1/2 pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                 placeholder="Max"
-                value={filters.maxSwellHeight}
+                value={filters.max_swell_height}
                 onChange={onFilterChange}
               />
             </div>
@@ -97,20 +97,20 @@ const JournalFilter = ({ filters, onFilterChange }) => {
             <div className="mt-1 flex space-x-2">
               <input
                 type="number"
-                id="minSwellPeriod"
-                name="minSwellPeriod"
+                id="min_swell_period"
+                name="min_swell_period"
                 className="block w-1/2 pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                 placeholder="Min"
-                value={filters.minSwellPeriod}
+                value={filters.min_swell_period}
                 onChange={onFilterChange}
               />
               <input
                 type="number"
-                id="maxSwellPeriod"
-                name="maxSwellPeriod"
+                id="max_swell_period"
+                name="max_swell_period"
                 className="block w-1/2 pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                 placeholder="Max"
-                value={filters.maxSwellPeriod}
+                value={filters.max_swell_period}
                 onChange={onFilterChange}
               />
             </div>
@@ -118,12 +118,12 @@ const JournalFilter = ({ filters, onFilterChange }) => {
 
           {/* Swell Direction Filter */}
           <div>
-            <label htmlFor="swellDirection" className="block text-sm font-medium text-gray-700">Swell Direction</label>
+            <label htmlFor="swell_direction" className="block text-sm font-medium text-gray-700">Swell Direction</label>
             <select
-              id="swellDirection"
-              name="swellDirection"
+              id="swell_direction"
+              name="swell_direction"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-              value={filters.swellDirection}
+              value={filters.swell_direction}
               onChange={onFilterChange}
             >
               <option value="">All Directions</option>
