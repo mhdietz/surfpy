@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/UI/Spinner';
 import SessionsList from '../components/SessionsList';
 import PageTabs from '../components/PageTabs';
+import JournalFilter from '../components/JournalFilter';
 
 function JournalPage() {
   const { userId } = useParams();
@@ -80,25 +81,28 @@ function JournalPage() {
   ];
 
   return (
-    <div className="container mx-auto p-4 pt-16">
-      <h1 className="text-2xl font-bold mb-4">
-        {profileUser ? `${profileUser.display_name}'s Journal` : 'Journal'}
-      </h1>
-      
-      <PageTabs tabs={journalTabs} />
+    <div className="bg-gray-100 min-h-screen py-8">
+      <main className="max-w-2xl mx-auto space-y-6 px-4 pt-16">
+        <h1 className="text-2xl font-bold mb-4">
+          {profileUser ? `${profileUser.display_name}'s Journal` : 'Journal'}
+        </h1>
+        
+        <PageTabs tabs={journalTabs} />
 
-      {currentTab === 'log' && (
-        <div>
-          <SessionsList sessions={sessions} loading={loading} error={error} />
-        </div>
-      )}
+        {currentTab === 'log' && (
+          <div className="w-full bg-white p-6 rounded-lg shadow-md">
+            <JournalFilter />
+            <SessionsList sessions={sessions} loading={loading} error={error} />
+          </div>
+        )}
 
-      {currentTab === 'stats' && (
-        <div className="text-center p-4">
-          <p>This is the stats section for {profileUser ? profileUser.display_name : 'this user'}.</p>
-          {/* Stats component will go here eventually */}
-        </div>
-      )}
+        {currentTab === 'stats' && (
+          <div className="w-full bg-white p-6 rounded-lg shadow-md text-center">
+            <p>This is the stats section for {profileUser ? profileUser.display_name : 'this user'}.</p>
+            {/* Stats component will go here eventually */}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

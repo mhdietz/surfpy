@@ -67,9 +67,9 @@ This revised plan breaks down the Journal Page implementation into smaller, test
 *   **Goal:** Implement the minimalist filter toggle and its controls.
 *   **Piecemeal Steps:**
 
-    1.  **Create `JournalFilter.jsx` with toggle mechanism and static filter options.**
-        *   **Action:** Create `frontend/src/components/JournalFilter.jsx` with the toggle logic and static dropdowns/inputs for region, swell height, period, and direction.
-        *   **Test:** Verify the component renders correctly. Click the toggle button and confirm it expands/collapses.
+    1.  **Create `JournalFilter.jsx` with toggle mechanism and a dummy filter UI placeholder.**
+        *   **Action:** Create `frontend/src/components/JournalFilter.jsx` with the toggle logic and a visually representative, but non-functional, placeholder for filter options (e.g., empty dropdowns, input fields). Focus on layout and styling.
+        *   **Test:** Verify the component renders correctly within `JournalPage.jsx`. Click the toggle button and confirm it expands/collapses, revealing the placeholder UI.
 
     2.  **Integrate `JournalFilter.jsx` into `JournalPage.jsx`.**
         *   **Action:** Import and render `JournalFilter.jsx` in `JournalPage.jsx`.
