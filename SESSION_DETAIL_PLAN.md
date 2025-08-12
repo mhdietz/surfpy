@@ -13,41 +13,33 @@ This document outlines the phased approach for implementing the Session Detail V
 
 **Objective:** To integrate the component with the backend API and display the fundamental session details.
 
-*   **Task 2.1:** Modify `SessionDetail.jsx` to fetch session data from the `/api/surf-sessions/:id` endpoint using `apiCall`.
-*   **Task 2.2:** Implement loading and error states (e.g., a spinner for loading, a message for errors or session not found).
-*   **Task 2.3:** Display the following core session information:
-    *   `session_name`
-    *   `location`
-    *   `fun_rating`
-    *   `session_started_at` (formatted)
-    *   `session_ended_at` (formatted)
-    *   `display_name` (creator)
-    *   `participants` (list of names)
-    *   `shakas` (count and preview of users)
+*   **Task 2.1 (Mockup): Mockup Display with Static Data:** Before connecting to the API, update `SessionDetail.jsx` to render a complete but static view using hardcoded mock data. This allows for rapid UI development and styling of the basic session info display.
+*   **Task 2.2 (API Call & Verification):** In `SessionDetail.jsx`, create an `async` function to call the `/api/surf-sessions/:id` endpoint. For now, call this function inside a `useEffect` and simply `console.log()` the response to verify the connection.
+*   **Task 2.3 (State Management Setup):** Introduce state variables for `session`, `isLoading`, and `error` using `useState`.
+*   **Task 2.4 (Connecting API to State):** Modify the `useEffect` hook to set the component's state based on the API call's outcome.
+*   **Task 2.5 (Conditional Rendering Logic):** Update the JSX to conditionally render a spinner, an error message, or the session view based on the component's state.
+*   **Task 2.6 (Connecting Live Data to UI):** Replace the hardcoded mock data with the live data from the `session` state object.
 
 ## Phase 3: Swell Data Display
 
 **Objective:** To display all relevant swell parameters from the fetched data.
 
-*   **Task 3.1:** Add a dedicated section within `SessionDetail.jsx` to render swell data.
-*   **Task 3.2:** Parse the `raw_swell[0].swell_components` object and display the `direction`, `height`, and `period` for each swell component (e.g., `swell_1`, `swell_2`, etc.).
+*   **Task 3.1 (Mockup):** Create a dedicated `SwellDisplay` component. Use hardcoded mock `raw_swell` data to build the UI that loops through and displays each swell component's height, period, and direction.
+*   **Task 3.2 (Integration):** Pass the actual `raw_swell` array from the fetched session data into the `SwellDisplay` component.
 
 ## Phase 4: Wind Data Display (Conditional Rendering)
 
 **Objective:** To display meteorological data, adapting to whether it comes from a weather station or a NOAA buoy.
 
-*   **Task 4.1:** Add a dedicated section within `SessionDetail.jsx` to render wind data.
-*   **Task 4.2:** Implement conditional rendering logic:
-    *   If `raw_met[0]` contains additional parameters like `air_temperature`, `dewpoint_temperature`, `pressure`, `pressure_tendency`, `water_temperature`, or `wind_gust` (indicating NOAA buoy data), display all these parameters along with `wind_speed` and `wind_direction`.
-    *   Otherwise (indicating weather station data, typically only `wind_speed` and `wind_direction` are present), display only `wind_speed` and `wind_direction`.
+*   **Task 4.1 (Mockup):** Create a `WindDisplay` component. This component will contain the conditional logic to render different fields based on the data it receives. Test its logic by passing it both shapes of mock `raw_met` data (the simple weather station version and the detailed NOAA buoy version).
+*   **Task 4.2 (Integration):** Pass the actual `raw_met` data from the fetched session into the `WindDisplay` component.
 
 ## Phase 5: Tide Data Display (with Timezone Conversion)
 
 **Objective:** To display tide information, ensuring correct timezone conversion for future events.
 
-*   **Task 5.1:** Add a dedicated section within `SessionDetail.jsx` to render tide data.
-*   **Task 5.2:** Display `water_level`, `direction`, `next_event_type`, and `next_event_height`.
-*   **Task 5.3:** Convert the `next_event_at` UTC timestamp to the user's local timezone before displaying it.
+*   **Task 5.1 (Mockup):** Create a `TideDisplay` component. Use hardcoded mock `tide` data to build the UI, including the logic to format the `next_event_at` timestamp.
+*   **Task 5.2 (Integration):** Pass the actual `tide` object from the fetched session into the `TideDisplay` component.
 
 ## Phase 6: Notes and Additional Information Display
 
