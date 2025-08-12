@@ -18,11 +18,6 @@ function JournalPage() {
   const queryParams = new URLSearchParams(location.search);
   const currentTab = queryParams.get('tab') || 'log'; // Default to 'log'
 
-  const journalTabs = [
-    { label: 'Log', path: `/journal/${userId}?tab=log` },
-    { label: 'My Stats', path: `/journal/${userId}?tab=stats` },
-  ];
-
   useEffect(() => {
     const fetchData = async () => {
       // If we're on the 'me' page, wait for the currentUser object to be loaded.
@@ -68,6 +63,21 @@ function JournalPage() {
   if (error) {
     return <div className="text-red-500 text-center p-4">Error: {error}</div>;
   }
+
+  // Determine the prefix for tab labels dynamically
+  let journalOwnerPrefix = 'Journal'; // Default fallback
+  if (profileUser) {
+    if (userId === 'me' || (currentUser && profileUser.id === currentUser.id)) {
+      journalOwnerPrefix = 'My';
+    } else {
+      journalOwnerPrefix = `${profileUser.display_name}'s`;
+    }
+  }
+
+  const journalTabs = [
+    { label: `${journalOwnerPrefix} Log`, path: `/journal/${userId}?tab=log` },
+    { label: `${journalOwnerPrefix} Stats`, path: `/journal/${userId}?tab=stats` },
+  ];
 
   return (
     <div className="container mx-auto p-4 pt-16">
