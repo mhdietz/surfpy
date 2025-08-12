@@ -82,7 +82,7 @@ function JournalPage() {
 
   return (
     <div className="bg-gray-100 min-h-screen py-8">
-      <main className="max-w-2xl mx-auto px-4">
+      <main className="max-w-2xl mx-auto px-4 pt-16">
         <h1 className="text-2xl font-bold mb-6">
           {profileUser ? `${profileUser.display_name}'s Journal` : 'Journal'}
         </h1>
@@ -90,14 +90,14 @@ function JournalPage() {
         <PageTabs tabs={journalTabs} />
 
         {currentTab === 'log' && (
-          <div className="w-full bg-white p-6 rounded-lg shadow-md mt-6">
+          <div className="w-full bg-white p-6 rounded-lg shadow-md">
             <JournalFilter />
             <SessionsList sessions={sessions} loading={loading} error={error} />
           </div>
         )}
 
         {currentTab === 'stats' && (
-          <div className="w-full bg-white p-6 rounded-lg shadow-md text-center mt-6">
+          <div className="w-full bg-white p-6 rounded-lg shadow-md text-center">
             <p>This is the stats section for {profileUser ? profileUser.display_name : 'this user'}.</p>
             {/* Stats component will go here eventually */}
           </div>
