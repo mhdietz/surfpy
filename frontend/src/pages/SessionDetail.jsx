@@ -7,6 +7,8 @@ import { format } from 'date-fns';
 import { apiCall } from '../services/api';
 
 import SwellDisplay from '../components/SwellDisplay';
+import WindDisplay from '../components/WindDisplay';
+import TideDisplay from '../components/TideDisplay';
 
 const SessionDetail = () => {
   const { id } = useParams();
@@ -99,6 +101,19 @@ const SessionDetail = () => {
           {/* Swell Display Component */}
           {session.raw_swell && <SwellDisplay swellData={session.raw_swell} />}
 
+          {/* Wind Display Component */}
+          {session.raw_met && <WindDisplay windData={session.raw_met} />}
+
+          {/* Tide Display Component */}
+          {session.tide && <TideDisplay tideData={session.tide} />}
+
+          {session.session_notes && (
+            <div className="mt-4 mb-4">
+              <h2 className="text-xl font-bold mb-2">Notes</h2>
+              <p className="text-gray-300 bg-gray-800 p-3 rounded-lg">{session.session_notes}</p>
+            </div>
+          )}
+
           <div className="flex justify-between items-center mb-6">
             <div>
               <span className="text-2xl font-bold text-yellow-400">{session.fun_rating}</span>
@@ -120,13 +135,6 @@ const SessionDetail = () => {
               ))}
             </div>
           </div>
-          
-          {session.session_notes && (
-            <div>
-              <h2 className="text-xl font-bold mb-2">Notes</h2>
-              <p className="text-gray-300 bg-gray-800 p-3 rounded-lg">{session.session_notes}</p>
-            </div>
-          )}
 
           </div>
       </Card>
