@@ -49,7 +49,7 @@ This revised plan breaks down the Journal Page implementation into smaller, test
         *   **Action:** Modify `frontend/src/App.jsx` to include the route for `/journal/:userId` and the redirect from `/journal` to `/journal/me`.
         *   **Test:** Navigate to `http://localhost:5173/journal` (should redirect to `/journal/me`). Navigate to `http://localhost:5173/journal/some-valid-user-id`. Confirm correct routing.
 
-    3.  **Fetch and display user's `display_name` in `JournalPage.jsx`.**
+    3.  **Fetch and display user's `display_name` in `JournalPage.jsx`. ✅**
         *   **Action:** In `JournalPage.jsx`, implement the `useEffect` to call the `/users/:userId/profile` endpoint and update the `profileUser` state. Display `profileUser.display_name` in the `<h1>` tag.
         *   **Test:** Navigate to the Journal page. Confirm the correct user's display name appears at the top of the page. Check console for any errors.
 

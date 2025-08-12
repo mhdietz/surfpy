@@ -856,6 +856,10 @@ def get_session_summary_list(viewer_id, profile_user_id_filter=None, filters={})
 
             query += " ORDER BY s.created_at DESC"
 
+            print(f"DEBUG: get_session_summary_list - profile_user_id_filter: {profile_user_id_filter}, viewer_id: {viewer_id}")
+            print(f"DEBUG: get_session_summary_list - SQL Query: {query}")
+            print(f"DEBUG: get_session_summary_list - Query Params: {params}")
+
             cur.execute(query, tuple(params))
             sessions = cur.fetchall()
 

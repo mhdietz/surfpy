@@ -726,6 +726,8 @@ def get_user_journal_sessions(viewer_user_id, profile_user_id):
         if profile_user_id == 'me':
             profile_user_id = viewer_user_id
 
+        print(f"DEBUG: get_user_journal_sessions - viewer_user_id: {viewer_user_id}, profile_user_id: {profile_user_id}")
+
         # Extract filter parameters from the request
         filters = {
             'min_swell_height': request.args.get('min_swell_height', type=float),

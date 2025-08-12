@@ -1,32 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { apiCall } from '../services/api';
-import Spinner from './UI/Spinner'; // Import Spinner
-import SessionTile from './SessionTile'; // Import SessionTile
+import React from 'react';
+import Spinner from './UI/Spinner';
+import SessionTile from './SessionTile';
 
-const SessionsList = () => {
-  const [sessions, setSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchSessions = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await apiCall('/api/surf-sessions');
-        console.log('Fetched sessions:', response.data);
-        setSessions(response.data);
-      } catch (err) {
-        console.error('Error fetching sessions:', err);
-        setError(err.message || 'Failed to fetch sessions');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSessions();
-  }, []);
-
+const SessionsList = ({ sessions, loading, error }) => {
   return (
     <div className="space-y-6">
       {loading && (
