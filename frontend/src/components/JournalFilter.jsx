@@ -1,11 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { apiCall } from '../services/api';
 
 const JournalFilter = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [regions, setRegions] = useState([]);
+  const [loadingRegions, setLoadingRegions] = useState(true);
+  const [errorRegions, setErrorRegions] = useState(null);
 
   const toggleFilter = () => {
     setIsOpen(!isOpen);
   };
+
+  useEffect(() => {
+    const fetchRegions = async () => {
+      try {
+        setLoadingRegions(true);
+        const response = await apiCall('/api/regions');
+        setRegions(response.data);
+      } catch (err) {
+        console.error('Error fetching regions:', err);
+        setErrorRegions('Failed to fetch regions.');
+      } finally {
+        setLoadingRegions(false);
+      }
+    };
+    fetchRegions();
+  }, []);
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md mb-6">
@@ -29,15 +49,18 @@ const JournalFilter = () => {
         <div className="mt-4 space-y-4">
           {/* Region Filter */}
           <div>
-            <label htmlFor="dummyRegion" className="block text-sm font-medium text-gray-700">Region (Dummy)</label>
+            <label htmlFor="region" className="block text-sm font-medium text-gray-700">Region</label>
             <select
-              id="dummyRegion"
-              name="dummyRegion"
+              id="region"
+              name="region"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
             >
               <option value="">All Regions</option>
-              <option value="dummy1">Dummy Region 1</option>
-              <option value="dummy2">Dummy Region 2</option>
+              {loadingRegions && <option>Loading regions...</option>}
+              {errorRegions && <option>Error loading regions</option>}
+              {!loadingRegions && !errorRegions && regions.map((region) => (
+                <option key={region} value={region}>{region}</option>
+              ))}
             </select>
           </div>
 
