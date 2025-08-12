@@ -1,40 +1,59 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Card from '../components/UI/Card';
+import Spinner from '../components/UI/Spinner';
 import { format } from 'date-fns';
+import { apiCall } from '../services/api';
 
-// Mock data based on the more detailed "Rockaways" example
-const mockSession = {
-  "id": 3669,
-  "session_name": "Making a session with this new thang",
-  "location": "Rockaways",
-  "fun_rating": "3",
-  "session_started_at": "2025-08-11T22:10:00+00:00",
-  "session_ended_at": "2025-08-12T00:10:00+00:00",
-  "display_name": "Stefano Scotti",
-  "participants": [
-    { "display_name": "Stefano Scotti", "user_id": "5e6e32b1-3059-4ac4-b819-02f175c32ed3" },
-    { "display_name": "Martin Dietz", "user_id": "81cdb75c-559b-413e-8672-8856ca435373" }
-  ],
-  "shakas": {
-    "count": 5,
-    "preview": [
-        { "display_name": "Martin Dietz" },
-        { "display_name": "John Doe" }
-    ],
-    "viewer_has_shakaed": true
-  },
-  "session_notes": "Extra tasty"
-};
+import SwellDisplay from '../components/SwellDisplay';
 
 const SessionDetail = () => {
   const { id } = useParams();
   const { isAuthenticated } = useAuth();
 
-  // For now, we'll just use the mock data.
-  // In later steps, we'll introduce loading and error states.
-  const session = mockSession;
+  // State management
+  const [session, setSession] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      setIsLoading(true);
+      try {
+        const response = await apiCall(`/api/surf-sessions/${id}`);
+        if (response.status === 'success') {
+          setSession(response.data);
+          setError(null);
+        } else {
+          throw new Error(response.message || 'Failed to fetch session data.');
+        }
+      } catch (err) {
+        setError(err);
+        setSession(null);
+        console.error("Failed to fetch session:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isAuthenticated && id) {
+      fetchSession();
+    } else {
+      setIsLoading(false);
+    }
+  }, [id, isAuthenticated]);
+
+  // Helper to format date and time
+  const formatSessionTime = (start, end) => {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    // Format: Mon, Aug 11, 2025, 10:10 PM - 12:10 AM
+    const datePart = format(startDate, "EEE, MMM d, yyyy");
+    const startTimePart = format(startDate, "h:mm a");
+    const endTimePart = format(endDate, "h:mm a");
+    return `${datePart}, ${startTimePart} - ${endTimePart}`;
+  };
 
   if (!isAuthenticated) {
     return (
@@ -44,29 +63,41 @@ const SessionDetail = () => {
     );
   }
 
-  // Helper to format date and time
-  const formatDateTime = (dateString) => {
-    const date = new Date(dateString);
-    return format(date, "EEE, MMM d, yyyy 'at' h:mm a");
-  };
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center p-4 text-red-500">
+        <p>Error loading session:</p>
+        <p>{error.message}</p>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="text-center p-4 text-gray-400">
+        Session not found.
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-4">
       <Card>
         <div className="p-4">
           <h1 className="text-3xl font-bold mb-2">{session.session_name}</h1>
-          <p className="text-lg text-gray-400 mb-4">{session.location}</p>
+          <p className="text-lg text-gray-400 mb-2">{session.location}</p>
+          <p className="text-md text-gray-300 mb-4">{formatSessionTime(session.session_started_at, session.session_ended_at)}</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-center">
-            <div className="bg-gray-800 p-3 rounded-lg">
-              <p className="text-sm text-gray-400">Started</p>
-              <p className="font-semibold">{formatDateTime(session.session_started_at)}</p>
-            </div>
-            <div className="bg-gray-800 p-3 rounded-lg">
-              <p className="text-sm text-gray-400">Ended</p>
-              <p className="font-semibold">{formatDateTime(session.session_ended_at)}</p>
-            </div>
-          </div>
+          {/* Swell Display Component */}
+          {session.raw_swell && <SwellDisplay swellData={session.raw_swell} />}
 
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -97,7 +128,7 @@ const SessionDetail = () => {
             </div>
           )}
 
-        </div>
+          </div>
       </Card>
     </div>
   );
