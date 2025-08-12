@@ -19,6 +19,23 @@ function JournalPage() {
   const queryParams = new URLSearchParams(location.search);
   const currentTab = queryParams.get('tab') || 'log'; // Default to 'log'
 
+  const [filters, setFilters] = useState({
+    minSwellHeight: '',
+    maxSwellHeight: '',
+    minSwellPeriod: '',
+    maxSwellPeriod: '',
+    swellDirection: '',
+    region: '',
+  });
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      [name]: value,
+    }));
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       // If we're on the 'me' page, wait for the currentUser object to be loaded.
@@ -91,7 +108,7 @@ function JournalPage() {
 
         {currentTab === 'log' && (
           <div className="w-full bg-white p-6 rounded-lg shadow-md">
-            <JournalFilter />
+            <JournalFilter filters={filters} onFilterChange={handleFilterChange} />
             <SessionsList sessions={sessions} loading={loading} error={error} />
           </div>
         )}

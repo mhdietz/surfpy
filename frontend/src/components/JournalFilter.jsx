@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiCall } from '../services/api';
 
-const JournalFilter = () => {
+const JournalFilter = ({ filters, onFilterChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [regions, setRegions] = useState([]);
   const [loadingRegions, setLoadingRegions] = useState(true);
@@ -54,6 +54,8 @@ const JournalFilter = () => {
               id="region"
               name="region"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={filters.region}
+              onChange={onFilterChange}
             >
               <option value="">All Regions</option>
               {loadingRegions && <option>Loading regions...</option>}
@@ -74,6 +76,8 @@ const JournalFilter = () => {
                 name="minSwellHeight"
                 className="block w-1/2 pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                 placeholder="Min"
+                value={filters.minSwellHeight}
+                onChange={onFilterChange}
               />
               <input
                 type="number"
@@ -81,6 +85,8 @@ const JournalFilter = () => {
                 name="maxSwellHeight"
                 className="block w-1/2 pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                 placeholder="Max"
+                value={filters.maxSwellHeight}
+                onChange={onFilterChange}
               />
             </div>
           </div>
@@ -95,6 +101,8 @@ const JournalFilter = () => {
                 name="minSwellPeriod"
                 className="block w-1/2 pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                 placeholder="Min"
+                value={filters.minSwellPeriod}
+                onChange={onFilterChange}
               />
               <input
                 type="number"
@@ -102,6 +110,8 @@ const JournalFilter = () => {
                 name="maxSwellPeriod"
                 className="block w-1/2 pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                 placeholder="Max"
+                value={filters.maxSwellPeriod}
+                onChange={onFilterChange}
               />
             </div>
           </div>
@@ -113,6 +123,8 @@ const JournalFilter = () => {
               id="swellDirection"
               name="swellDirection"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={filters.swellDirection}
+              onChange={onFilterChange}
             >
               <option value="">All Directions</option>
               <option value="N">N</option>
