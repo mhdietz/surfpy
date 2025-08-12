@@ -27,7 +27,7 @@ const JournalFilter = () => {
 
       {isOpen && (
         <div className="mt-4 space-y-4">
-          {/* Dummy Filter Options */}
+          {/* Region Filter */}
           <div>
             <label htmlFor="dummyRegion" className="block text-sm font-medium text-gray-700">Region (Dummy)</label>
             <select
@@ -41,33 +41,54 @@ const JournalFilter = () => {
             </select>
           </div>
 
+          {/* Swell Height Filter (Range) */}
           <div>
-            <label htmlFor="dummySwellHeight" className="block text-sm font-medium text-gray-700">Min Swell Height (Dummy)</label>
-            <input
-              type="number"
-              id="dummySwellHeight"
-              name="dummySwellHeight"
-              className="mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-              placeholder="e.g., 3"
-            />
+            <label className="block text-sm font-medium text-gray-700">Swell Height (ft)</label>
+            <div className="mt-1 flex space-x-2">
+              <input
+                type="number"
+                id="minSwellHeight"
+                name="minSwellHeight"
+                className="block w-1/2 pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                placeholder="Min"
+              />
+              <input
+                type="number"
+                id="maxSwellHeight"
+                name="maxSwellHeight"
+                className="block w-1/2 pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                placeholder="Max"
+              />
+            </div>
           </div>
 
+          {/* Swell Period Filter (Range) */}
           <div>
-            <label htmlFor="dummySwellPeriod" className="block text-sm font-medium text-gray-700">Min Swell Period (Dummy)</label>
-            <input
-              type="number"
-              id="dummySwellPeriod"
-              name="dummySwellPeriod"
-              className="mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-              placeholder="e.g., 8"
-            />
+            <label className="block text-sm font-medium text-gray-700">Swell Period (s)</label>
+            <div className="mt-1 flex space-x-2">
+              <input
+                type="number"
+                id="minSwellPeriod"
+                name="minSwellPeriod"
+                className="block w-1/2 pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                placeholder="Min"
+              />
+              <input
+                type="number"
+                id="maxSwellPeriod"
+                name="maxSwellPeriod"
+                className="block w-1/2 pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                placeholder="Max"
+              />
+            </div>
           </div>
 
+          {/* Swell Direction Filter */}
           <div>
-            <label htmlFor="dummySwellDirection" className="block text-sm font-medium text-gray-700">Swell Direction (Dummy)</label>
+            <label htmlFor="swellDirection" className="block text-sm font-medium text-gray-700">Swell Direction</label>
             <select
-              id="dummySwellDirection"
-              name="dummySwellDirection"
+              id="swellDirection"
+              name="swellDirection"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
             >
               <option value="">All Directions</option>
@@ -75,6 +96,10 @@ const JournalFilter = () => {
               <option value="NE">NE</option>
               <option value="E">E</option>
               <option value="SE">SE</option>
+              <option value="S">S</option>
+              <option value="SW">SW</option>
+              <option value="W">W</option>
+              <option value="NW">NW</option>
             </select>
           </div>
         </div>
@@ -84,3 +109,4 @@ const JournalFilter = () => {
 };
 
 export default JournalFilter;
+
