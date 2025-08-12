@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate
-} from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthPage from './pages/Auth.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -47,8 +42,9 @@ const AppContent = () => {
               </ProtectedRoute>
             }
           />
+          <Route path="/journal" element={<Navigate to="/journal/me" replace />} />
           <Route
-            path="/journal"
+            path="/journal/:userId"
             element={
               <ProtectedRoute>
                 <JournalPage />

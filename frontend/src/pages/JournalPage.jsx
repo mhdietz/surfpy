@@ -1,47 +1,106 @@
-import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import PageTabs from '../components/PageTabs'; // Import PageTabs
+import React, { useState, useEffect } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
+import { apiCall } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import Spinner from '../components/UI/Spinner';
+import SessionsList from '../components/SessionsList';
+import PageTabs from '../components/PageTabs';
 
-const JournalPage = () => {
+function JournalPage() {
+  const { userId } = useParams();
+  const { user: currentUser } = useAuth();
+  const [profileUser, setProfileUser] = useState(null);
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const location = useLocation();
-  const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
   const currentTab = queryParams.get('tab') || 'log'; // Default to 'log'
 
-  // Define tabs for JournalPage
+  useEffect(() => {
+    const fetchData = async () => {
+      // If we're on the 'me' page, wait for the currentUser object to be loaded.
+      if (userId === 'me' && !currentUser) {
+        return; // The effect will re-run when currentUser is available.
+      }
+
+      try {
+        setLoading(true);
+        const effectiveUserId = userId === 'me' ? currentUser.id : userId;
+
+        if (!effectiveUserId) {
+          setError("User not found.");
+          setLoading(false);
+          return;
+        }
+
+        // Fetch profile data
+        const profileResponse = await apiCall(`/api/users/${effectiveUserId}/profile`);
+        setProfileUser(profileResponse.data);
+
+        // Fetch sessions data (only if on the 'log' tab)
+        if (currentTab === 'log') {
+          const sessionsResponse = await apiCall(`/api/users/${effectiveUserId}/sessions`);
+          setSessions(sessionsResponse.data);
+        }
+
+        setLoading(false);
+      } catch (err) {
+        setError('Failed to fetch data.');
+        console.error(err);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [userId, currentUser, currentTab]); // Add currentTab to dependencies
+
+  if (loading && !profileUser) {
+    return <Spinner />;
+  }
+
+  if (error) {
+    return <div className="text-red-500 text-center p-4">Error: {error}</div>;
+  }
+
+  // Determine the prefix for tab labels dynamically
+  let journalOwnerPrefix = 'Journal'; // Default fallback
+  if (profileUser) {
+    if (userId === 'me' || (currentUser && profileUser.id === currentUser.id)) {
+      journalOwnerPrefix = 'My';
+    } else {
+      journalOwnerPrefix = `${profileUser.display_name}'s`;
+    }
+  }
+
   const journalTabs = [
-    { label: 'My Sessions', path: '/journal?tab=log' },
-    { label: 'My Stats', path: '/journal?tab=stats' },
+    { label: `${journalOwnerPrefix} Log`, path: `/journal/${userId}?tab=log` },
+    { label: `${journalOwnerPrefix} Stats`, path: `/journal/${userId}?tab=stats` },
   ];
 
   return (
-    <div className="bg-gray-100 min-h-screen py-8"> {/* Adjusted root div */} 
-      {/* PageTabs component will be fixed at the top, so main content needs padding */}
-      <main className="max-w-2xl mx-auto space-y-6 px-4 pt-16"> {/* Main content wrapper with pt-16 */} 
-        {/* Page Header / Sub-Navigation - now handled by PageTabs */}
-        <PageTabs tabs={journalTabs} />
+    <div className="container mx-auto p-4 pt-16">
+      <h1 className="text-2xl font-bold mb-4">
+        {profileUser ? `${profileUser.display_name}'s Journal` : 'Journal'}
+      </h1>
+      
+      <PageTabs tabs={journalTabs} />
 
-        {/* Conditional Content */}
-        <div className="w-full bg-white p-6 rounded-lg shadow-md"> {/* Main content card */} 
-          {currentTab === 'log' && (
-            <div>
-              <h3 className="text-xl font-semibold mb-2">My Sessions Log</h3>
-              <p>This is where your surf sessions will be displayed.</p>
-              {/* SessionsList component will go here eventually */}
-            </div>
-          )}
-
-          {currentTab === 'stats' && (
-            <div>
-              <h3 className="text-xl font-semibold mb-2">My Aggregated Stats</h3>
-              <p>This is where your personal surf statistics will be displayed.</p>
-              {/* Stats components will go here eventually */}
-            </div>
-          )}
+      {currentTab === 'log' && (
+        <div>
+          <SessionsList sessions={sessions} loading={loading} error={error} />
         </div>
-      </main>
+      )}
+
+      {currentTab === 'stats' && (
+        <div className="text-center p-4">
+          <p>This is the stats section for {profileUser ? profileUser.display_name : 'this user'}.</p>
+          {/* Stats component will go here eventually */}
+        </div>
+      )}
     </div>
   );
-};
+}
 
 export default JournalPage;
