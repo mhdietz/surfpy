@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ShakaModal from './ShakaModal';
+import { toggleShaka } from '../services/api';
 
 const SessionTile = ({ session }) => {
   const navigate = useNavigate();

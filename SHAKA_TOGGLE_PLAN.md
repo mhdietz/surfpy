@@ -9,8 +9,8 @@ Implement API integration for shaka reactions in SessionTile.jsx with step-by-st
 ---
 
 ## Progress Tracker
-- [ ] Step 1: Create API Service Function
-- [ ] Step 2: Import API Function in SessionTile
+- [x] Step 1: Create API Service Function
+- [x] Step 2: Import API Function in SessionTile
 - [ ] Step 3: Implement API Call in handleToggleShaka
 - [ ] Step 4: Test ShakaModal Integration
 - [ ] Step 5: Test Edge Cases & Error Handling
@@ -18,7 +18,7 @@ Implement API integration for shaka reactions in SessionTile.jsx with step-by-st
 ---
 
 ## Step 1: Create API Service Function
-**Status**: ⏳ Pending
+**Status**: ✅ Complete
 
 **File**: `frontend/src/services/api.js`
 
@@ -34,7 +34,7 @@ Implement API integration for shaka reactions in SessionTile.jsx with step-by-st
 ---
 
 ## Step 2: Import API Function in SessionTile
-**Status**: ⏳ Pending
+**Status**: ✅ Complete
 
 **File**: `frontend/src/components/SessionTile.jsx`
 
