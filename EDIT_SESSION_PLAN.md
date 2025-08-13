@@ -30,23 +30,28 @@ This plan outlines the necessary changes across the frontend and backend to allo
 
 *Goal: Populate the edit page with data and make it interactive.*
 
-- [ ] **Step 2.1: Copy `CreateSessionPage` as Template**
+- [x] **Step 2.1: Copy `CreateSessionPage` as Template**
     - **Action**: Replace the placeholder content in `EditSessionPage.jsx` with the full content from `CreateSessionPage.jsx`.
     - **Validation**: Navigate to an edit page URL. You should see the full session creation form.
 
-- [ ] **Step 2.2: Update Static Text**
+- [x] **Step 2.2: Update Static Text**
     - **Action**: Change static text in `EditSessionPage.jsx` from "Create" to "Edit" or "Update" (e.g., page title, submit button).
     - **Validation**: Navigate to an edit page. The title and button text should reflect that you are editing, not creating.
 
-- [ ] **Step 2.3: Fetch Session Data**
+- [x] **Step 2.3: Fetch Session Data**
     - **Action**: Implement the `useEffect` hook in `EditSessionPage.jsx` to call the `GET /api/surf-sessions/:id` endpoint.
     - **Validation**: Open your browser's **Developer Tools -> Network** tab. When you load an edit page, you should see a successful `fetch` request for the session data.
 
-- [ ] **Step 2.4: Pre-populate Form Fields**
+- [x] **Step 2.4: Pre-populate Form Fields**
     - **Action**: Use the fetched data to set the state for the form fields.
     - **Validation**: Navigate to an edit page. The form fields (Date, Location, Notes, etc.) should be pre-filled with the correct data for that session. Use **React DevTools** to inspect the component's state.
 
-- [ ] **Step 2.5: Pre-populate Tagged Surfers**
+- [x] **Step 2.4a: Fix Location Population**
+    - **Action (Backend)**: Modify the `get_session_detail` function in `database_utils.py` to include the location's `slug` by joining with the `surf_spots` table.
+    - **Action (Frontend)**: Update the `useEffect` hook in `EditSessionPage.jsx` to use the new `session.location_slug` field to set the state for the location dropdown.
+    - **Validation**: Navigate to an edit page. The "Location" dropdown should now be correctly pre-populated with the session's location.
+
+- [x] **Step 2.5: Pre-populate Tagged Surfers**
     - **Action**: Use the `participants` array from the fetched data to pre-populate the `taggedUsers` state.
     - **Validation**: Navigate to an edit page for a session with participants. The "Tag Surfers" section should already contain the tagged users.
 

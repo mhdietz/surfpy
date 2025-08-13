@@ -86,6 +86,7 @@ def get_session_detail(session_id, current_user_id):
                     s.session_water_level, s.tide_direction, s.next_tide_event_type, s.next_tide_event_at, s.next_tide_event_height,
                     s.session_started_at, s.session_ended_at,
                     u.email as user_email,
+                    sp.slug as location_slug,
                     COALESCE(
                         u.raw_user_meta_data->>'display_name',
                         NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
@@ -129,6 +130,7 @@ def get_session_detail(session_id, current_user_id):
                     ) as shakas
                 FROM surf_sessions_duplicate s
                 LEFT JOIN auth.users u ON s.user_id = u.id
+                LEFT JOIN surf_spots sp ON s.location = sp.name
                 WHERE s.id = %s
             """, (current_user_id, session_id))
             session = cur.fetchone()
