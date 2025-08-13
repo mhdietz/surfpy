@@ -335,6 +335,47 @@ def toggle_shaka(session_id, user_id):
     finally:
         conn.close()
 
+def get_session_shakas(session_id):
+    """Get all users who have reacted with shakas for a specific session, ordered by most recent first."""
+    conn = get_db_connection()
+    if not conn:
+        return None
+    
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT 
+                    ss.user_id,
+                    ss.created_at,
+                    COALESCE(
+                        u.raw_user_meta_data->>'display_name',
+                        NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
+                        split_part(u.email, '@', 1)
+                    ) as display_name
+                FROM session_shakas ss
+                JOIN auth.users u ON ss.user_id = u.id
+                WHERE ss.session_id = %s
+                ORDER BY ss.created_at DESC
+            """, (session_id,))
+            
+            shakas = cur.fetchall()
+            
+            # Format timestamps for JSON serialization
+            formatted_shakas = []
+            for shaka in shakas:
+                formatted_shaka = dict(shaka)
+                if isinstance(formatted_shaka['created_at'], datetime):
+                    formatted_shaka['created_at'] = formatted_shaka['created_at'].isoformat()
+                formatted_shakas.append(formatted_shaka)
+            
+            return formatted_shakas
+            
+    except Exception as e:
+        print(f"Error getting session shakas: {e}")
+        return None
+    finally:
+        conn.close()
+
 def get_user_by_email(email):
     """Get user details by email"""
     conn = get_db_connection()
