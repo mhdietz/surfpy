@@ -43,6 +43,9 @@ This document provides a systematic plan for building the SLAPP frontend using G
 │   ├── Navigation.jsx      # App navigation with bottom nav
 │   ├── UserSearch.jsx      # Search overlay/modal
 │   ├── ShakaModal.jsx      # Users who reacted modal
+│   ├── SwellDisplay.jsx    # Renders swell data charts
+│   ├── WindDisplay.jsx     # Renders wind data charts
+│   ├── TideDisplay.jsx     # Renders tide data charts
 │   ├── StatsDisplay.jsx    # Renders user stats on Journal page
 │   ├── Leaderboard.jsx     # Renders community leaderboard on Feed page
 │   └── UI/                 # Basic UI components (buttons, inputs, filters)
@@ -222,12 +225,11 @@ The following foundational tasks have been completed, ensuring consistency, reus
     - Includes form validation, loading/submitting states, and success/error notifications.
     - On successful creation, it redirects the user to the new session's detail page.
 
-- **Session Detail Views**:
-  - Complete session information display
-  - Surf conditions display (swell, wind, tide, temperature)
-  - Clickable participant profiles → navigate to their journals
-  - Edit/delete functionality for session owners
-  - Shaka reactions with modal integration
+- **Session Detail Views**: ✅ **Complete**
+  - **Completed**:
+    - Fetches and displays all information for a single session, including name, location, time, and notes.
+    - Utilizes new dedicated components (`SwellDisplay`, `WindDisplay`, `TideDisplay`) to visualize detailed oceanographic data.
+    - Shows the list of participants, fun rating, and shaka count.
 
 - **Journal Pages**: ✅ **Complete**
   - **Completed**:
@@ -408,7 +410,7 @@ const apiCall = async (endpoint, options = {}) => {
 ### Session Management ✅
 - [x] Session creation flow
 - [x] Journal pages and stats
-- [ ] Session detail views
+- [x] Session detail views
 - [ ] Session editing functionality
 - [ ] API integration complete
 
