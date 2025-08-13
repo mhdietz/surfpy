@@ -136,7 +136,16 @@ const SessionDetail = () => {
             </div>
           </div>
 
+          {/* Dummy Delete Session Button */}
+          <div className="mt-6">
+            <button
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-150 ease-in-out"
+            >
+              Delete Session
+            </button>
           </div>
+
+        </div>
       </Card>
     </div>
   );
