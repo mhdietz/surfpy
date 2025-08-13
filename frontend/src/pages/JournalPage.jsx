@@ -6,6 +6,7 @@ import Spinner from '../components/UI/Spinner';
 import SessionsList from '../components/SessionsList';
 import PageTabs from '../components/PageTabs';
 import JournalFilter from '../components/JournalFilter';
+import StatsDisplay from '../components/StatsDisplay'; // Import the new component
 
 // Helper function to parse URL search params into filter state
 const parseSearchParams = (params) => {
@@ -26,6 +27,7 @@ function JournalPage() {
   const { user: currentUser } = useAuth();
   const [profileUser, setProfileUser] = useState(null);
   const [sessions, setSessions] = useState([]);
+  const [stats, setStats] = useState(null); // State for stats data
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -54,13 +56,13 @@ function JournalPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      // If we're on the 'me' page, wait for the currentUser object to be loaded.
       if (userId === 'me' && !currentUser) {
-        return; // The effect will re-run when currentUser is available.
+        return; 
       }
 
       try {
         setLoading(true);
+        setError(null); // Reset error state
         const effectiveUserId = userId === 'me' ? currentUser.id : userId;
 
         if (!effectiveUserId) {
@@ -69,15 +71,20 @@ function JournalPage() {
           return;
         }
 
-        // Fetch profile data
-        const profileResponse = await apiCall(`/api/users/${effectiveUserId}/profile`);
-        setProfileUser(profileResponse.data);
+        // Fetch profile data if not already fetched
+        if (!profileUser || profileUser.id !== effectiveUserId) {
+          const profileResponse = await apiCall(`/api/users/${effectiveUserId}/profile`);
+          setProfileUser(profileResponse.data);
+        }
 
-        // Fetch sessions data (only if on the 'log' tab)
+        // Fetch data based on the active tab
         if (currentTab === 'log') {
           const queryString = new URLSearchParams(filters).toString();
           const sessionsResponse = await apiCall(`/api/users/${effectiveUserId}/sessions?${queryString}`);
           setSessions(sessionsResponse.data);
+        } else if (currentTab === 'stats') {
+          const statsResponse = await apiCall(`/api/users/${effectiveUserId}/stats`);
+          setStats(statsResponse.data);
         }
 
         setLoading(false);
@@ -89,13 +96,13 @@ function JournalPage() {
     };
 
     fetchData();
-  }, [userId, currentUser, currentTab, filters]); // Add filters to dependencies
+  }, [userId, currentUser, currentTab, filters, profileUser]); // Add profileUser to dependencies
 
   if (loading && !profileUser) {
     return <Spinner />;
   }
 
-  if (error) {
+  if (error && !profileUser) { // Only show full-page error if profile hasn't loaded
     return <div className="text-red-500 text-center p-4">Error: {error}</div>;
   }
 
@@ -110,15 +117,17 @@ function JournalPage() {
   }
 
   const journalTabs = [
-    { label: `${journalOwnerPrefix} Log`, path: `/journal/${userId}?tab=log` },
-    { label: `${journalOwnerPrefix} Stats`, path: `/journal/${userId}?tab=stats` },
+    { label: `${journalOwnerPrefix} Log`, path: `/journal/${userId || 'me'}?tab=log` },
+    { label: `${journalOwnerPrefix} Stats`, path: `/journal/${userId || 'me'}?tab=stats` },
   ];
 
   return (
     <div className="bg-gray-100 min-h-screen py-8">
       <main className="max-w-2xl mx-auto px-4 pt-16">
         <h1 className="text-2xl font-bold mb-6">
-          {profileUser ? `${profileUser.display_name}'s Journal` : 'Journal'}
+          {profileUser 
+            ? `${profileUser.display_name}'s ${currentTab === 'stats' ? 'Stats' : 'Journal'}` 
+            : (currentTab === 'stats' ? 'Stats' : 'Journal')}
         </h1>
         
         <PageTabs tabs={journalTabs} />
@@ -131,9 +140,8 @@ function JournalPage() {
         )}
 
         {currentTab === 'stats' && (
-          <div className="w-full bg-white p-6 rounded-lg shadow-md text-center">
-            <p>This is the stats section for {profileUser ? profileUser.display_name : 'this user'}.</p>
-            {/* Stats component will go here eventually */}
+          <div className="w-full bg-white p-6 rounded-lg shadow-md">
+            <StatsDisplay stats={stats} loading={loading} error={error} />
           </div>
         )}
       </main>

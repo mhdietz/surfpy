@@ -4,7 +4,7 @@ from flask_caching import Cache
 from datetime import datetime, timezone, timedelta
 import surfpy
 import database_utils
-from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location, get_all_regions, get_user_profile_by_id
+from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location, get_all_regions, get_user_profile_by_id, get_user_stats
 import json
 from json_utils import CustomJSONEncoder
 import math
@@ -755,6 +755,29 @@ def get_user_journal_sessions(viewer_user_id, profile_user_id):
         import traceback
         print(traceback.format_exc())
         return jsonify({"status": "fail", "message": f"Error retrieving user sessions: {str(e)}"}), 500
+
+@app.route('/api/users/<string:profile_user_id>/stats', methods=['GET'])
+@token_required
+def get_user_stats_route(viewer_user_id, profile_user_id):
+    """
+    Get statistics for a specific user.
+    Handles 'me' as an alias for the authenticated user.
+    """
+    try:
+        # Handle 'me' alias
+        if profile_user_id == 'me':
+            profile_user_id = viewer_user_id
+
+        stats = get_user_stats(profile_user_id)
+        
+        if stats is None:
+            return jsonify({"status": "fail", "message": "Failed to retrieve user stats"}), 500
+            
+        return jsonify({"status": "success", "data": stats}), 200
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"status": "error", "message": f"An error occurred while fetching stats: {str(e)}"}), 500
 
 
 

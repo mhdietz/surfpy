@@ -404,6 +404,36 @@ def verify_user_session(access_token):
     finally:
         conn.close()
 
+def get_user_stats(user_id):
+    """Get simple statistics for a given user."""
+    conn = get_db_connection()
+    if not conn:
+        return None
+    
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT
+                    COUNT(*) as total_sessions,
+                    ROUND(
+                        COALESCE(
+                            SUM(
+                                EXTRACT(EPOCH FROM (session_ended_at - session_started_at))
+                            ) / 60
+                        , 0)
+                    )::integer as total_surf_time_minutes,
+                    ROUND(AVG(fun_rating)::numeric, 2) as average_fun_rating
+                FROM surf_sessions_duplicate
+                WHERE user_id = %s
+            """, (user_id,))
+            stats = cur.fetchone()
+            return stats
+    except Exception as e:
+        print(f"Error getting user stats: {e}")
+        return None
+    finally:
+        conn.close()
+
 def get_dashboard_stats(current_user_id):
     """Get comprehensive dashboard statistics for current user, other users, and community"""
     conn = get_db_connection()
