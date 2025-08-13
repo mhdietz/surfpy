@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ShakaModal from './ShakaModal';
-import { toggleShaka } from '../services/api';
-import { useAuth } from '../context/AuthContext'; // Add this import
+import { toggleShaka, getSessionShakas } from '../services/api'; // Add getSessionShakas import
+import { useAuth } from '../context/AuthContext';
 
 const SessionTile = ({ session }) => {
   const navigate = useNavigate();
-  const { user: currentUser } = useAuth(); // Add this line
+  const { user: currentUser } = useAuth();
   const [isShakaModalOpen, setIsShakaModalOpen] = useState(false);
 
   const [shakaCount, setShakaCount] = useState(0);
   const [hasViewerShakaed, setHasViewerShakaed] = useState(false);
-  const [shakaPreview, setShakaPreview] = useState([]); // Add this state
+  const [shakaPreview, setShakaPreview] = useState([]);
+  const [shakaAllUsers, setShakaAllUsers] = useState([]); // Add this state
+  const [loadingShakaUsers, setLoadingShakaUsers] = useState(false); // Add this state
 
   const {
     id, user_id, session_name, location, fun_rating,
@@ -22,7 +24,7 @@ const SessionTile = ({ session }) => {
     if (shakas) {
       setShakaCount(shakas.count || 0);
       setHasViewerShakaed(shakas.viewer_has_shakaed || false);
-      setShakaPreview(shakas.preview || []); // Add this line
+      setShakaPreview(shakas.preview || []);
     }
   }, [shakas]);
 
@@ -41,10 +43,23 @@ const SessionTile = ({ session }) => {
     navigate(`/journal/${userId}`);
   };
 
-  const handleOpenShakaModal = (e) => {
+  // Updated handleOpenShakaModal function
+  const handleOpenShakaModal = async (e) => {
     e.stopPropagation();
     if (shakaCount > 0) {
       setIsShakaModalOpen(true);
+      setLoadingShakaUsers(true);
+      
+      try {
+        const allUsers = await getSessionShakas(id);
+        setShakaAllUsers(allUsers);
+      } catch (error) {
+        console.error('🤙 Failed to load shaka users:', error);
+        // Fallback to preview data if API call fails
+        setShakaAllUsers(shakaPreview);
+      } finally {
+        setLoadingShakaUsers(false);
+      }
     }
   };
 
@@ -63,7 +78,7 @@ const SessionTile = ({ session }) => {
       // Update count with server response
       setShakaCount(response.data.shaka_count || 0);
       
-      // Update preview array
+      // Update preview array (keep existing logic for tile display)
       if (currentUser) {
         const currentUserPreview = {
           user_id: currentUser.id,
@@ -71,13 +86,11 @@ const SessionTile = ({ session }) => {
         };
         
         if (!wasShaked) {
-          // User added a shaka - add them to the front, keep max 2
           setShakaPreview(prev => [
             currentUserPreview,
             ...prev.filter(user => user.user_id !== currentUser.id)
           ].slice(0, 2));
         } else {
-          // User removed a shaka - remove them from preview
           setShakaPreview(prev => prev.filter(user => user.user_id !== currentUser.id));
         }
       }
@@ -149,11 +162,15 @@ const SessionTile = ({ session }) => {
         </div>
       </div>
 
-      {/* Shaka Modal */}
+      {/* Updated Shaka Modal */}
       {isShakaModalOpen && (
         <ShakaModal 
-          users={shakaPreview} 
-          onClose={() => setIsShakaModalOpen(false)} 
+          users={shakaAllUsers} // Changed from shakaPreview to shakaAllUsers
+          onClose={() => {
+            setIsShakaModalOpen(false);
+            setShakaAllUsers([]); // Clear data when modal closes
+          }}
+          loading={loadingShakaUsers} // Add loading prop if ShakaModal supports it
         />
       )}
     </>
