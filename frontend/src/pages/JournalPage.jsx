@@ -125,7 +125,9 @@ function JournalPage() {
     <div className="bg-gray-100 min-h-screen py-8">
       <main className="max-w-2xl mx-auto px-4 pt-16">
         <h1 className="text-2xl font-bold mb-6">
-          {profileUser ? `${profileUser.display_name}'s Journal` : 'Journal'}
+          {profileUser 
+            ? `${profileUser.display_name}'s ${currentTab === 'stats' ? 'Stats' : 'Journal'}` 
+            : (currentTab === 'stats' ? 'Stats' : 'Journal')}
         </h1>
         
         <PageTabs tabs={journalTabs} />
