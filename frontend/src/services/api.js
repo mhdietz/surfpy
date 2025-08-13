@@ -37,3 +37,24 @@ export const apiCall = async (endpoint, options = {}) => {
 
   return data;
 };
+
+/**
+ * Toggle shaka reaction for a surf session
+ * @param {number} sessionId - The ID of the session to toggle shaka for
+ * @returns {Promise<object>} Response containing updated shaka count
+ */
+export const toggleShaka = async (sessionId) => {
+  console.log(`🤙 Toggling shaka for session ${sessionId}`);
+  
+  try {
+    const response = await apiCall(`/api/surf-sessions/${sessionId}/shaka`, {
+      method: 'POST'
+    });
+    
+    console.log(`🤙 Shaka toggle response:`, response);
+    return response;
+  } catch (error) {
+    console.error(`🤙 Shaka toggle error for session ${sessionId}:`, error);
+    throw error;
+  }
+};
