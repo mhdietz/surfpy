@@ -424,115 +424,98 @@ def get_location_surf_sessions(user_id, location_slug):
 def update_surf_session(user_id, session_id):
     try:
         session_data = request.get_json()
-        
         if not session_data:
             return jsonify({"status": "fail", "message": "No data provided"}), 400
-        
-        # Get existing session
-        existing_session = get_session(session_id, user_id)
+
+        # Check ownership first
+        existing_session = get_session_detail(session_id, user_id)
         if not existing_session:
             return jsonify({"status": "fail", "message": f"Session with id {session_id} not found"}), 404
         
-        # Check if user owns this session
-        if existing_session.get('user_id') != user_id:
-            return jsonify({"status": "fail", "message": f"Session with id {session_id} not found"}), 404
-        
-        # Extract fields that might need to be updated
+        if str(existing_session.get('user_id')) != str(user_id):
+            return jsonify({"status": "fail", "message": "You are not authorized to edit this session"}), 403
+
+        # Start with the simple, non-relational fields
+        update_data = {}
+        allowed_fields = ['session_name', 'fun_rating', 'session_notes']
+        for field in allowed_fields:
+            if field in session_data:
+                update_data[field] = session_data[field]
+
+        # Check if date, time, or location have changed, and if so, re-fetch ocean data
         session_date = session_data.get('date')
         session_time = session_data.get('time')
         end_time = session_data.get('end_time')
-        location = session_data.get('location', existing_session.get('location'))
-        
-        # Validate end_time if provided in update
-        if session_time and end_time:
-            try:
-                from datetime import time as time_obj
-                start_time_obj = time_obj.fromisoformat(session_time)
-                end_time_obj = time_obj.fromisoformat(end_time)
-                
-                if end_time_obj <= start_time_obj:
-                    return jsonify({
-                        "status": "fail", 
-                        "message": "end_time must be after start time"
-                    }), 400
-                    
-            except ValueError:
-                return jsonify({
-                    "status": "fail", 
-                    "message": "Invalid time format. Use HH:MM:SS format for both time and end_time"
-                }), 400
-        
-        # Validate location and get spot configuration
-        spot_config = get_spot_config(location)
-        if not spot_config:
-            return jsonify({
-                "status": "fail", 
-                "message": f"Invalid location: {location}. Please provide a valid surf spot."
-            }), 400
-        session_data['location'] = spot_config['name']
+        location_slug = session_data.get('location') # Frontend sends slug
+
+        # Only re-fetch if at least one of date, time, or location is provided
+        if any([session_date, session_time, end_time, location_slug]):
+            # Use existing values as fallback if not all are provided
+            if not session_date:
+                session_date = existing_session['session_started_at'].split('T')[0]
             
-        # Get buoy mapping using the ocean_data module (can use spot_config directly)
-        session_data['swell_buoy_id'] = spot_config["swell_buoy_id"]
-        session_data['met_buoy_id'] = spot_config.get("met_buoy_id", spot_config["swell_buoy_id"]) # Prioritize met_buoy_id, fallback to swell_buoy_id
-        session_data['tide_station_id'] = spot_config["tide_station_id"]
-        
-        # If date or time changed, update oceanographic data
-        if session_date and session_time:
+            if not session_time:
+                start_dt = datetime.fromisoformat(existing_session['session_started_at'])
+                session_time = start_dt.strftime('%H:%M:%S')
+
+            if not end_time:
+                end_dt = datetime.fromisoformat(existing_session['session_ended_at'])
+                end_time = end_dt.strftime('%H:%M:%S')
             
-            # Create a datetime object from the date and time
+            if not location_slug:
+                location_slug = existing_session['location_slug']
+
+            # Validate location and get spot configuration
+            spot_config = get_spot_config(location_slug)
+            if not spot_config:
+                return jsonify({"status": "fail", "message": f"Invalid location: {location_slug}"}), 400
+            update_data['location'] = spot_config['name']
+            
+            # Get buoy mapping
+            swell_buoy_id = spot_config["swell_buoy_id"]
+            met_buoy_id = spot_config.get("met_buoy_id", swell_buoy_id)
+            tide_station_id = spot_config["tide_station_id"]
+
+            # Combine date and time to create datetime objects
             try:
                 start_datetime_str = f"{session_date}T{session_time}"
                 end_datetime_str = f"{session_date}T{end_time}"
                 naive_start_datetime = datetime.fromisoformat(start_datetime_str)
                 naive_end_datetime = datetime.fromisoformat(end_datetime_str)
                 
-                # Get the spot's timezone from the configuration
-                spot_timezone_str = spot_config.get('timezone', 'UTC') # Default to UTC if not found
-                spot_tz = pytz.timezone(spot_timezone_str)
-                
-                # Localize to the spot's timezone
+                spot_tz = pytz.timezone(spot_config.get('timezone', 'UTC'))
                 localized_start_datetime = spot_tz.localize(naive_start_datetime)
                 localized_end_datetime = spot_tz.localize(naive_end_datetime)
 
-                # Convert to UTC for data retrieval and storage
                 utc_start_datetime = localized_start_datetime.astimezone(timezone.utc)
                 utc_end_datetime = localized_end_datetime.astimezone(timezone.utc)
 
-                # Add to session_data for database insertion
-                session_data['session_started_at'] = utc_start_datetime
-                session_data['session_ended_at'] = utc_end_datetime
-
+                update_data['session_started_at'] = utc_start_datetime
+                update_data['session_ended_at'] = utc_end_datetime
             except ValueError:
-                return jsonify({
-                    "status": "fail", 
-                    "message": "Invalid date/time format. Use ISO format for date (YYYY-MM-DD) and time (HH:MM:SS)"
-                }), 400
-                
-            # 1. Fetch updated swell data using the ocean_data module
-            swell_buoy_id = session_data.get('swell_buoy_id', existing_session.get('swell_buoy_id'))
-            if swell_buoy_id:
-                swell_data = fetch_swell_data(swell_buoy_id, utc_start_datetime, count=500)
-                session_data['raw_swell'] = swell_data
+                return jsonify({"status": "fail", "message": "Invalid date/time format"}), 400
+
+            # Re-fetch oceanographic data
+            update_data['raw_swell'] = fetch_swell_data(swell_buoy_id, utc_start_datetime, count=500)
+            update_data['raw_met'] = fetch_meteorological_data(met_buoy_id, utc_start_datetime, count=500, use_imperial_units=True)
             
-            # 2. Fetch updated meteorological data using the ocean_data module
-            met_buoy_id = session_data.get('met_buoy_id', existing_session.get('met_buoy_id'))
-            if met_buoy_id:
-                met_data = fetch_meteorological_data(met_buoy_id, utc_start_datetime, count=500, use_imperial_units=True)
-                session_data['raw_met'] = met_data
-                        
-            # 3. Fetch updated tide data using the ocean_data module
-            tide_station_id = session_data.get('tide_station_id', existing_session.get('tide_station_id'))
-            if tide_station_id:
-                detailed_tide_data = fetch_tide_data(tide_station_id, utc_start_datetime, use_imperial_units=True)
-                if detailed_tide_data:
-                    session_data['session_water_level'] = detailed_tide_data.get('water_level')
-                    session_data['tide_direction'] = detailed_tide_data.get('direction')
-                    session_data['next_tide_event_type'] = detailed_tide_data.get('next_event_type')
-                    session_data['next_tide_event_at'] = detailed_tide_data.get('next_event_at')
-                    session_data['next_tide_event_height'] = detailed_tide_data.get('next_event_height')
+            detailed_tide_data = fetch_tide_data(tide_station_id, utc_start_datetime, use_imperial_units=True)
+            if detailed_tide_data:
+                update_data['session_water_level'] = detailed_tide_data.get('water_level')
+                update_data['tide_direction'] = detailed_tide_data.get('direction')
+                update_data['next_tide_event_type'] = detailed_tide_data.get('next_event_type')
+                update_data['next_tide_event_at'] = detailed_tide_data.get('next_event_at')
+                update_data['next_tide_event_height'] = detailed_tide_data.get('next_event_height')
+            
+            update_data['swell_buoy_id'] = swell_buoy_id
+            update_data['met_buoy_id'] = met_buoy_id
+            update_data['tide_station_id'] = tide_station_id
+
+        if not update_data:
+            return jsonify({"status": "fail", "message": "No valid fields provided for update"}), 400
 
         # Update the session in the database
-        updated_session = update_session(session_id, session_data, user_id)
+        updated_session = update_session(session_id, update_data, user_id)
         
         if updated_session:
             return jsonify({

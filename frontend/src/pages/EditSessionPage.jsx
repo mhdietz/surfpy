@@ -131,7 +131,7 @@ function EditSessionPage() {
     event.preventDefault();
     setIsSubmitting(true);
 
-    // Basic validation
+    // Full validation
     if (!date || !location || !sessionName || !startTime || !endTime || !funRating) {
       toast.error("Please fill in all required fields.");
       setIsSubmitting(false);
@@ -151,13 +151,14 @@ function EditSessionPage() {
         session_name: sessionName,
         time: startTime,
         end_time: endTime,
-        fun_rating: parseFloat(funRating), // Changed from parseInt to parseFloat
+        fun_rating: parseFloat(funRating),
         session_notes: notes,
-        tagged_users: taggedUsers.map(user => user.user_id) // Send only user IDs
+        // Note: We are not sending tagged_users yet, as per the updated plan.
+        // That will be handled in a future step if prioritized.
       };
 
-      const response = await apiCall('/api/surf-sessions', {
-        method: 'POST',
+      const response = await apiCall(`/api/surf-sessions/${id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -165,14 +166,14 @@ function EditSessionPage() {
       });
 
       if (response.status === 'success') {
-        toast.success("Surf session created successfully!");
-        // Redirect to the new session's detail page or journal
-        navigate(`/session/${response.data.id}`); 
+        toast.success("Surf session updated successfully!");
+        // Redirect back to the session's detail page
+        navigate(`/session/${id}`); 
       } else {
-        toast.error(response.message || "Failed to create surf session.");
+        toast.error(response.message || "Failed to update surf session.");
       }
     } catch (error) {
-      console.error("Error creating surf session:", error);
+      console.error("Error updating surf session:", error);
       toast.error(error.message || "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);

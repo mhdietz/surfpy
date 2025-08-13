@@ -61,18 +61,14 @@ This plan outlines the necessary changes across the frontend and backend to allo
 
 *Goal: Create and enhance the backend endpoints to handle session updates securely.*
 
-- [ ] **Step 3.1: Enhance `update_session` Endpoint**
+- [x] **Step 3.1: Enhance `update_session` Endpoint**
     - **Action**: In `surfdata.py`, enhance the `PUT /api/surf-sessions/:session_id` endpoint to include an ownership check and handle basic field updates (e.g., `session_name`, `notes`).
     - **Validation**: This is a backend-only change. The primary validation is that the API server continues to run without errors. Testing will occur in the next step.
 
-- [ ] **Step 3.2: Connect Frontend Form to Update Endpoint**
+- [x] **Step 3.2: Connect Frontend Form to Update Endpoint**
     - **Action**: Wire up the `handleSubmit` function in `EditSessionPage.jsx` to send a `PUT` request.
     - **Validation**: Edit a simple field like "Notes" on the page and save. The **Network** tab should show a successful `PUT` request, and upon redirection to the detail page, the notes should be updated.
 
-- [ ] **Step 3.3: Implement Participant Update Logic**
-    - **Action**: Create `update_session_participants` in `database_utils.py` and call it from the endpoint.
-    - **Validation**: Edit a session and add or remove a tagged surfer. After saving, the session detail page should reflect the change in participants.
-
-- [ ] **Step 3.4: Handle Data Re-fetching on Backend**
+- [x] **Step 3.4: Handle Data Re-fetching on Backend**
     - **Action**: Add logic to the backend to re-fetch oceanographic data if the date or location changes.
     - **Validation**: Edit a session's date or location. After saving, the swell, wind, and tide data visualizations on the detail page should change to reflect the new inputs.
