@@ -72,19 +72,6 @@ const Feed = () => {
             <Leaderboard />
           )}
         </div>
-
-        <Card>
-          <div className="text-center">
-            <h2 className="text-3xl font-bold">Welcome!</h2>
-            {user && <p className="mt-2 text-gray-600">You are logged in.</p>}
-          </div>
-          <Button
-            onClick={handleLogout}
-            variant="destructive"
-          >
-            Logout
-          </Button>
-        </Card>
       </main>
     </div>
   );
