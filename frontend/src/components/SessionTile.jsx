@@ -44,10 +44,27 @@ const SessionTile = ({ session }) => {
     }
   };
 
-  // Toggles the visual state locally without changing the count
-  const handleToggleShaka = (e) => {
+  const handleToggleShaka = async (e) => {
     e.stopPropagation();
-    setHasViewerShakaed(prev => !prev);
+    
+    // Optimistic update - change UI immediately
+    const wasShaked = hasViewerShakaed;
+    setHasViewerShakaed(!wasShaked);
+    setShakaCount(prev => wasShaked ? prev - 1 : prev + 1);
+    
+    try {
+      const response = await toggleShaka(id);
+      console.log('🤙 Shaka API response:', response);
+      
+      // Update with server response (should match our optimistic update)
+      setShakaCount(response.data.shaka_count || 0);  // ✅ Changed this line
+    } catch (error) {
+      console.error('🤙 Failed to toggle shaka:', error);
+      
+      // Rollback optimistic update on error
+      setHasViewerShakaed(wasShaked);
+      setShakaCount(prev => wasShaked ? prev + 1 : prev - 1);
+    }
   };
 
   return (
