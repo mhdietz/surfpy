@@ -58,3 +58,24 @@ export const toggleShaka = async (sessionId) => {
     throw error;
   }
 };
+
+/**
+ * Get all users who have reacted with shakas for a specific session
+ * @param {number} sessionId - The ID of the session
+ * @returns {Promise<array>} Array of users who have reacted
+ */
+export const getSessionShakas = async (sessionId) => {
+  console.log(`🤙 Fetching all shakas for session ${sessionId}`);
+  
+  try {
+    const response = await apiCall(`/api/surf-sessions/${sessionId}/shakas`, {
+      method: 'GET'
+    });
+    
+    console.log(`🤙 Session shakas response:`, response);
+    return response.data; // Return the array directly
+  } catch (error) {
+    console.error(`🤙 Failed to fetch session shakas for session ${sessionId}:`, error);
+    throw error;
+  }
+};

@@ -581,6 +581,30 @@ def toggle_shaka_route(user_id, session_id):
         print(traceback.format_exc())
         return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
 
+@app.route('/api/surf-sessions/<int:session_id>/shakas', methods=['GET'])
+@token_required
+def get_session_shakas_route(user_id, session_id):
+    """Get all users who have reacted with shakas for a specific session."""
+    try:
+        shakas = database_utils.get_session_shakas(session_id)
+        
+        if shakas is None:
+            return jsonify({"status": "fail", "message": "Failed to retrieve shakas"}), 500
+        
+        return jsonify({
+            "status": "success", 
+            "data": shakas
+        }), 200
+        
+    except Exception as e:
+        print(f"Error in get session shakas endpoint: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "status": "error", 
+            "message": f"An error occurred: {str(e)}"
+        }), 500
+
 @app.route('/api/test', methods=['GET'])
 def test_route():
     return jsonify({"status": "success", "message": "API is working"}), 200
