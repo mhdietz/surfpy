@@ -4,7 +4,7 @@ from flask_caching import Cache
 from datetime import datetime, timezone, timedelta
 import surfpy
 import database_utils
-from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location, get_all_regions, get_user_profile_by_id, get_user_stats
+from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location, get_all_regions, get_user_profile_by_id, get_user_stats, get_leaderboard
 import json
 from json_utils import CustomJSONEncoder
 import math
@@ -601,6 +601,29 @@ def get_dashboard(user_id):
         
     except Exception as e:
         print(f"Error in dashboard endpoint: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "status": "error",
+            "message": f"An error occurred: {str(e)}"
+        }), 500
+
+@app.route('/api/leaderboard', methods=['GET'])
+@token_required
+def get_leaderboard_route(user_id):
+    try:
+        year = request.args.get('year', type=int)
+        stat = request.args.get('stat', type=str, default='sessions')
+
+        leaderboard_data = get_leaderboard(year=year, stat=stat)
+
+        if leaderboard_data is None:
+            return jsonify({"status": "fail", "message": "Failed to retrieve leaderboard data"}), 500
+
+        return jsonify({"status": "success", "data": leaderboard_data}), 200
+
+    except Exception as e:
+        print(f"Error in leaderboard endpoint: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({

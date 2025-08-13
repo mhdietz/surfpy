@@ -434,6 +434,60 @@ def get_user_stats(user_id):
     finally:
         conn.close()
 
+def get_leaderboard(year=None, stat='sessions'):
+    """Get leaderboard data, ranked by a specific statistic."""
+    conn = get_db_connection()
+    if not conn:
+        return None
+
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # Base query
+            query = """
+                SELECT
+                    u.id as user_id,
+                    COALESCE(
+                        u.raw_user_meta_data->>'display_name',
+                        NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
+                        split_part(u.email, '@', 1)
+                    ) as display_name,
+                    COUNT(s.id) as total_sessions,
+                    ROUND(COALESCE(SUM(EXTRACT(EPOCH FROM (s.session_ended_at - s.session_started_at))) / 60, 0))::integer as total_surf_time_minutes,
+                    ROUND(AVG(s.fun_rating)::numeric, 2) as average_fun_rating
+                FROM auth.users u
+                JOIN surf_sessions_duplicate s ON u.id = s.user_id
+            """
+            params = []
+
+            # Year filter
+            if year:
+                query += " WHERE EXTRACT(YEAR FROM s.session_started_at) = %s"
+                params.append(year)
+
+            query += " GROUP BY u.id"
+
+            # Order by the selected statistic
+            if stat == 'time':
+                query += " ORDER BY total_surf_time_minutes DESC"
+            elif stat == 'rating':
+                query += " ORDER BY average_fun_rating DESC NULLS LAST"
+            else: # Default to sessions
+                query += " ORDER BY total_sessions DESC"
+            
+            query += " LIMIT 100" # Limit to top 100
+
+            cur.execute(query, tuple(params))
+            leaderboard_data = cur.fetchall()
+            return leaderboard_data
+
+    except Exception as e:
+        print(f"Error getting leaderboard data: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+    finally:
+        conn.close()
+
 def get_dashboard_stats(current_user_id):
     """Get comprehensive dashboard statistics for current user, other users, and community"""
     conn = get_db_connection()

@@ -43,6 +43,11 @@ This document provides a systematic plan for building the SLAPP frontend using G
 │   ├── Navigation.jsx      # App navigation with bottom nav
 │   ├── UserSearch.jsx      # Search overlay/modal
 │   ├── ShakaModal.jsx      # Users who reacted modal
+│   ├── SwellDisplay.jsx    # Renders swell data charts
+│   ├── WindDisplay.jsx     # Renders wind data charts
+│   ├── TideDisplay.jsx     # Renders tide data charts
+│   ├── StatsDisplay.jsx    # Renders user stats on Journal page
+│   ├── Leaderboard.jsx     # Renders community leaderboard on Feed page
 │   └── UI/                 # Basic UI components (buttons, inputs, filters)
 ├── pages/              # Main application pages
 │   ├── Auth.jsx           # Login/signup page
@@ -220,19 +225,19 @@ The following foundational tasks have been completed, ensuring consistency, reus
     - Includes form validation, loading/submitting states, and success/error notifications.
     - On successful creation, it redirects the user to the new session's detail page.
 
-- **Session Detail Views**:
-  - Complete session information display
-  - Surf conditions display (swell, wind, tide, temperature)
-  - Clickable participant profiles → navigate to their journals
-  - Edit/delete functionality for session owners
-  - Shaka reactions with modal integration
+- **Session Detail Views**: ✅ **Complete**
+  - **Completed**:
+    - Fetches and displays all information for a single session, including name, location, time, and notes.
+    - Utilizes new dedicated components (`SwellDisplay`, `WindDisplay`, `TideDisplay`) to visualize detailed oceanographic data.
+    - Shows the list of participants, fun rating, and shaka count.
 
-- **Journal Pages**:
-  - Flexible component works for any user (self or friends)
-  - Log/Stats tab switching within same page
-  - Filtering controls for surf conditions and regions
-  - User context handling (me vs others)
-  - URL parameter support for filters
+- **Journal Pages**: ✅ **Complete**
+  - **Completed**:
+    - A flexible component that works for any user (the logged-in user or others).
+    - Implemented tab switching for `Log` and `Stats` views within the same page, driven by URL query parameters.
+    - The `Stats` tab now fetches data from a dedicated `/api/users/:id/stats` endpoint.
+    - A new `StatsDisplay.jsx` component renders the aggregate data (total sessions, time, and average rating).
+    - The page title is dynamic, updating to reflect the active tab (e.g., "User's Stats").
 
 ### API Integration
 - Backend surf spot data with regional organization
@@ -240,6 +245,7 @@ The following foundational tasks have been completed, ensuring consistency, reus
 - Complete session CRUD operations
 - User session history with filtering capabilities
 - Individual session details with full surf data
+- **New**: Dedicated user stats endpoint (`/api/users/:id/stats`).
 
 ### Success Criteria
 - Complete session CRUD functionality
@@ -257,12 +263,11 @@ The following foundational tasks have been completed, ensuring consistency, reus
 - Implement reaction and leaderboard systems
 
 ### Features to Build
-- **Session Feed**:
-  - Community session display using SessionsList
-  - Feed/Leaderboard tab switching within same page
-  - Pull-to-refresh and infinite scroll
-  - Social context and user attribution
-  - Clickable usernames navigate to their journals
+- **Session Feed**: ✅ **Complete**
+  - **Completed**:
+    - Displays the community session feed using the `SessionsList` component.
+    - Implemented tab switching for the `Feed` and `Leaderboard` views.
+    - The general "Welcome" card has been removed to streamline the UI.
 
 - **User Search Integration**:
   - UserSearch modal integration across app
@@ -276,18 +281,18 @@ The following foundational tasks have been completed, ensuring consistency, reus
   - User profile links from reaction modal
   - Real-time count updates
 
-- **Leaderboards**:
-  - Community rankings by sessions, surf time, fun rating
-  - Tab switching within Feed page
-  - Year selection and filtering capabilities
-  - Current user highlighting in rankings
+- **Leaderboards**: ✅ **Complete**
+  - **Completed**:
+    - A new `Leaderboard.jsx` component encapsulates all leaderboard logic.
+    - It fetches data from a new, dedicated `/api/leaderboard` endpoint for efficiency.
+    - Includes dropdowns to filter the leaderboard by year and by statistic (sessions, time, rating).
+    - The currently logged-in user's entry is highlighted in the list for easy visibility.
 
 ### API Integration
 - Community session feeds with filtering support
 - Shaka reaction toggle and user lists
 - User search and discovery functionality
-- User session history across all users
-- Community statistics and leaderboard data
+- **New**: Dedicated leaderboard endpoint (`/api/leaderboard`) with filtering.
 
 ### Success Criteria
 - Social features encourage community engagement
@@ -404,15 +409,16 @@ const apiCall = async (endpoint, options = {}) => {
 
 ### Session Management ✅
 - [x] Session creation flow
-- [ ] Session detail views
+- [x] Journal pages and stats
+- [x] Session detail views
 - [ ] Session editing functionality
 - [ ] API integration complete
 
 ### Social Features ✅  
-- [ ] Session feed and community view
+- [x] Session feed and community view
+- [x] Leaderboards and statistics
 - [ ] Shaka reactions system
 - [ ] User discovery and profiles
-- [ ] Leaderboards and statistics
 
 ### Integration & Polish ✅
 - [ ] Complete API integration
