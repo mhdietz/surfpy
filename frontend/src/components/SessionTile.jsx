@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ShakaModal from './ShakaModal';
 import { toggleShaka } from '../services/api';
+import { useAuth } from '../context/AuthContext'; // Add this import
 
 const SessionTile = ({ session }) => {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth(); // Add this line
   const [isShakaModalOpen, setIsShakaModalOpen] = useState(false);
 
   const [shakaCount, setShakaCount] = useState(0);
   const [hasViewerShakaed, setHasViewerShakaed] = useState(false);
+  const [shakaPreview, setShakaPreview] = useState([]); // Add this state
 
   const {
     id, user_id, session_name, location, fun_rating,
@@ -19,6 +22,7 @@ const SessionTile = ({ session }) => {
     if (shakas) {
       setShakaCount(shakas.count || 0);
       setHasViewerShakaed(shakas.viewer_has_shakaed || false);
+      setShakaPreview(shakas.preview || []); // Add this line
     }
   }, [shakas]);
 
@@ -56,8 +60,27 @@ const SessionTile = ({ session }) => {
       const response = await toggleShaka(id);
       console.log('🤙 Shaka API response:', response);
       
-      // Update with server response (should match our optimistic update)
-      setShakaCount(response.data.shaka_count || 0);  // ✅ Changed this line
+      // Update count with server response
+      setShakaCount(response.data.shaka_count || 0);
+      
+      // Update preview array
+      if (currentUser) {
+        const currentUserPreview = {
+          user_id: currentUser.id,
+          display_name: currentUser.display_name || currentUser.email
+        };
+        
+        if (!wasShaked) {
+          // User added a shaka - add them to the front, keep max 2
+          setShakaPreview(prev => [
+            currentUserPreview,
+            ...prev.filter(user => user.user_id !== currentUser.id)
+          ].slice(0, 2));
+        } else {
+          // User removed a shaka - remove them from preview
+          setShakaPreview(prev => prev.filter(user => user.user_id !== currentUser.id));
+        }
+      }
     } catch (error) {
       console.error('🤙 Failed to toggle shaka:', error);
       
@@ -129,7 +152,7 @@ const SessionTile = ({ session }) => {
       {/* Shaka Modal */}
       {isShakaModalOpen && (
         <ShakaModal 
-          users={shakas?.preview || []} 
+          users={shakaPreview} 
           onClose={() => setIsShakaModalOpen(false)} 
         />
       )}
