@@ -62,25 +62,13 @@ const UserSearch = ({ onClose }) => {
           <ul>
             {!loading && !error && results.map(user => (
               <li key={user.user_id} className="border-b">
-                {onSelectUser ? (
-                    <button
-                      onClick={() => {
-                        onSelectUser(user);
-                        onClose(); // Optionally close modal on selection
-                      }}
-                      className="block w-full text-left p-2 hover:bg-gray-100"
-                    >
-                      {user.display_name || user.email}
-                    </button>
-                  ) : (
-                    <Link
-                      to={`/journal/${user.user_id}`}
-                      onClick={onClose} // Close modal on navigation
-                      className="block p-2 hover:bg-gray-100"
-                    >
-                      {user.display_name || user.email}
-                    </Link>
-                  )}
+                <Link
+                  to={`/journal/${user.user_id}`}
+                  onClick={onClose} // Close modal on navigation
+                  className="block p-2 hover:bg-gray-100"
+                >
+                  {user.display_name || user.email}
+                </Link>
               </li>
             ))}
           </ul>
