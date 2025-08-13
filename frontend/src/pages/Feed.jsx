@@ -7,6 +7,7 @@ import SessionsList from '../components/SessionsList';
 import PageTabs from '../components/PageTabs';
 import { apiCall } from '../services/api';
 import Spinner from '../components/UI/Spinner';
+import Leaderboard from '../components/Leaderboard'; // Import Leaderboard
 
 const Feed = () => {
   const { user, logout } = useAuth();
@@ -36,6 +37,9 @@ const Feed = () => {
 
     if (currentTab === 'feed') {
       fetchAllSessions();
+    } else {
+      // For leaderboard tab, loading is handled by the Leaderboard component itself
+      setLoading(false);
     }
   }, [currentTab]);
 
@@ -49,14 +53,6 @@ const Feed = () => {
     navigate('/auth/login');
   };
 
-  if (loading) {
-    return <Spinner />;
-  }
-
-  if (error) {
-    return <div className="text-red-500 text-center p-4">Error: {error}</div>;
-  }
-
   return (
     <div className="bg-gray-100 min-h-screen py-8">
       <main className="max-w-2xl mx-auto space-y-6 px-4 pt-16">
@@ -66,15 +62,14 @@ const Feed = () => {
           {currentTab === 'feed' && (
             <div>
               <h3 className="text-xl font-semibold mb-2">Community Feed</h3>
-              <SessionsList sessions={sessions} loading={loading} error={error} />
+              {loading && <Spinner />}
+              {error && <div className="text-red-500 text-center p-4">Error: {error}</div>}
+              {!loading && !error && <SessionsList sessions={sessions} />}
             </div>
           )}
 
           {currentTab === 'leaderboard' && (
-            <div>
-              <h3 className="text-xl font-semibold mb-2">Community Leaderboard</h3>
-              <p>This is a placeholder for the community leaderboard.</p>
-            </div>
+            <Leaderboard />
           )}
         </div>
 
