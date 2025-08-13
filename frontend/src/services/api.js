@@ -79,3 +79,24 @@ export const getSessionShakas = async (sessionId) => {
     throw error;
   }
 };
+
+/**
+ * Delete a surf session
+ * @param {number} sessionId - The ID of the session to delete
+ * @returns {Promise<object>} Response from the API
+ */
+export const deleteSession = async (sessionId) => {
+  console.log(`🗑️ Deleting session ${sessionId}`);
+  
+  try {
+    const response = await apiCall(`/api/surf-sessions/${sessionId}`, {
+      method: 'DELETE'
+    });
+    
+    console.log(`🗑️ Delete session response:`, response);
+    return response;
+  } catch (error) {
+    console.error(`🗑️ Failed to delete session ${sessionId}:`, error);
+    throw error;
+  }
+};
