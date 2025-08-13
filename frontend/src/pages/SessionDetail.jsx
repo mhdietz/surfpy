@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // Import useNavigate
 import { useAuth } from '../context/AuthContext';
 import Card from '../components/UI/Card';
 import Spinner from '../components/UI/Spinner';
 import { format } from 'date-fns';
-import { apiCall } from '../services/api';
+import { apiCall, deleteSession } from '../services/api'; // Import deleteSession
+import toast from 'react-hot-toast'; // Import toast
 
 import SwellDisplay from '../components/SwellDisplay';
 import WindDisplay from '../components/WindDisplay';
@@ -12,7 +13,8 @@ import TideDisplay from '../components/TideDisplay';
 
 const SessionDetail = () => {
   const { id } = useParams();
-  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate(); // Initialize useNavigate
+  const { isAuthenticated, user } = useAuth(); // Get user from AuthContext
 
   // State management
   const [session, setSession] = useState(null);
@@ -55,6 +57,22 @@ const SessionDetail = () => {
     const startTimePart = format(startDate, "h:mm a");
     const endTimePart = format(endDate, "h:mm a");
     return `${datePart}, ${startTimePart} - ${endTimePart}`;
+  };
+
+  const handleDeleteSession = async () => {
+    if (window.confirm('Are you sure you want to delete this session? This action cannot be undone.')) {
+      try {
+        await toast.promise(deleteSession(id), {
+          loading: 'Deleting session...', 
+          success: 'Session deleted successfully!',
+          error: 'Failed to delete session.',
+        });
+        navigate('/journal'); // Redirect to journal page after successful deletion
+      } catch (err) {
+        console.error("Error deleting session:", err);
+        // toast.error is handled by toast.promise
+      }
+    }
   };
 
   if (!isAuthenticated) {
@@ -136,7 +154,19 @@ const SessionDetail = () => {
             </div>
           </div>
 
-          </div>
+          {/* Delete Session Button - Only visible to session creator */}
+          {user && session.user_id === user.id && (
+            <div className="mt-6">
+              <button
+                onClick={handleDeleteSession}
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-150 ease-in-out"
+              >
+                Delete Session
+              </button>
+            </div>
+          )}
+
+        </div>
       </Card>
     </div>
   );
