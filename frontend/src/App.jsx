@@ -5,6 +5,7 @@ import AuthPage from './pages/Auth.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
 import Feed from './pages/Feed.jsx';
 import CreateSessionPage from './pages/CreateSessionPage.jsx'; // Import CreateSessionPage
+import EditSessionPage from './pages/EditSessionPage.jsx'; // Import EditSessionPage
 import JournalPage from './pages/JournalPage.jsx'; // Import JournalPage
 import SessionDetail from './pages/SessionDetail.jsx'; // Import SessionDetail
 import { Toaster } from 'react-hot-toast';
@@ -56,6 +57,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <SessionDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/session/:id/edit"
+            element={
+              <ProtectedRoute>
+                <EditSessionPage />
               </ProtectedRoute>
             }
           />
