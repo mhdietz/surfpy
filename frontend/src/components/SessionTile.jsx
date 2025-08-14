@@ -144,7 +144,7 @@ const SessionTile = ({ session }) => {
           {/* Fun Rating */}
           <div className="flex items-center gap-2">
             <span className="font-bold text-gray-800">Fun Rating:</span>
-            <span className="font-bold text-blue-600 text-lg">{fun_rating} / 5</span>
+            <span className="font-bold text-blue-600 text-lg">{fun_rating} / 10</span>
           </div>
 
           {/* Shaka Count & Toggle */}
