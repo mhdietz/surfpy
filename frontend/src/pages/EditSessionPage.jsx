@@ -67,7 +67,10 @@ function EditSessionPage() {
           setSessionName(session.session_name);
           setFunRating(session.fun_rating.toString());
           setNotes(session.session_notes);
-          setTaggedUsers(session.participants || []);
+          const taggedParticipants = session.participants.filter(
+            p => p.user_id !== session.user_id
+          );
+          setTaggedUsers(taggedParticipants || []);
         } else {
           toast.error(response.message || 'Failed to fetch session data.');
         }
