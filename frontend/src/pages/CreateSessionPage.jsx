@@ -10,7 +10,13 @@ function CreateSessionPage() {
   const navigate = useNavigate();
 
   // Form states
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
   const [location, setLocation] = useState('');
   const [sessionName, setSessionName] = useState('');
   const [startTime, setStartTime] = useState('');
