@@ -25,7 +25,7 @@ const AuthPage = () => {
         await signup(email, password, firstName, lastName);
         toast.success('Account created successfully!');
       }
-      navigate('/feed'); // Redirect to a protected route on success
+      navigate('/journal/me'); // Redirect to user's journal on success
     } catch (err) {
       toast.error(err.message || 'An error occurred.');
     }

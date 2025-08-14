@@ -96,7 +96,7 @@ This document outlines the prioritized plan for addressing the identified fronte
         1.  Click on the "Surf App" logo in the top left corner.
         2.  Verify that you are navigated to the specified home page (`/feed` or `/journal/me`).
 
-*   **#6: Default routing to "my Journal" (Auth.jsx, Routing)**
+*   **#6: Default routing to "my Journal" (Auth.jsx, Routing)** - **COMPLETE**
     *   **Description:** After successful login or session creation, redirect the user to their own journal (`/journal/me`).
     *   **Affected Files:** `frontend/src/pages/Auth.jsx` (for login/signup success), `frontend/src/pages/CreateSessionPage.jsx` (for session creation success).
     *   **Granular Actions:**

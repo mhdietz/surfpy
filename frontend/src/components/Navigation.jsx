@@ -37,7 +37,7 @@ const Navigation = () => {
 
           {/* Center: Title */}
           <div className="text-center">
-            <Link to="/feed" className="text-xl font-bold text-blue-600">
+            <Link to="/journal/me" className="text-xl font-bold text-blue-600">
               <h1>Surf App</h1>
             </Link>
           </div>
