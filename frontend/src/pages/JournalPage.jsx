@@ -107,7 +107,7 @@ function JournalPage() {
   }
 
   // Determine the prefix for tab labels dynamically
-  let journalOwnerPrefix = 'Journal'; // Default fallback
+  let journalOwnerPrefix = 'Surf Log'; // Default fallback   
   if (profileUser) {
     if (userId === 'me' || (currentUser && profileUser.id === currentUser.id)) {
       journalOwnerPrefix = 'My';
@@ -117,7 +117,7 @@ function JournalPage() {
   }
 
   const journalTabs = [
-    { label: `${journalOwnerPrefix} Log`, path: `/journal/${userId || 'me'}?tab=log` },
+    { label: `${journalOwnerPrefix} Surf Log`, path: `/journal/${userId || 'me'}?tab=log` },
     { label: `${journalOwnerPrefix} Stats`, path: `/journal/${userId || 'me'}?tab=stats` },
   ];
 
@@ -126,8 +126,8 @@ function JournalPage() {
       <main className="max-w-2xl mx-auto px-4 pt-16">
         <h1 className="text-2xl font-bold mb-6">
           {/* {profileUser 
-            ? `${profileUser.display_name}'s ${currentTab === 'stats' ? 'Stats' : 'Journal'}` 
-            : (currentTab === 'stats' ? 'Stats' : 'Journal')} */}
+            ? `${profileUser.display_name}'s ${currentTab === 'stats' ? 'Stats' : 'Surf Log'}` 
+            : (currentTab === 'stats' ? 'Stats' : 'Surf Log')} */}
         </h1>
         
         <PageTabs tabs={journalTabs} />

@@ -35,16 +35,16 @@ This document outlines the prioritized plan for addressing the identified fronte
         4.  Navigate to another user's journal.
         5.  Verify that the page title also simply says "Journal" or "Stats" and no longer includes the other user's name.
 
-*   **#5: Change "my journal" to "surf log" throughout (JournalPage.jsx, Navigation.jsx)**
-    *   **Description:** Replace all instances of "Journal" or "My Journal" with "Surf Log".
+*   **#5: Change "my journal" to "surf log" throughout (JournalPage.jsx, Navigation.jsx)** - **COMPLETE**
+    *   **Description:** Replaced all instances of "Journal" or "My Journal" with "Surf Log".
     *   **Affected Files:** `frontend/src/pages/JournalPage.jsx`, `frontend/src/components/Navigation.jsx` (and potentially other minor references).
     *   **Granular Actions:**
-        1.  In `JournalPage.jsx`, replace "Journal" with "Surf Log" in the `journalTabs` array and the main `<h1>` title.
-        2.  In `Navigation.jsx`, replace "Journal" with "Surf Log" in the bottom navigation link.
+        1.  In `JournalPage.jsx`, replaced "Journal" with "Surf Log" in the `journalTabs` array and the main `<h1>` title.
+        2.  In `Navigation.jsx`, replaced "Journal" with "Surf Log" in the bottom navigation link.
     *   **Test/Validation:**
-        1.  Navigate to your own journal (`/journal/me`).
-        2.  Verify that the page title and tab labels now say "Surf Log" (e.g., "Your Surf Log", "Your Stats").
-        3.  Check the bottom navigation bar and confirm the "Journal" link now says "Surf Log".
+        1.  Navigated to your own journal (`/journal/me`).
+        2.  Verified that the page title and tab labels now say "Surf Log" (e.g., "Your Surf Log", "Your Stats").
+        3.  Checked the bottom navigation bar and confirmed the "Journal" link now says "Surf Log".
 
 *   **#27: Cold start states (empty states for new users) (JournalPage.jsx)**
     *   **Description:** Display a specific message when a user has no sessions logged in their journal.
@@ -57,6 +57,27 @@ This document outlines the prioritized plan for addressing the identified fronte
         2.  Navigate to your journal (`/journal/me`).
         3.  Verify that the "No sessions logged yet..." message is displayed.
         4.  (Optional) Create a new session and verify that the message disappears and the session appears.
+
+*   **#New1: Reduce extra space between tabs and content (JournalPage.jsx, Feed.jsx)**
+    *   **Description:** The vertical gap between `PageTabs` and the content (`SessionsList` or `StatsDisplay`) is too large in both Journal and Feed pages.
+    *   **Affected Files:** `frontend/src/pages/JournalPage.jsx`, `frontend/src/pages/Feed.jsx`
+    *   **Granular Actions:**
+        1.  **JournalPage.jsx:** Remove `space-y-6` from the `main` element.
+        2.  **Feed.jsx:** Remove `space-y-6` from the `main` element.
+    *   **Test/Validation:**
+        1.  Navigate to the Journal page. Verify the gap between tabs and content is reduced/removed. Check overall layout.
+        2.  Navigate to the Feed page. Verify the gap between tabs and content is reduced/removed. Check overall layout.
+
+*   **#New2: Shorten user's name in other users' surf logs/stats (JournalPage.jsx)**
+    *   **Description:** When viewing another user's journal, the full display name (e.g., "Stefano Scotti's Surf Log") takes up too much space. It should be shortened to just the first name (e.g., "Stefano's Surf Log").
+    *   **Affected File:** `frontend/src/pages/JournalPage.jsx`
+    *   **Granular Actions:**
+        1.  Locate the line where `journalOwnerPrefix` is set to `${profileUser.display_name}'s`.
+        2.  Change it to use `profileUser.first_name` instead.
+    *   **Test/Validation:**
+        1.  Log in.
+        2.  Navigate to another user's journal (e.g., `/journal/<some_other_user_id>`).
+        3.  Verify that the tab labels now display the other user's first name (e.g., "Stefano's Surf Log", "Stefano's Stats").
 
 ### Phase 2: Navigation & Global Functionality
 

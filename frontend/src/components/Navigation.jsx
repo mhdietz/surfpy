@@ -53,7 +53,7 @@ const Navigation = () => {
         <div className="container mx-auto flex justify-around items-center">
           {/* My Journal */}
           <Link to="/journal" className={getLinkClasses("/journal")}>
-            <span>Journal</span>
+            <span>Surf Log</span>
           </Link>
           {/* Create Session */}
           <Link to="/create-session" className={getLinkClasses("/create-session")}>
