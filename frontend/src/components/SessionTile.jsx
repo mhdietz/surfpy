@@ -64,7 +64,7 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
         <div className="flex-grow space-y-3 mt-2">
                     {session_notes && 
             <div className="bg-gray-50 p-3 rounded-md">
-              <p className="text-gray-600 line-clamp-2">
+              <p className="text-sm text-gray-600 line-clamp-3">
                 {session_notes}
               </p>
             </div>
@@ -74,10 +74,10 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
         {/* Footer */}
         <div className="pt-3 mt-auto border-t border-gray-100 space-y-2">
           {/* Location and Participants */}
-          <div className="text-md text-gray-600 space-y-1">
-            <p className="font-medium truncate">{location}</p>
+          <div className="text-sm space-y-1">
+            <p className="font-semibold text-gray-800 truncate">{location}</p>
             {participants && participants.length > 1 && (
-              <p className="text-gray-500 truncate">{generateParticipantsString()}</p>
+              <p className="font-normal text-gray-500 truncate">{generateParticipantsString()}</p>
             )}
           </div>
 
