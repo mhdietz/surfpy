@@ -56,7 +56,7 @@ const Navigation = () => {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v11.494m-5.25-8.494v11.494l5.25-2.625 5.25 2.625V6.253l-5.25-2.625-5.25 2.625z" />
             </svg>
-            <span className="text-xs">Journal</span>
+            <span className="text-xs">Surf Log</span>
           </Link>
           {/* Create Session */}
           <Link to="/create-session" className={getLinkClasses("/create-session")}>
