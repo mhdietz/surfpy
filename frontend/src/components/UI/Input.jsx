@@ -13,7 +13,7 @@ const Input = ({
 }) => {
 
   // Dark theme base styles for input, select, and textarea
-  const baseStyle = 'w-full px-3 py-4 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 sm:text-sm appearance-none';
+  const baseStyle = 'w-full px-3 py-4 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 sm:text-sm appearance-none min-h-10';
 
   // Specific styles to remove default browser UI for date/time inputs
   const dateInputSpecificStyles = `
