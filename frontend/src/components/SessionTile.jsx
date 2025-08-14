@@ -125,7 +125,9 @@ const SessionTile = ({ session }) => {
             <div className="pt-2">
               <p className="font-semibold text-gray-700">With:</p>
               <div className="flex flex-wrap gap-2 mt-1">
-                {participants.map(p => (
+                {participants
+                  .filter(p => p.user_id !== user_id) // Filter out the session creator
+                  .map(p => (
                   <span 
                     key={p.user_id} 
                     onClick={(e) => handleNavigateToJournal(e, p.user_id)}
