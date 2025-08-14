@@ -63,19 +63,19 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
         {/* Body */}
         <div className="flex-grow space-y-3 mt-2">
           {session_notes && <p className="text-gray-600 bg-gray-50 p-3 rounded-md truncate">{session_notes}</p>}
+        </div>
 
-          {/* Condensed Location and Participants */}
+        {/* Footer */}
+        <div className="flex items-center justify-between pt-3 mt-auto border-t border-gray-100">
+          {/* Location and Participants */}
           <div className="text-md text-gray-600 truncate">
             <span>{location}</span>
             {participants && participants.length > 1 && (
               <span className="ml-1 font-semibold">{generateParticipantsString()}</span>
             )}
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end pt-3 mt-auto border-t border-gray-100">
-          <div className="flex items-center gap-2">
+          {/* Shaka Controls */}
+          <div className="flex items-center gap-2 flex-shrink-0 ml-4">
             <span onClick={onShaka} className={`text-xl cursor-pointer transition-all ${hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}>🤙</span>
             <div onClick={onOpenShakaModal} className="cursor-pointer">
               <span className="font-bold text-blue-600">{shakaCount}</span>
