@@ -435,6 +435,9 @@ def update_surf_session(user_id, session_id):
         if str(existing_session.get('user_id')) != str(user_id):
             return jsonify({"status": "fail", "message": "You are not authorized to edit this session"}), 403
 
+        # Extract participant data. It can be None if not provided.
+        tagged_users = session_data.get('tagged_users')
+
         # Start with the simple, non-relational fields
         update_data = {}
         allowed_fields = ['session_name', 'fun_rating', 'session_notes']
@@ -511,11 +514,17 @@ def update_surf_session(user_id, session_id):
             update_data['met_buoy_id'] = met_buoy_id
             update_data['tide_station_id'] = tide_station_id
 
-        if not update_data:
+        # Check if there is anything to update
+        if not update_data and tagged_users is None:
             return jsonify({"status": "fail", "message": "No valid fields provided for update"}), 400
 
-        # Update the session in the database
-        updated_session = update_session(session_id, update_data, user_id)
+        # Update the session in the database, now including participants
+        updated_session = update_session(
+            session_id=session_id, 
+            update_data=update_data, 
+            user_id=user_id, 
+            tagged_user_ids=tagged_users
+        )
         
         if updated_session:
             return jsonify({

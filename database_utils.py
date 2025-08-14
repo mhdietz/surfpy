@@ -211,58 +211,74 @@ def create_session(session_data, user_id):
     finally:
         conn.close()
 
-def update_session(session_id, update_data, user_id):
-    """Update an existing surf session for a specific user"""
+def update_session(session_id, update_data, user_id, tagged_user_ids=None):
+    """Update an existing surf session and its participants for a specific user."""
     conn = get_db_connection()
     if not conn:
         return None
     
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # First check if the session belongs to the user
+            # First, check if the session belongs to the user
             cur.execute("SELECT id FROM surf_sessions_duplicate WHERE id = %s AND user_id = %s", (session_id, user_id))
             if not cur.fetchone():
-                # Session doesn't exist or doesn't belong to user
-                return None
+                return None  # Session doesn't exist or doesn't belong to the user
+
+            # --- Update Basic Session Details ---
+            # Prevent key fields from being updated directly
+            update_data.pop('id', None)
+            update_data.pop('created_at', None)
+            update_data.pop('user_id', None)
             
-            # Ensure id, created_at, and user_id aren't in the update data
-            if 'id' in update_data:
-                del update_data['id']
-            if 'created_at' in update_data:
-                del update_data['created_at']
-            if 'user_id' in update_data:
-                del update_data['user_id']  # Prevent user_id from being changed
-            
-            # Handle raw_swell as JSONB
+            # Handle JSONB fields
             if 'raw_swell' in update_data:
                 update_data['raw_swell'] = Json(update_data['raw_swell'])
-                
-            # Handle raw_met as JSONB
             if 'raw_met' in update_data:
                 update_data['raw_met'] = Json(update_data['raw_met'])
 
-            # Remove deprecated fields
+            # Remove deprecated fields if they exist
             update_data.pop('date', None)
             update_data.pop('time', None)
             update_data.pop('end_time', None)
 
-            # Build SET clause for the SQL query
-            set_clause = ', '.join([f"{key} = %s" for key in update_data.keys()])
-            
-            query = f"""
-            UPDATE surf_sessions_duplicate 
-            SET {set_clause} 
-            WHERE id = %s AND user_id = %s
-            RETURNING *
-            """
-            
-            # Add the session_id and user_id as the last parameters
-            values = list(update_data.values()) + [session_id, user_id]
-            
-            cur.execute(query, values)
+            # Only perform the update if there's data to update
+            if update_data:
+                set_clause = ', '.join([f"{key} = %s" for key in update_data.keys()])
+                query = f"""
+                UPDATE surf_sessions_duplicate 
+                SET {set_clause} 
+                WHERE id = %s AND user_id = %s
+                """
+                values = list(update_data.values()) + [session_id, user_id]
+                cur.execute(query, values)
+
+            # --- Synchronize Session Participants ---
+            if tagged_user_ids is not None:
+                # 1. Delete all existing 'tagged' participants for this session
+                cur.execute(
+                    "DELETE FROM session_participants WHERE session_id = %s AND role = 'tagged_participant'",
+                    (session_id,)
+                )
+                
+                # 2. Insert the new list of tagged participants
+                if tagged_user_ids:
+                    for tagged_user_id in tagged_user_ids:
+                        cur.execute(
+                            """
+                            INSERT INTO session_participants (session_id, user_id, tagged_by_user_id, role)
+                            VALUES (%s, %s, %s, %s)
+                            """,
+                            (session_id, tagged_user_id, user_id, 'tagged_participant')
+                        )
+
+            # Commit the entire transaction
             conn.commit()
             
+            # Fetch the fully updated session to return it
+            # We can't just use RETURNING anymore because we might have multiple queries
+            cur.execute("SELECT * FROM surf_sessions_duplicate WHERE id = %s", (session_id,))
             updated_session = cur.fetchone()
+            
             return _format_session_response(updated_session)
     except Exception as e:
         print(f"Error updating session: {e}")
