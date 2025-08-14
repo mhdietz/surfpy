@@ -23,18 +23,17 @@ This document outlines the prioritized plan for addressing the identified fronte
         1.  Navigated to a session detail page or a list of sessions (Feed or Journal).
         2.  Verified that the "Fun Rating" now displays as "X / 10" for all session tiles.
 
-*   **#2: Change "Martin's log" to "Your log" when viewing own journal (JournalPage.jsx)**
-    *   **Description:** When the current user views their own journal, the title and tab labels should say "Your Log" instead of "[User's Name]'s Log".
+*   **#2: Change "Martin's log" to "Your log" when viewing own journal (JournalPage.jsx)** - **COMPLETE**
+    *   **Description:** The previous dynamic display of "[User's Name]'s Log" or "[User's Name]'s Stats" in the main title has been removed. The title now defaults to "Journal" or "Stats" based on the active tab.
     *   **Affected File:** `frontend/src/pages/JournalPage.jsx`
     *   **Granular Actions:**
-        1.  Locate the `journalOwnerPrefix` logic.
-        2.  Modify the condition to set `journalOwnerPrefix` to "Your" if `userId === 'me'` or `profileUser.id === currentUser.id`.
+        1.  The conditional rendering for the main `<h1>` title was modified to remove the dynamic display of the user's name.
     *   **Test/Validation:**
         1.  Log in as a user.
         2.  Navigate to your own journal (`/journal/me`).
-        3.  Verify that the page title and tab labels (e.g., "Your Log", "Your Stats") correctly display "Your" instead of your display name.
+        3.  Verify that the page title now simply says "Journal" or "Stats" (depending on the tab) and no longer includes the user's name.
         4.  Navigate to another user's journal.
-        5.  Verify that the page title and tab labels correctly display the other user's display name (e.g., "Friend's Log", "Friend's Stats").
+        5.  Verify that the page title also simply says "Journal" or "Stats" and no longer includes the other user's name.
 
 *   **#5: Change "my journal" to "surf log" throughout (JournalPage.jsx, Navigation.jsx)**
     *   **Description:** Replace all instances of "Journal" or "My Journal" with "Surf Log".
