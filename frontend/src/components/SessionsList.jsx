@@ -2,7 +2,7 @@ import React from 'react';
 import Spinner from './UI/Spinner';
 import SessionTile from './SessionTile';
 
-const SessionsList = ({ sessions, loading, error }) => {
+const SessionsList = ({ sessions, loading, error, isOwnJournal, profileUser }) => {
   return (
     <div className="space-y-6">
       {loading && (
@@ -19,9 +19,18 @@ const SessionsList = ({ sessions, loading, error }) => {
       )}
 
       {!loading && !error && sessions.length === 0 && (
-        <div className="text-center text-gray-600 p-4">
-          <p>No sessions found.</p>
-          <p>Be the first to log a session!</p>
+        <div className="text-center text-gray-700 p-8 bg-blue-50 rounded-lg shadow-inner">
+          {isOwnJournal ? (
+            <>
+              <p className="text-xl font-semibold mb-2">You're dry mate</p>
+              <p className="text-lg">get your ass in the water</p>
+            </>
+          ) : (
+            <>
+              <p className="text-xl font-semibold mb-2">{profileUser?.display_name}'s dry</p>
+              <p className="text-lg">get that ass in the water</p>
+            </>
+          )}
         </div>
       )}
 

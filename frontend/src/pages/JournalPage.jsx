@@ -116,6 +116,8 @@ function JournalPage() {
     }
   }
 
+  const isOwnJournal = userId === 'me' || (currentUser && profileUser && profileUser.id === currentUser.id);
+
   const journalTabs = [
     { label: `${journalOwnerPrefix} Surf Log`, path: `/journal/${userId || 'me'}?tab=log` },
     { label: `${journalOwnerPrefix} Stats`, path: `/journal/${userId || 'me'}?tab=stats` },
@@ -135,7 +137,7 @@ function JournalPage() {
         {currentTab === 'log' && (
           <div className="w-full bg-white p-6 rounded-lg shadow-md">
             <JournalFilter filters={filters} onFilterChange={handleFilterChange} />
-            <SessionsList sessions={sessions} loading={loading} error={error} />
+            <SessionsList sessions={sessions} loading={loading} error={error} isOwnJournal={isOwnJournal} profileUser={profileUser} />
           </div>
         )}
 
