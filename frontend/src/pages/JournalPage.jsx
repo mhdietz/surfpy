@@ -125,7 +125,7 @@ function JournalPage() {
 
   return (
     <div className="bg-gray-100 min-h-screen py-8">
-      <main className="max-w-2xl mx-auto px-4 pt-2">
+      <main className="max-w-2xl mx-auto pt-4 sm:pt-8">
         <h1 className="text-2xl font-bold mb-6">
           {/* {profileUser 
             ? `${profileUser.display_name}'s ${currentTab === 'stats' ? 'Stats' : 'Surf Log'}` 
@@ -135,14 +135,14 @@ function JournalPage() {
         <PageTabs tabs={journalTabs} />
 
         {currentTab === 'log' && (
-          <div className="w-full bg-white p-6 rounded-lg shadow-md">
+          <div className="w-full bg-white rounded-lg shadow-md">
             <JournalFilter filters={filters} onFilterChange={handleFilterChange} />
             <SessionsList sessions={sessions} loading={loading} error={error} isOwnJournal={isOwnJournal} profileUser={profileUser} />
           </div>
         )}
 
         {currentTab === 'stats' && (
-          <div className="w-full bg-white p-4 rounded-lg shadow-md"> 
+          <div className="w-full bg-white rounded-lg shadow-md"> 
             <StatsDisplay stats={stats} loading={loading} error={error} />
           </div>
         )}

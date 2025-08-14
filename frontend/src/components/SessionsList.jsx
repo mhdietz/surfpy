@@ -1,10 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Spinner from './UI/Spinner';
 import SessionTile from './SessionTile';
 
 const SessionsList = ({ sessions, loading, error, isOwnJournal, profileUser }) => {
+  const [tileVariant, setTileVariant] = useState('journal'); // 'journal' or 'strava'
+
   return (
     <div className="space-y-6">
+      {/* Temporary Style Toggle for Development */}
+      <div className="flex justify-center gap-2 bg-gray-100 p-2 rounded-lg">
+        <button 
+          onClick={() => setTileVariant('journal')}
+          className={`px-4 py-1 rounded-md text-sm font-medium ${tileVariant === 'journal' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700'}`}>
+            Journal View
+        </button>
+        <button 
+          onClick={() => setTileVariant('strava')}
+          className={`px-4 py-1 rounded-md text-sm font-medium ${tileVariant === 'strava' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700'}`}>
+            Strava View
+        </button>
+      </div>
+
       {loading && (
         <div className="flex justify-center items-center h-32">
           <Spinner />
@@ -35,9 +51,9 @@ const SessionsList = ({ sessions, loading, error, isOwnJournal, profileUser }) =
       )}
 
       {!loading && !error && sessions.length > 0 && (
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1">
           {sessions.map((session) => (
-            <SessionTile key={session.id} session={session} />
+            <SessionTile key={session.id} session={session} variant={tileVariant} />
           ))}
         </div>
       )}
