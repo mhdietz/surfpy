@@ -23,14 +23,23 @@ const Navigation = () => {
     <>
       {/* Top Header */}
       <header className="fixed top-0 left-0 w-full bg-white shadow-md p-4 z-20">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-bold text-blue-600">Surf App</h1>
-          {/* User Search and Profile Dropdown */}
-          <div className="flex items-center space-x-4">
-            {/* User Search Icon */}
-            <span onClick={() => setIsSearchOpen(true)} className="text-gray-600 cursor-pointer hover:text-blue-600">🔍 Search</span>
+        <div className="container mx-auto grid grid-cols-3 items-center">
+          {/* Left: Search Icon */}
+          <div className="justify-self-start">
+            <button onClick={() => setIsSearchOpen(true)} className="text-gray-600 hover:text-blue-600">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+          </div>
 
-            {/* Profile Dropdown Placeholder */}
+          {/* Center: Title */}
+          <div className="text-center">
+            <h1 className="text-xl font-bold text-blue-600">Surf App</h1>
+          </div>
+
+          {/* Right: Profile Dropdown */}
+          <div className="justify-self-end">
             {isAuthenticated ? (
               <div className="relative group pb-2">
                 <span className="text-gray-600 cursor-pointer hover:text-blue-600">
