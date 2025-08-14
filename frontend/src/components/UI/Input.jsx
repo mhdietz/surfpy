@@ -9,11 +9,13 @@ const Input = ({
   placeholder = '',
   className = '',
   as = 'input', // New prop to specify the element type
-  children // For select options
+  children, // For select options
+  isPlaceholder = false // New prop for placeholder styling
 }) => {
 
-  // Dark theme base styles for input, select, and textarea
-  const baseStyle = 'w-full px-3 py-4 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 sm:text-sm appearance-none min-h-10';
+  const textColorClass = isPlaceholder ? 'text-gray-500' : 'text-gray-900';
+
+  const baseStyle = `w-full px-3 py-4 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white sm:text-sm appearance-none min-h-10 ${textColorClass}`;
 
   // Specific styles to remove default browser UI for date/time inputs
   const dateInputSpecificStyles = `

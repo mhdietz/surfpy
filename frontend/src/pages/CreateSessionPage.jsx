@@ -156,7 +156,7 @@ function CreateSessionPage() {
 
           <div>
             <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
-            <Input as="select" id="location" name="location" value={location} onChange={(e) => setLocation(e.target.value)}>
+            <Input as="select" id="location" name="location" value={location} onChange={(e) => setLocation(e.target.value)} isPlaceholder={!location}>
               {isLoading ? (
                 <option>Loading locations...</option>
               ) : (
