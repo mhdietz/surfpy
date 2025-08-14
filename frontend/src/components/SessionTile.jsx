@@ -37,7 +37,7 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
   return (
     <div onClick={onNavigate} className="bg-white rounded-lg shadow border border-gray-200 flex cursor-pointer hover:shadow-lg transition-shadow overflow-hidden">
       {/* Date Column (LHS) */}
-      <div className="flex flex-col justify-center items-center w-24 bg-gray-50 p-2 border-r border-gray-200">
+      <div className="flex flex-col justify-center items-center w-20 flex-shrink-0 bg-gray-50 p-2 border-r border-gray-200">
         <p className="text-sm font-semibold text-red-500 tracking-wider">{month}</p>
         <p className="text-4xl font-bold text-gray-800">{day}</p>
         <p className="text-xs text-gray-400">{year}</p>
@@ -64,7 +64,7 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
         <div className="flex-grow space-y-3 mt-2">
                     {session_notes && 
             <div className="bg-gray-50 p-3 rounded-md">
-              <p className="text-gray-600 line-clamp-2">
+              <p className="text-sm text-gray-600 line-clamp-3">
                 {session_notes}
               </p>
             </div>
@@ -72,19 +72,22 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 mt-auto border-t border-gray-100">
+        <div className="pt-3 mt-auto border-t border-gray-100 space-y-2">
           {/* Location and Participants */}
-          <div className="text-md text-gray-600 truncate">
-            <span>{location}</span>
+          <div className="text-sm space-y-1">
+            <p className="font-semibold text-gray-800 truncate">{location}</p>
             {participants && participants.length > 1 && (
-              <span className="ml-1 font-semibold">{generateParticipantsString()}</span>
+              <p className="font-normal text-gray-500 truncate">{generateParticipantsString()}</p>
             )}
           </div>
+
           {/* Shaka Controls */}
-          <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-            <span onClick={onShaka} className={`text-xl cursor-pointer transition-all ${hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}>🤙</span>
-            <div onClick={onOpenShakaModal} className="cursor-pointer">
-              <span className="font-bold text-blue-600">{shakaCount}</span>
+          <div className="flex justify-end items-center">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span onClick={onShaka} className={`text-xl cursor-pointer transition-all ${hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}>🤙</span>
+              <div onClick={onOpenShakaModal} className="cursor-pointer">
+                <span className="font-bold text-blue-600">{shakaCount}</span>
+              </div>
             </div>
           </div>
         </div>
