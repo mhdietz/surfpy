@@ -21,6 +21,19 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
   const day = date.getDate();
   const year = date.getFullYear();
 
+  const generateParticipantsString = () => {
+    const others = participants.filter(p => p.user_id !== user_id);
+    if (others.length === 0) return '';
+
+    const firstName = others[0].display_name;
+    if (others.length === 1) {
+      return `with ${firstName}`;
+    }
+
+    const othersCount = others.length - 1;
+    return `with ${firstName} and ${othersCount} other${othersCount > 1 ? 's' : ''}`;
+  };
+
   return (
     <div onClick={onNavigate} className="bg-white rounded-lg shadow border border-gray-200 flex cursor-pointer hover:shadow-lg transition-shadow overflow-hidden">
       {/* Date Column (LHS) */}
@@ -33,46 +46,35 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
       {/* Content Column (RHS) */}
       <div className="flex-grow flex flex-col p-4">
         {/* Header */}
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start gap-4">
+          {/* Title and Creator */}
           <div>
             <h3 className="text-xl font-bold text-gray-900">{session_name || 'Untitled Session'}</h3>
-            <p className="text-md text-gray-600">{location}</p>
+            <p onClick={(e) => onUserClick(e, user_id)} className="text-sm font-medium text-gray-500 hover:underline">
+              by {display_name}
+            </p>
           </div>
-          <p onClick={(e) => onUserClick(e, user_id)} className="text-right text-sm font-bold text-gray-800 hover:underline">
-            {display_name}
-          </p>
+          {/* Rating */}
+          <div className="flex-shrink-0">
+            <p className="text-3xl font-bold text-blue-600">{fun_rating}</p>
+          </div>
         </div>
 
         {/* Body */}
         <div className="flex-grow space-y-3 mt-2">
           {session_notes && <p className="text-gray-600 bg-gray-50 p-3 rounded-md truncate">{session_notes}</p>}
 
-          {participants && participants.length > 1 && (
-            <div>
-              <p className="font-semibold text-gray-700 text-xs">With:</p>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {participants
-                  .filter(p => p.user_id !== user_id)
-                  .map(p => (
-                  <span 
-                    key={p.user_id} 
-                    onClick={(e) => onUserClick(e, p.user_id)}
-                    className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium hover:bg-blue-200 hover:text-blue-900"
-                  >
-                    {p.display_name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Condensed Location and Participants */}
+          <div className="text-md text-gray-600 truncate">
+            <span>{location}</span>
+            {participants && participants.length > 1 && (
+              <span className="ml-1 font-semibold">{generateParticipantsString()}</span>
+            )}
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 mt-auto border-t border-gray-100">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">Fun Rating:</span>
-            <span className="font-bold text-blue-600">{fun_rating}/10</span>
-          </div>
+        <div className="flex items-center justify-end pt-3 mt-auto border-t border-gray-100">
           <div className="flex items-center gap-2">
             <span onClick={onShaka} className={`text-xl cursor-pointer transition-all ${hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}>🤙</span>
             <div onClick={onOpenShakaModal} className="cursor-pointer">
