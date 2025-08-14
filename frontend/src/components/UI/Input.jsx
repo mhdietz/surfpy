@@ -13,9 +13,22 @@ const Input = ({
 }) => {
 
   // Dark theme base styles for input, select, and textarea
-  const baseStyle = 'w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 sm:text-sm';
+  const baseStyle = 'w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 sm:text-sm appearance-none';
 
-  const combinedClassName = `${baseStyle} ${className}`;
+  // Specific styles to remove default browser UI for date/time inputs
+  const dateInputSpecificStyles = `
+    &::-webkit-calendar-picker-indicator {
+      display: none;
+      -webkit-appearance: none;
+    }
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  `;
+
+  const combinedClassName = `${baseStyle} ${className} ${dateInputSpecificStyles}`;
 
   const renderElement = () => {
     switch (as) {

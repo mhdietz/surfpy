@@ -175,15 +175,13 @@ function CreateSessionPage() {
             <Input type="text" id="session_name" name="session_name" placeholder="e.g., Fun morning session" value={sessionName} onChange={(e) => setSessionName(e.target.value)} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="start_time" className="block text-sm font-medium text-gray-700">Start Time</label>
-              <Input type="time" id="start_time" name="start_time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-            </div>
-            <div>
-              <label htmlFor="end_time" className="block text-sm font-medium text-gray-700">End Time</label>
-              <Input type="time" id="end_time" name="end_time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-            </div>
+          <div>
+            <label htmlFor="start_time" className="block text-sm font-medium text-gray-700">Start Time</label>
+            <Input type="time" id="start_time" name="start_time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="end_time" className="block text-sm font-medium text-gray-700">End Time</label>
+            <Input type="time" id="end_time" name="end_time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
           </div>
 
           <div>
