@@ -182,17 +182,17 @@ function EditSessionPage() {
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <h1 className="text-2xl font-bold text-center mb-6">Edit Surf Session</h1>
+      <h1 className="text-2xl font-bold text-center mb-6 text-gray-900">Edit Session</h1>
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="date" className="block text-sm font-medium text-gray-300">Date</label>
+            <label htmlFor="date" className="block text-sm font-medium text-gray-700">Date</label>
             <Input type="date" id="date" name="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
 
           <div>
-            <label htmlFor="location" className="block text-sm font-medium text-gray-300">Location</label>
-            <select id="location" name="location" value={location} onChange={(e) => setLocation(e.target.value)} className="mt-1 block w-full bg-gray-700 border-gray-600 text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+            <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
+            <Input as="select" id="location" name="location" value={location} onChange={(e) => setLocation(e.target.value)} isPlaceholder={!location}>
               {isLoading ? (
                 <option>Loading locations...</option>
               ) : (
@@ -209,37 +209,50 @@ function EditSessionPage() {
                   ))}
                 </>
               )}
-            </select>
+            </Input>
           </div>
 
           <div>
-            <label htmlFor="session_name" className="block text-sm font-medium text-gray-300">Title</label>
+            <label htmlFor="session_name" className="block text-sm font-medium text-gray-700">Title</label>
             <Input type="text" id="session_name" name="session_name" placeholder="e.g., Fun morning session" value={sessionName} onChange={(e) => setSessionName(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="start_time" className="block text-sm font-medium text-gray-300">Start Time</label>
+              <label htmlFor="start_time" className="block text-sm font-medium text-gray-700">Start Time</label>
               <Input type="time" id="start_time" name="start_time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
             </div>
             <div>
-              <label htmlFor="end_time" className="block text-sm font-medium text-gray-300">End Time</label>
+              <label htmlFor="end_time" className="block text-sm font-medium text-gray-700">End Time</label>
               <Input type="time" id="end_time" name="end_time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
             </div>
           </div>
 
           <div>
-            <label htmlFor="fun_rating" className="block text-sm font-medium text-gray-300">Fun Rating (1-10, 2 decimal places)</label>
-            <Input type="number" id="fun_rating" name="fun_rating" min="1" max="10" step="0.01" value={funRating} onChange={(e) => setFunRating(e.target.value)} />
+            <label htmlFor="fun_rating" className="block text-sm font-medium text-gray-700">Fun Rating</label>
+            <div className="flex items-center space-x-4">
+              <Input 
+                type="range" 
+                id="fun_rating" 
+                name="fun_rating" 
+                min="1" 
+                max="10" 
+                step="0.25" 
+                value={funRating} 
+                onChange={(e) => setFunRating(e.target.value)}
+                className="flex-grow"
+              />
+              <span className="text-lg font-semibold text-gray-900 w-16 text-right">{parseFloat(funRating).toFixed(2)}</span>
+            </div>
           </div>
 
           <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-300">Notes</label>
-            <textarea id="notes" name="notes" rows="4" className="mt-1 block w-full bg-gray-700 border-gray-600 text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2" placeholder="How were the waves?" value={notes} onChange={(e) => setNotes(e.target.value)}></textarea>
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes</label>
+            <Input as="textarea" id="notes" name="notes" placeholder="How were the waves?" value={notes} onChange={(e) => setNotes(e.target.value)}></Input>
           </div>
 
           <div>
-            <label htmlFor="user_search" className="block text-sm font-medium text-gray-300">Tag Surfers</label>
+            <label htmlFor="user_search" className="block text-sm font-medium text-gray-700">Tag Surfers</label>
             <Input 
               type="text" 
               id="user_search" 
@@ -276,9 +289,12 @@ function EditSessionPage() {
             </div>
           </div>
 
-          <div className="pt-4">
+          <div className="pt-4 flex space-x-4">
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Updating...' : 'Update Session'}
+            </Button>
+            <Button type="button" variant="secondary" className="w-full" onClick={() => navigate(`/session/${id}`)}>
+              Cancel
             </Button>
           </div>
         </form>
