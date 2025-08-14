@@ -62,7 +62,7 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
 
         {/* Body */}
         <div className="flex-grow space-y-3 mt-2">
-          {session_notes && <p className="text-gray-600 bg-gray-50 p-3 rounded-md truncate">{session_notes}</p>}
+          {session_notes && <p className="text-gray-600 bg-gray-50 p-3 rounded-md line-clamp-2">{session_notes}</p>}
         </div>
 
         {/* Footer */}
