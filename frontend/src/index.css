@@ -12,7 +12,7 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-runnable-track {
   background: #e0e0e0; /* Light grey track */
   border-radius: 5px;
-  height: 8px;
+  height: 12px;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -22,7 +22,7 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 50%;
   width: 20px;
   height: 20px;
-  margin-top: -6px; /* Center the thumb vertically */
+  margin-top: -4px; /* Center the thumb vertically */
   cursor: pointer;
 }
 
@@ -30,7 +30,7 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-moz-range-track {
   background: #e0e0e0; /* Light grey track */
   border-radius: 5px;
-  height: 8px;
+  height: 12px;
 }
 
 input[type="range"]::-moz-range-thumb {
