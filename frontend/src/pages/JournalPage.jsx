@@ -135,7 +135,7 @@ function JournalPage() {
         <PageTabs tabs={journalTabs} />
 
         {currentTab === 'log' && (
-          <div className="w-full bg-white p-6 rounded-lg shadow-md">
+          <div className="w-full bg-white p-2 sm:p-6 rounded-lg shadow-md">
             <JournalFilter filters={filters} onFilterChange={handleFilterChange} />
             <SessionsList sessions={sessions} loading={loading} error={error} isOwnJournal={isOwnJournal} profileUser={profileUser} />
           </div>

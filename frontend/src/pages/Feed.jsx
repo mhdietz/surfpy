@@ -58,7 +58,7 @@ const Feed = () => {
       <main className="max-w-2xl mx-auto px-2 sm:px-4 pt-4 sm:pt-8">
         <PageTabs tabs={feedTabs} />
 
-        <div className="w-full bg-white p-6 rounded-lg shadow-md">
+        <div className="w-full bg-white p-2 sm:p-6 rounded-lg shadow-md">
           {currentTab === 'feed' && (
             <div>
               <h3 className="text-xl font-semibold mb-2">Community Feed</h3>
