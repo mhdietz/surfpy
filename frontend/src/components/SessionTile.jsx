@@ -96,54 +96,7 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
   );
 };
 
-// Strava-style Tile
-const StravaTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaModal, shakaData }) => {
-  const { id, user_id, session_name, location, fun_rating, session_started_at, display_name, participants } = session;
-  const { shakaCount, hasViewerShakaed } = shakaData;
-  const participantCount = (participants?.length || 0) - 1;
 
-  return (
-    <div onClick={onNavigate} className="bg-white p-4 rounded-lg shadow border border-gray-200 flex flex-col gap-3 cursor-pointer hover:shadow-lg transition-shadow">
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <span onClick={(e) => onUserClick(e, user_id)} className="text-gray-800 text-3xl">🏄</span>
-        <div className="flex-grow">
-          <p onClick={(e) => onUserClick(e, user_id)} className="font-bold text-gray-800 hover:underline">{display_name}</p>
-          <p className="text-xs text-gray-500">{formatSessionDate(session_started_at)}</p>
-        </div>
-      </div>
-
-      {/* Title */}
-      <div>
-        <h3 className="font-bold text-gray-900">{session_name || 'Untitled Session'}</h3>
-        <p className="text-sm text-gray-600">{location}</p>
-      </div>
-
-      {/* Stats */}
-      <div className="flex justify-around border-t border-b border-gray-100 py-2">
-        <div className="text-center">
-          <p className="text-xs text-gray-500">Rating</p>
-          <p className="font-bold text-lg text-blue-600">{fun_rating}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-xs text-gray-500">Surfers</p>
-          <p className="font-bold text-lg text-blue-600">{participantCount > 0 ? `+${participantCount}` : 'Solo'}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-xs text-gray-500">Shakas</p>
-          <p className="font-bold text-lg text-blue-600">{shakaCount}</p>
-        </div>
-      </div>
-
-      {/* Footer Actions */}
-      <div className="flex items-center justify-end">
-        <div className="flex items-center gap-2">
-          <span onClick={onShaka} className={`text-2xl cursor-pointer transition-all ${hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}>🤙</span>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // Main Component Router
 const SessionTile = ({ session, variant = 'journal' }) => {
