@@ -192,17 +192,20 @@ function CreateSessionPage() {
 
           <div>
             <label htmlFor="fun_rating" className="block text-sm font-medium text-gray-700">Fun Rating</label>
-            <Input 
-              type="range" 
-              id="fun_rating" 
-              name="fun_rating" 
-              min="1" 
-              max="10" 
-              step="0.25" 
-              value={funRating} 
-              onChange={(e) => setFunRating(e.target.value)}
-            />
-            <span className="block text-lg font-semibold text-gray-900 text-center mt-2">{parseFloat(funRating).toFixed(2)}</span>
+            <div className="flex items-center space-x-4">
+              <Input 
+                type="range" 
+                id="fun_rating" 
+                name="fun_rating" 
+                min="1" 
+                max="10" 
+                step="0.25" 
+                value={funRating} 
+                onChange={(e) => setFunRating(e.target.value)}
+                className="flex-grow"
+              />
+              <span className="text-lg font-semibold text-gray-900 w-16 text-right">{parseFloat(funRating).toFixed(2)}</span>
+            </div>
           </div>
 
           <div>
