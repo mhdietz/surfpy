@@ -63,7 +63,7 @@ This document outlines the prioritized plan for addressing the identified fronte
                 *   Log in as a user with no sessions and navigate to your journal. Verify the "You're dry..." message appears.
                 *   Find another user with no sessions and navigate to their journal. Verify the "[User's Name]'s dry..." message appears.
 
-*   **#New1: Reduce extra space between tabs and content (JournalPage.jsx, Feed.jsx)**
+*   **#New1: Reduce extra space between tabs and content (JournalPage.jsx, Feed.jsx)** - **COMPLETE**
     *   **Description:** The vertical gap between `PageTabs` and the content (`SessionsList` or `StatsDisplay`) is too large in both Journal and Feed pages.
     *   **Affected Files:** `frontend/src/pages/JournalPage.jsx`, `frontend/src/pages/Feed.jsx`
     *   **Granular Actions:**
@@ -73,7 +73,7 @@ This document outlines the prioritized plan for addressing the identified fronte
         1.  Navigate to the Journal page. Verify the gap between tabs and content is reduced/removed. Check overall layout.
         2.  Navigate to the Feed page. Verify the gap between tabs and content is reduced/removed. Check overall layout.
 
-*   **#New2: Shorten user's name in other users' surf logs/stats (JournalPage.jsx)**
+*   **#New2: Shorten user's name in other users' surf logs/stats (JournalPage.jsx)** - **ON HOLD**
     *   **Description:** When viewing another user's journal, the full display name (e.g., "Stefano Scotti's Surf Log") takes up too much space. It should be shortened to just the first name (e.g., "Stefano's Surf Log").
     *   **Affected File:** `frontend/src/pages/JournalPage.jsx`
     *   **Granular Actions:**
