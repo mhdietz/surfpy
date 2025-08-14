@@ -146,7 +146,9 @@ const SessionDetail = () => {
           <div className="mb-4">
             <h2 className="text-xl font-bold mb-2">Surfers</h2>
             <div className="flex flex-wrap gap-2">
-              {session.participants.map(p => (
+              {session.participants
+                .filter(p => p.user_id !== session.user_id) // Filter out the session creator
+                .map(p => (
                 <span key={p.user_id} className="bg-gray-700 px-3 py-1 rounded-full text-sm">
                   {p.display_name}
                 </span>
