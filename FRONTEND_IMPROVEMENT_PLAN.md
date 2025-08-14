@@ -46,17 +46,22 @@ This document outlines the prioritized plan for addressing the identified fronte
         2.  Verified that the page title and tab labels now say "Surf Log" (e.g., "Your Surf Log", "Your Stats").
         3.  Checked the bottom navigation bar and confirmed the "Journal" link now says "Surf Log".
 
-*   **#27: Cold start states (empty states for new users) (JournalPage.jsx)**
-    *   **Description:** Display a specific message when a user has no sessions logged in their journal.
-    *   **Affected File:** `frontend/src/pages/JournalPage.jsx` (within the `SessionsList` rendering area).
+*   **#27: Dynamic Empty State Message** - **COMPLETE**
+    *   **Description:** The empty state message in the session list should be dynamic. It will show one message if the user is viewing their own empty journal and a different message if they are viewing another user's empty journal.
+    *   **Affected Files:** `frontend/src/pages/JournalPage.jsx`, `frontend/src/components/SessionsList.jsx`
     *   **Granular Actions:**
-        1.  Locate the `SessionsList` component rendering in `JournalPage.jsx` when `currentTab === 'log'`.
-        2.  Add a conditional check: if `!loading && !error && sessions.length === 0`, display a placeholder message (e.g., "No sessions logged yet. Time to hit the waves!").
-    *   **Test/Validation:**
-        1.  Log in as a user with no existing surf sessions.
-        2.  Navigate to your journal (`/journal/me`).
-        3.  Verify that the "No sessions logged yet..." message is displayed.
-        4.  (Optional) Create a new session and verify that the message disappears and the session appears.
+        1.  **In `JournalPage.jsx`:**
+            *   **Action 1.1:** Calculate a boolean `isOwnJournal`. Pass `isOwnJournal` and the `profileUser` object as props to the `SessionsList` component.
+            *   **Test/Validation 1.1:** Use `console.log` or React DevTools to verify that `isOwnJournal` and `profileUser` are correctly passed to `SessionsList`.
+        2.  **In `SessionsList.jsx`:**
+            *   **Action 2.1:** Update the component to receive the new `isOwnJournal` and `profileUser` props.
+            *   **Test/Validation 2.1:** Use `console.log` or React DevTools to verify the props are received correctly.
+            *   **Action 2.2:** Implement conditional rendering for the empty state message.
+                *   If `isOwnJournal` is `true`, display: "You're dry mate" and "get your ass in the water".
+                *   If `isOwnJournal` is `false`, display: `${profileUser.display_name}'s dry` and "get that ass in the water".
+            *   **Test/Validation 2.2:**
+                *   Log in as a user with no sessions and navigate to your journal. Verify the "You're dry..." message appears.
+                *   Find another user with no sessions and navigate to their journal. Verify the "[User's Name]'s dry..." message appears.
 
 *   **#New1: Reduce extra space between tabs and content (JournalPage.jsx, Feed.jsx)**
     *   **Description:** The vertical gap between `PageTabs` and the content (`SessionsList` or `StatsDisplay`) is too large in both Journal and Feed pages.
