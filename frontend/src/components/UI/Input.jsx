@@ -10,7 +10,8 @@ const Input = ({
   className = '',
   as = 'input', // New prop to specify the element type
   children, // For select options
-  isPlaceholder = false // New prop for placeholder styling
+  isPlaceholder = false, // New prop for placeholder styling
+  ...rest // Capture all other props
 }) => {
 
   const textColorClass = isPlaceholder ? 'text-gray-500' : 'text-gray-900';
@@ -42,6 +43,7 @@ const Input = ({
             onChange={onChange}
             required={required}
             className={combinedClassName}
+            {...rest} // Pass rest props to select
           >
             {children}
           </select>
@@ -56,6 +58,7 @@ const Input = ({
             placeholder={placeholder}
             className={combinedClassName}
             rows="4" // Default rows for textarea
+            {...rest} // Pass rest props to textarea
           ></textarea>
         );
       case 'input':
@@ -69,6 +72,7 @@ const Input = ({
             required={required}
             placeholder={placeholder}
             className={combinedClassName}
+            {...rest} // Pass rest props to input
           />
         );
     }

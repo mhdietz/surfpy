@@ -21,7 +21,7 @@ function CreateSessionPage() {
   const [sessionName, setSessionName] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
-  const [funRating, setFunRating] = useState('');
+  const [funRating, setFunRating] = useState('5');
   const [notes, setNotes] = useState('');
 
   // Other states
@@ -191,8 +191,21 @@ function CreateSessionPage() {
           </div>
 
           <div>
-            <label htmlFor="fun_rating" className="block text-sm font-medium text-gray-700">Fun Rating (1-10, 2 decimal places)</label>
-            <Input type="number" id="fun_rating" name="fun_rating" min="1" max="10" step="0.01" value={funRating} onChange={(e) => setFunRating(e.target.value)} />
+            <label htmlFor="fun_rating" className="block text-sm font-medium text-gray-700">Fun Rating</label>
+            <div className="flex items-center space-x-4">
+              <Input 
+                type="range" 
+                id="fun_rating" 
+                name="fun_rating" 
+                min="1" 
+                max="10" 
+                step="0.25" 
+                value={funRating} 
+                onChange={(e) => setFunRating(e.target.value)}
+                className="flex-grow"
+              />
+              <span className="text-lg font-semibold text-gray-900 w-16 text-right">{parseFloat(funRating).toFixed(2)}</span>
+            </div>
           </div>
 
           <div>

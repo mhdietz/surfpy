@@ -1,3 +1,69 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom styles for range input (slider) */
+input[type="range"] {
+  /* Ensure appearance: none is applied by Input.jsx */
+  /* Add any base styles for the range input itself if needed */
+}
+
+/* Webkit (Chrome, Safari, Edge) */
+input[type="range"]::-webkit-slider-runnable-track {
+  background: #e0e0e0; /* Light grey track */
+  border-radius: 5px;
+  height: 8px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; /* Remove default thumb styles */
+  background: #2563eb; /* blue-600 */
+  border: 1px solid #2563eb;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  margin-top: -6px; /* Center the thumb vertically */
+  cursor: pointer;
+}
+
+/* Mozilla (Firefox) */
+input[type="range"]::-moz-range-track {
+  background: #e0e0e0; /* Light grey track */
+  border-radius: 5px;
+  height: 8px;
+}
+
+input[type="range"]::-moz-range-thumb {
+  background: #2563eb; /* blue-600 */
+  border: 1px solid #2563eb;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+/* Microsoft Edge (Legacy) - if needed, though modern Edge uses Webkit */
+input[type="range"]::-ms-track {
+  background: transparent; /* Hide the track */
+  border-color: transparent;
+  color: transparent;
+}
+
+input[type="range"]::-ms-fill-lower {
+  background: #4f46e5; /* Color of the track to the left of the thumb */
+  border-radius: 5px;
+}
+
+input[type="range"]::-ms-fill-upper {
+  background: #e0e0e0; /* Color of the track to the right of the thumb */
+  border-radius: 5px;
+}
+
+input[type="range"]::-ms-thumb {
+  background: #2563eb; /* blue-600 */
+  border: 1px solid #2563eb;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
