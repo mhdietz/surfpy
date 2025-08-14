@@ -86,7 +86,7 @@ This document outlines the prioritized plan for addressing the identified fronte
 
 ### Phase 2: Navigation & Global Functionality
 
-*   **#3: Logo clicks go to home (Navigation.jsx)**
+*   **#3: Logo clicks go to home (Navigation.jsx)** - **COMPLETE**
     *   **Description:** Make the "Surf App" logo in the header clickable and link it to the home page.
     *   **Affected File:** `frontend/src/components/Navigation.jsx`
     *   **Granular Actions:**
