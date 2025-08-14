@@ -37,7 +37,9 @@ const Navigation = () => {
 
           {/* Center: Title */}
           <div className="text-center">
-            <h1 className="text-xl font-bold text-blue-600">Surf App</h1>
+            <Link to="/feed" className="text-xl font-bold text-blue-600">
+              <h1>Surf App</h1>
+            </Link>
           </div>
 
           {/* Right: Profile Dropdown */}
