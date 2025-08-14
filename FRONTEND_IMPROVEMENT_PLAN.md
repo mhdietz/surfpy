@@ -111,7 +111,7 @@ This document outlines the prioritized plan for addressing the identified fronte
 
 ### Phase 3: Debugging & Refinement
 
-*   **#28: Fix leaderboard stats issues (Feed.jsx, Leaderboard.jsx)**
+*   **#28: Fix leaderboard stats issues (Feed.jsx, Leaderboard.jsx)** - **ON HOLD**
     *   **Description:** Debug and resolve any issues with the statistics displayed in the `Leaderboard` component.
     *   **Affected Files:** `frontend/src/pages/Feed.jsx` (as it renders `Leaderboard`), `frontend/src/components/Leaderboard.jsx` (the primary component to investigate).
     *   **Granular Actions:**
