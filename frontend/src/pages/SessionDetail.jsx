@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useParams, useNavigate, useLocation } from 'react-router-dom'; // Import useNavigate
 import { useAuth } from '../context/AuthContext';
 import Card from '../components/UI/Card';
 import Spinner from '../components/UI/Spinner';
@@ -14,6 +14,7 @@ import TideDisplay from '../components/TideDisplay';
 const SessionDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate(); // Initialize useNavigate
+  const location = useLocation();
   const { isAuthenticated, user } = useAuth(); // Get user from AuthContext
 
   // State management
@@ -46,7 +47,7 @@ const SessionDetail = () => {
     } else {
       setIsLoading(false);
     }
-  }, [id, isAuthenticated]);
+  }, [id, isAuthenticated, location.key]);
 
   // Helper to format date and time
   const formatSessionTime = (start, end) => {

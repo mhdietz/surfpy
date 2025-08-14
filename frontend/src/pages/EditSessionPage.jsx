@@ -153,8 +153,7 @@ function EditSessionPage() {
         end_time: endTime,
         fun_rating: parseFloat(funRating),
         session_notes: notes,
-        // Note: We are not sending tagged_users yet, as per the updated plan.
-        // That will be handled in a future step if prioritized.
+        tagged_users: taggedUsers.map(user => user.user_id), // Send updated participants
       };
 
       const response = await apiCall(`/api/surf-sessions/${id}`, {
@@ -167,8 +166,8 @@ function EditSessionPage() {
 
       if (response.status === 'success') {
         toast.success("Surf session updated successfully!");
-        // Redirect back to the session's detail page
-        navigate(`/session/${id}`); 
+        // Redirect back to the session's detail page, passing the updated data
+        navigate(`/session/${id}`, { state: { updatedSession: response.data }, replace: true }); 
       } else {
         toast.error(response.message || "Failed to update surf session.");
       }
