@@ -1,137 +1,63 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ShakaModal from './ShakaModal';
-import { toggleShaka, getSessionShakas } from '../services/api'; // Add getSessionShakas import
+import { toggleShaka, getSessionShakas } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-const SessionTile = ({ session }) => {
-  const navigate = useNavigate();
-  const { user: currentUser } = useAuth();
-  const [isShakaModalOpen, setIsShakaModalOpen] = useState(false);
-
-  const [shakaCount, setShakaCount] = useState(0);
-  const [hasViewerShakaed, setHasViewerShakaed] = useState(false);
-  const [shakaPreview, setShakaPreview] = useState([]);
-  const [shakaAllUsers, setShakaAllUsers] = useState([]); // Add this state
-  const [loadingShakaUsers, setLoadingShakaUsers] = useState(false); // Add this state
-
-  const {
-    id, user_id, session_name, location, fun_rating,
-    session_started_at, display_name, participants, shakas, session_notes,
-  } = session || {};
-
-  useEffect(() => {
-    if (shakas) {
-      setShakaCount(shakas.count || 0);
-      setHasViewerShakaed(shakas.viewer_has_shakaed || false);
-      setShakaPreview(shakas.preview || []);
-    }
-  }, [shakas]);
-
-  if (!session) {
-    return null;
-  }
-
-  const sessionDate = new Date(session_started_at).toLocaleDateString('en-US', {
+// Helper function for date formatting
+const formatSessionDate = (dateStr) => {
+  return new Date(dateStr).toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric',
   });
+};
 
-  const handleNavigateToSession = () => navigate(`/session/${id}`);
+// Journal-style Tile
+const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaModal, shakaData }) => {
+  const { id, user_id, session_name, location, fun_rating, session_started_at, display_name, participants, session_notes } = session;
+  const { shakaCount, hasViewerShakaed } = shakaData;
 
-  const handleNavigateToJournal = (e, userId) => {
-    e.stopPropagation();
-    navigate(`/journal/${userId}`);
-  };
-
-  // Updated handleOpenShakaModal function
-  const handleOpenShakaModal = async (e) => {
-    e.stopPropagation();
-    if (shakaCount > 0) {
-      setIsShakaModalOpen(true);
-      setLoadingShakaUsers(true);
-      
-      try {
-        const allUsers = await getSessionShakas(id);
-        setShakaAllUsers(allUsers);
-      } catch (error) {
-        console.error('🤙 Failed to load shaka users:', error);
-        // Fallback to preview data if API call fails
-        setShakaAllUsers(shakaPreview);
-      } finally {
-        setLoadingShakaUsers(false);
-      }
-    }
-  };
-
-  const handleToggleShaka = async (e) => {
-    e.stopPropagation();
-    
-    // Optimistic update - change UI immediately
-    const wasShaked = hasViewerShakaed;
-    setHasViewerShakaed(!wasShaked);
-    setShakaCount(prev => wasShaked ? prev - 1 : prev + 1);
-    
-    try {
-      const response = await toggleShaka(id);
-      console.log('🤙 Shaka API response:', response);
-      
-      // Update count with server response
-      setShakaCount(response.data.shaka_count || 0);
-      
-      // Update preview array (keep existing logic for tile display)
-      if (currentUser) {
-        const currentUserPreview = {
-          user_id: currentUser.id,
-          display_name: currentUser.display_name || currentUser.email
-        };
-        
-        if (!wasShaked) {
-          setShakaPreview(prev => [
-            currentUserPreview,
-            ...prev.filter(user => user.user_id !== currentUser.id)
-          ].slice(0, 2));
-        } else {
-          setShakaPreview(prev => prev.filter(user => user.user_id !== currentUser.id));
-        }
-      }
-    } catch (error) {
-      console.error('🤙 Failed to toggle shaka:', error);
-      
-      // Rollback optimistic update on error
-      setHasViewerShakaed(wasShaked);
-      setShakaCount(prev => wasShaked ? prev + 1 : prev - 1);
-    }
-  };
+  const date = new Date(session_started_at);
+  const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+  const day = date.getDate();
+  const year = date.getFullYear();
 
   return (
-    <>
-      <div onClick={handleNavigateToSession} className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-200 space-y-4 cursor-pointer hover:shadow-lg transition-shadow">
+    <div onClick={onNavigate} className="bg-white rounded-lg shadow border border-gray-200 flex cursor-pointer hover:shadow-lg transition-shadow overflow-hidden">
+      {/* Date Column (LHS) */}
+      <div className="flex flex-col justify-center items-center w-24 bg-gray-50 p-2 border-r border-gray-200">
+        <p className="text-sm font-semibold text-red-500 tracking-wider">{month}</p>
+        <p className="text-4xl font-bold text-gray-800">{day}</p>
+        <p className="text-xs text-gray-400">{year}</p>
+      </div>
+
+      {/* Content Column (RHS) */}
+      <div className="flex-grow flex flex-col p-4">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <p onClick={(e) => handleNavigateToJournal(e, user_id)} className="font-bold text-lg text-gray-800 hover:underline">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">{session_name || 'Untitled Session'}</h3>
+            <p className="text-md text-gray-600">{location}</p>
+          </div>
+          <p onClick={(e) => onUserClick(e, user_id)} className="text-right text-sm font-bold text-gray-800 hover:underline">
             {display_name}
           </p>
-          <p className="text-sm text-gray-500">{sessionDate}</p>
         </div>
 
         {/* Body */}
-        <div className="space-y-2">
-          <h3 className="text-2xl font-bold text-gray-900">{session_name || 'Untitled Session'}</h3>
-          <p className="text-md font-semibold text-gray-700">{location}</p>
-          
-          {session_notes && <p className="text-gray-600 bg-gray-50 p-3 rounded-md">{session_notes}</p>}
+        <div className="flex-grow space-y-3 mt-2">
+          {session_notes && <p className="text-gray-600 bg-gray-50 p-3 rounded-md truncate">{session_notes}</p>}
 
-          {participants && participants.length > 0 && (
-            <div className="pt-2">
-              <p className="font-semibold text-gray-700">With:</p>
+          {participants && participants.length > 1 && (
+            <div>
+              <p className="font-semibold text-gray-700 text-xs">With:</p>
               <div className="flex flex-wrap gap-2 mt-1">
                 {participants
-                  .filter(p => p.user_id !== user_id) // Filter out the session creator
+                  .filter(p => p.user_id !== user_id)
                   .map(p => (
                   <span 
                     key={p.user_id} 
-                    onClick={(e) => handleNavigateToJournal(e, p.user_id)}
-                    className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium hover:bg-blue-200 hover:text-blue-900"
+                    onClick={(e) => onUserClick(e, p.user_id)}
+                    className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium hover:bg-blue-200 hover:text-blue-900"
                   >
                     {p.display_name}
                   </span>
@@ -142,37 +68,159 @@ const SessionTile = ({ session }) => {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-          {/* Fun Rating */}
+        <div className="flex items-center justify-between pt-3 mt-auto border-t border-gray-100">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-gray-800">Fun Rating:</span>
-            <span className="font-bold text-blue-600 text-lg">{fun_rating} / 10</span>
+            <span className="text-xs text-gray-500">Fun Rating:</span>
+            <span className="font-bold text-blue-600">{fun_rating}/10</span>
           </div>
-
-          {/* Shaka Count & Toggle */}
           <div className="flex items-center gap-2">
-            <span 
-              onClick={handleToggleShaka} 
-              className={`text-xl cursor-pointer transition-all ${hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}
-            >
-              🤙
-            </span>
-            <div onClick={handleOpenShakaModal} className="cursor-pointer">
-              <span className="font-bold text-blue-600 text-lg">{shakaCount}</span>
+            <span onClick={onShaka} className={`text-xl cursor-pointer transition-all ${hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}>🤙</span>
+            <div onClick={onOpenShakaModal} className="cursor-pointer">
+              <span className="font-bold text-blue-600">{shakaCount}</span>
             </div>
           </div>
         </div>
       </div>
+    </div>
+  );
+};
 
-      {/* Updated Shaka Modal */}
+// Strava-style Tile
+const StravaTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaModal, shakaData }) => {
+  const { id, user_id, session_name, location, fun_rating, session_started_at, display_name, participants } = session;
+  const { shakaCount, hasViewerShakaed } = shakaData;
+  const participantCount = (participants?.length || 0) - 1;
+
+  return (
+    <div onClick={onNavigate} className="bg-white p-4 rounded-lg shadow border border-gray-200 flex flex-col gap-3 cursor-pointer hover:shadow-lg transition-shadow">
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <span onClick={(e) => onUserClick(e, user_id)} className="text-gray-800 text-3xl">🏄</span>
+        <div className="flex-grow">
+          <p onClick={(e) => onUserClick(e, user_id)} className="font-bold text-gray-800 hover:underline">{display_name}</p>
+          <p className="text-xs text-gray-500">{formatSessionDate(session_started_at)}</p>
+        </div>
+      </div>
+
+      {/* Title */}
+      <div>
+        <h3 className="font-bold text-gray-900">{session_name || 'Untitled Session'}</h3>
+        <p className="text-sm text-gray-600">{location}</p>
+      </div>
+
+      {/* Stats */}
+      <div className="flex justify-around border-t border-b border-gray-100 py-2">
+        <div className="text-center">
+          <p className="text-xs text-gray-500">Rating</p>
+          <p className="font-bold text-lg text-blue-600">{fun_rating}</p>
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-gray-500">Surfers</p>
+          <p className="font-bold text-lg text-blue-600">{participantCount > 0 ? `+${participantCount}` : 'Solo'}</p>
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-gray-500">Shakas</p>
+          <p className="font-bold text-lg text-blue-600">{shakaCount}</p>
+        </div>
+      </div>
+
+      {/* Footer Actions */}
+      <div className="flex items-center justify-end">
+        <div className="flex items-center gap-2">
+          <span onClick={onShaka} className={`text-2xl cursor-pointer transition-all ${hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}>🤙</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Main Component Router
+const SessionTile = ({ session, variant = 'journal' }) => {
+  const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
+  const [isShakaModalOpen, setIsShakaModalOpen] = useState(false);
+
+  const [shakaData, setShakaData] = useState({
+    shakaCount: 0,
+    hasViewerShakaed: false,
+    shakaPreview: [],
+  });
+  const [shakaAllUsers, setShakaAllUsers] = useState([]);
+  const [loadingShakaUsers, setLoadingShakaUsers] = useState(false);
+
+  useEffect(() => {
+    if (session?.shakas) {
+      setShakaData({
+        shakaCount: session.shakas.count || 0,
+        hasViewerShakaed: session.shakas.viewer_has_shakaed || false,
+        shakaPreview: session.shakas.preview || [],
+      });
+    }
+  }, [session?.shakas]);
+
+  if (!session) {
+    return null;
+  }
+
+  const handleNavigateToSession = () => navigate(`/session/${session.id}`);
+
+  const handleNavigateToJournal = (e, userId) => {
+    e.stopPropagation();
+    navigate(`/journal/${userId}`);
+  };
+
+  const handleOpenShakaModal = async (e) => {
+    e.stopPropagation();
+    if (shakaData.shakaCount > 0) {
+      setIsShakaModalOpen(true);
+      setLoadingShakaUsers(true);
+      try {
+        const allUsers = await getSessionShakas(session.id);
+        setShakaAllUsers(allUsers);
+      } catch (error) {
+        console.error('🤙 Failed to load shaka users:', error);
+        setShakaAllUsers(shakaData.shakaPreview);
+      } finally {
+        setLoadingShakaUsers(false);
+      }
+    }
+  };
+
+  const handleToggleShaka = async (e) => {
+    e.stopPropagation();
+    const wasShaked = shakaData.hasViewerShakaed;
+    setShakaData(prev => ({ ...prev, hasViewerShakaed: !wasShaked, shakaCount: wasShaked ? prev.shakaCount - 1 : prev.shakaCount + 1 }));
+    
+    try {
+      const response = await toggleShaka(session.id);
+      setShakaData(prev => ({ ...prev, shakaCount: response.data.shaka_count || 0 }));
+    } catch (error) {
+      console.error('🤙 Failed to toggle shaka:', error);
+      setShakaData(prev => ({ ...prev, hasViewerShakaed: wasShaked, shakaCount: wasShaked ? prev.shakaCount + 1 : prev.shakaCount - 1 }));
+    }
+  };
+
+  const tileProps = {
+    session,
+    onNavigate: handleNavigateToSession,
+    onUserClick: handleNavigateToJournal,
+    onShaka: handleToggleShaka,
+    onOpenShakaModal: handleOpenShakaModal,
+    shakaData,
+  };
+
+  return (
+    <>
+      {variant === 'strava' ? <StravaTile {...tileProps} /> : <JournalTile {...tileProps} />}
+      
       {isShakaModalOpen && (
         <ShakaModal 
-          users={shakaAllUsers} // Changed from shakaPreview to shakaAllUsers
+          users={shakaAllUsers}
           onClose={() => {
             setIsShakaModalOpen(false);
-            setShakaAllUsers([]); // Clear data when modal closes
+            setShakaAllUsers([]);
           }}
-          loading={loadingShakaUsers} // Add loading prop if ShakaModal supports it
+          loading={loadingShakaUsers}
         />
       )}
     </>
