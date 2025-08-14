@@ -7,6 +7,7 @@ const Navigation = () => {
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth(); // Get auth state
   const [isSearchOpen, setIsSearchOpen] = useState(false); // State for search modal
+  const [isProfileOpen, setIsProfileOpen] = useState(false); // State for profile dropdown
 
   const getLinkClasses = (path) => {
     const baseClasses = "flex flex-col items-center text-gray-600 hover:text-blue-600";
@@ -16,6 +17,7 @@ const Navigation = () => {
 
   const handleLogout = () => {
     logout();
+    setIsProfileOpen(false);
     // Optionally navigate to login page after logout
   };
 
@@ -41,12 +43,13 @@ const Navigation = () => {
           {/* Right: Profile Dropdown */}
           <div className="justify-self-end">
             {isAuthenticated ? (
-              <div className="relative group pb-2">
-                <span className="text-gray-600 cursor-pointer hover:text-blue-600">
-                  Hello, {user?.email?.split('@')[0] || 'User'} ▼
-                </span>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden group-hover:block">
-                  <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</Link>
+              <div className="relative">
+                <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="text-gray-600 hover:text-blue-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+                <div className={`absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ${isProfileOpen ? 'block' : 'hidden'}`}>
                   <button onClick={handleLogout} className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Logout</button>
                 </div>
               </div>
