@@ -188,17 +188,20 @@ const SessionDetail = () => {
 
           <div className="flex items-center gap-4 mb-6"> {/* New flex container for Shaka Group and Stoke Tile */}
             {/* Shaka Group */}
-            <div className="flex items-center gap-2 flex-shrink-0 border border-black p-3 rounded-lg">
-              <span onClick={handleToggleShaka} className={`text-xl cursor-pointer transition-all ${shakaData.hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}>🤙</span>
-              <div onClick={handleOpenShakaModal} className="cursor-pointer">
-                <span className="font-bold text-blue-600">{shakaData.shakaCount}</span>
+            <div className="flex flex-col gap-2 flex-shrink-0 border border-black p-3 rounded-lg flex-1"> {/* Added flex-1 */}
+              <h2 className="text-xl font-bold">Shakas</h2>
+              <div className="flex items-center gap-2"> {/* This div keeps icon and count side-by-side */}
+                <span onClick={handleToggleShaka} className={`text-xl cursor-pointer transition-all ${shakaData.hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}>🤙</span>
+                <div onClick={handleOpenShakaModal} className="cursor-pointer">
+                  <span className="font-bold text-blue-600 text-sm">{shakaData.shakaCount}</span>
+                </div>
               </div>
             </div>
 
             {/* Stoke Tile */}
-            <div className="text-gray-800 bg-white p-3 rounded-lg border border-black">
-              <h2 className="text-xl font-bold mb-2">Stoke</h2>
-              <p className="text-m">{session.fun_rating}<span className="text-gray-800">/10</span></p>
+            <div className="text-gray-800 bg-white p-3 rounded-lg border border-black flex-1"> {/* Added flex-1 */}
+              <h2 className="text-xl font-bold">Stoke</h2>
+              <p className="text-sm">{session.fun_rating}<span className="text-gray-800">/10</span></p>
             </div>
           </div>
 
