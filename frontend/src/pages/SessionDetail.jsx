@@ -128,8 +128,10 @@ const SessionDetail = () => {
 
           {session.session_notes && (
             <div className="mt-4 mb-4">
-              <h2 className="text-xl font-bold mb-2">Notes</h2>
-              <p className="text-gray-800 bg-white p-3 rounded-lg">{session.session_notes}</p>
+              <div className="text-gray-800 bg-white p-3 rounded-lg border border-black">
+                <h2 className="text-xl font-bold mb-2">Notes</h2>
+                <p>{session.session_notes}</p>
+              </div>
             </div>
           )}
 
