@@ -18,7 +18,7 @@ const TideDisplay = ({ tideData }) => {
   return (
     <div className="mt-4 mb-4">
       <h2 className="text-xl font-bold mb-2">Tide</h2>
-      <div className="text-gray-300 bg-gray-800 p-3 rounded-lg space-y-1">
+      <div className="text-gray-800 bg-white p-3 rounded-lg space-y-1">
         {/* Always show water level if available */}
         {water_level !== null && water_level !== undefined && (
           <p className="text-sm">

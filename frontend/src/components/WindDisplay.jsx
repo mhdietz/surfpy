@@ -20,7 +20,7 @@ const WindDisplay = ({ windData }) => {
   return (
     <div className="mt-4 mb-4">
       <h2 className="text-xl font-bold mb-2">Wind & Weather</h2>
-      <div className="text-gray-300 bg-gray-800 p-3 rounded-lg space-y-1">
+      <div className="text-gray-800 bg-white p-3 rounded-lg space-y-1">
         <p className="text-sm">
           <span className="font-semibold">Wind:</span> {wind.wind_speed?.toFixed(1)} mph from {wind.wind_direction?.toFixed(0)}° ({formatDirection(wind.wind_direction)})
           {wind.wind_gust && ` gusting to ${wind.wind_gust.toFixed(1)} mph`}
