@@ -4,12 +4,13 @@ import { useAuth } from '../context/AuthContext';
 import Card from '../components/UI/Card';
 import Spinner from '../components/UI/Spinner';
 import { format } from 'date-fns';
-import { apiCall, deleteSession } from '../services/api'; // Import deleteSession
+import { apiCall, deleteSession, toggleShaka, getSessionShakas } from '../services/api'; // Import deleteSession
 import toast from 'react-hot-toast'; // Import toast
 
 import SwellDisplay from '../components/SwellDisplay';
 import WindDisplay from '../components/WindDisplay';
 import TideDisplay from '../components/TideDisplay';
+import ShakaModal from '../components/ShakaModal';
 
 const SessionDetail = () => {
   const { id } = useParams();
@@ -21,6 +22,14 @@ const SessionDetail = () => {
   const [session, setSession] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isShakaModalOpen, setIsShakaModalOpen] = useState(false);
+  const [shakaData, setShakaData] = useState({
+    shakaCount: 0,
+    hasViewerShakaed: false,
+    shakaPreview: [],
+  });
+  const [shakaAllUsers, setShakaAllUsers] = useState([]);
+  const [loadingShakaUsers, setLoadingShakaUsers] = useState(false);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -49,6 +58,16 @@ const SessionDetail = () => {
     }
   }, [id, isAuthenticated, location.key]);
 
+  useEffect(() => {
+    if (session?.shakas) {
+      setShakaData({
+        shakaCount: session.shakas.count || 0,
+        hasViewerShakaed: session.shakas.viewer_has_shakaed || false,
+        shakaPreview: session.shakas.preview || [],
+      });
+    }
+  }, [session?.shakas]);
+
   // Helper to format date and time
   const formatSessionTime = (start, end) => {
     const startDate = new Date(start);
@@ -72,6 +91,38 @@ const SessionDetail = () => {
       } catch (err) {
         console.error("Error deleting session:", err);
         // toast.error is handled by toast.promise
+      }
+    }
+  };
+
+  const openShakaModal = () => setIsShakaModalOpen(true);
+  const closeShakaModal = () => setIsShakaModalOpen(false);
+
+  const handleToggleShaka = async () => {
+    const wasShaked = shakaData.hasViewerShakaed;
+    setShakaData(prev => ({ ...prev, hasViewerShakaed: !wasShaked, shakaCount: wasShaked ? prev.shakaCount - 1 : prev.shakaCount + 1 }));
+    
+    try {
+      const response = await toggleShaka(id);
+      setShakaData(prev => ({ ...prev, shakaCount: response.data.shaka_count || 0 }));
+    } catch (error) {
+      console.error('🤙 Failed to toggle shaka:', error);
+      setShakaData(prev => ({ ...prev, hasViewerShakaed: wasShaked, shakaCount: wasShaked ? prev.shakaCount + 1 : prev.shakaCount - 1 }));
+    }
+  };
+
+  const handleOpenShakaModal = async () => {
+    if (shakaData.shakaCount > 0) {
+      setIsShakaModalOpen(true);
+      setLoadingShakaUsers(true);
+      try {
+        const allUsers = await getSessionShakas(id);
+        setShakaAllUsers(allUsers);
+      } catch (error) {
+        console.error('🤙 Failed to load shaka users:', error);
+        setShakaAllUsers(shakaData.shakaPreview); // Fallback to preview if full list fails
+      } finally {
+        setLoadingShakaUsers(false);
       }
     }
   };
@@ -136,9 +187,11 @@ const SessionDetail = () => {
           )}
 
           <div className="flex justify-between items-center mb-6">
-            <div>
-              <span className="text-2xl">🤙</span>
-              <span className="font-bold ml-2">{session.shakas.count} Shakas</span>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span onClick={handleToggleShaka} className={`text-xl cursor-pointer transition-all ${shakaData.hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}>🤙</span>
+              <div onClick={handleOpenShakaModal} className="cursor-pointer">
+                <span className="font-bold text-blue-600">{shakaData.shakaCount}</span>
+              </div>
             </div>
           </div>
 
@@ -185,6 +238,17 @@ const SessionDetail = () => {
 
         </div>
       </Card>
+
+      {isShakaModalOpen && (
+        <ShakaModal 
+          users={shakaAllUsers}
+          onClose={() => {
+            setIsShakaModalOpen(false);
+            setShakaAllUsers([]);
+          }}
+          loading={loadingShakaUsers}
+        />
+      )}
     </div>
   );
 };
