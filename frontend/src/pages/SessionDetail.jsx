@@ -137,12 +137,15 @@ const SessionDetail = () => {
 
           <div className="flex justify-between items-center mb-6">
             <div>
-              <span className="text-2xl font-bold text-yellow-400">{session.fun_rating}</span>
-              <span className="text-gray-400">/10 Fun Rating</span>
-            </div>
-            <div>
               <span className="text-2xl">🤙</span>
               <span className="font-bold ml-2">{session.shakas.count} Shakas</span>
+            </div>
+          </div>
+
+          <div className="mt-4 mb-4">
+            <div className="text-gray-800 bg-white p-3 rounded-lg border border-black">
+              <h2 className="text-xl font-bold mb-2">Stoke</h2>
+              <p className="text-2xl font-bold">{session.fun_rating}<span className="text-gray-800">/10</span></p>
             </div>
           </div>
 
