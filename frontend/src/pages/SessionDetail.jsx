@@ -165,8 +165,8 @@ const SessionDetail = () => {
       <Card>
         <div className="p-4">
           <h1 className="text-3xl font-bold mb-2">{session.session_name}</h1>
-          <p className="text-lg text-gray-400 mb-2">{session.location}</p>
-          <p className="text-md text-gray-300 mb-4">{formatSessionTime(session.session_started_at, session.session_ended_at)}</p>
+          <p className="text-lg mb-2">{session.location}</p>
+          <p className="text-md mb-4">{formatSessionTime(session.session_started_at, session.session_ended_at)}</p>
 
           {/* Swell Display Component */}
           {session.raw_swell && <SwellDisplay swellData={session.raw_swell} />}
@@ -205,13 +205,13 @@ const SessionDetail = () => {
             </div>
           </div>
 
-          <div className="mb-4">
+          <div className="mb-4 border border-black p-3 rounded-lg">
             <h2 className="text-xl font-bold mb-2">Surfers</h2>
             <div className="flex flex-wrap gap-2">
               {session.participants
                 .filter(p => p.user_id !== session.user_id) // Filter out the session creator
                 .map(p => (
-                <span key={p.user_id} className="bg-gray-700 px-3 py-1 rounded-full text-sm">
+                <span key={p.user_id} className="border border-black px-3 py-1 rounded-full text-sm">
                   {p.display_name}
                 </span>
               ))}
