@@ -199,9 +199,9 @@ const SessionDetail = () => {
             </div>
 
             {/* Stoke Tile */}
-            <div className="text-gray-800 bg-white p-3 rounded-lg border border-black flex-1"> {/* Added flex-1 */}
+            <div className="flex flex-col gap-2 text-gray-800 bg-white p-3 rounded-lg border border-black flex-1"> {/* Match Shaka structure */}
               <h2 className="text-xl font-bold">Stoke</h2>
-              <p className="text-sm">{session.fun_rating}<span className="text-gray-800">/10</span></p>
+              <p className="text-xl">{session.fun_rating}<span className="text-sm text-gray-800">/10</span></p>
             </div>
           </div>
 
