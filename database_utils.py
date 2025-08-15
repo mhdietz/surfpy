@@ -997,7 +997,7 @@ def get_session_summary_list(viewer_id, profile_user_id_filter=None, filters={})
             if where_clauses:
                 query += " WHERE " + " AND ".join(where_clauses)
 
-            query += " ORDER BY s.created_at DESC"
+            query += " ORDER BY s.session_started_at DESC"
 
             print(f"DEBUG: get_session_summary_list - profile_user_id_filter: {profile_user_id_filter}, viewer_id: {viewer_id}")
             print(f"DEBUG: get_session_summary_list - SQL Query: {query}")
