@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/UI/Button';
 import Input from '../components/UI/Input';
@@ -106,6 +106,11 @@ const AuthPage = () => {
           </button>
         </div>
       </Card>
+      <div className="mt-4 text-center">
+        <Link to="/about" className="text-sm text-gray-600 hover:underline">
+          About
+        </Link>
+      </div>
     </div>
   );
 };

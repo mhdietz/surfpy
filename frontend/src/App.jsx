@@ -69,14 +69,7 @@ const AppContent = () => {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/about"
-            element={
-              <ProtectedRoute>
-                <AboutPage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/about" element={<AboutPage />} />
           {/* Redirect any other path to home */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
