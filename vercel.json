@@ -1,20 +1,22 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "surfdata.py",
-        "use": "@vercel/python"
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
       }
-    ],
-    "routes": [
-      {
-        "src": "/(.*)",
-        "dest": "surfdata.py",
-        "headers": {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-          "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept"
-        }
-      }
-    ]
-  }
+    },
+    {
+      "src": "surfdata.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "surfdata.py"
+    }
+  ]
+}
