@@ -169,9 +169,9 @@ const SessionDetail = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <div className="max-w-2xl mx-auto">
       <Card>
-        <div className="p-4">
+        <div className="p-1">
           <h1 className="text-3xl font-bold mb-2">{session.session_name}</h1>
           <p className="text-lg mb-2">{session.location}</p>
           <p className="text-md mb-4">{formatSessionTime(session.session_started_at, session.session_ended_at, session.location_timezone)}</p>
