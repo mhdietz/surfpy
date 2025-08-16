@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatInTimeZone } from 'date-fns-tz';
 import { apiCall } from '../services/api';
 import Card from '../components/UI/Card';
 import Input from '../components/UI/Input';
@@ -55,13 +56,12 @@ function EditSessionPage() {
         if (response.status === 'success') {
           const session = response.data;
           
-          // Format and set state for form fields
-          const startDate = new Date(session.session_started_at);
-          const endDate = new Date(session.session_ended_at);
+          // Format and set state for form fields using the spot's timezone
+          const tz = session.location_timezone || 'UTC'; // Fallback to UTC
 
-          setDate(startDate.toISOString().split('T')[0]); // YYYY-MM-DD
-          setStartTime(startDate.toTimeString().split(' ')[0].substring(0, 5)); // HH:MM
-          setEndTime(endDate.toTimeString().split(' ')[0].substring(0, 5)); // HH:MM
+          setDate(formatInTimeZone(session.session_started_at, tz, 'yyyy-MM-dd'));
+          setStartTime(formatInTimeZone(session.session_started_at, tz, 'HH:mm'));
+          setEndTime(formatInTimeZone(session.session_ended_at, tz, 'HH:mm'));
           
           setLocation(session.location_slug);
           setSessionName(session.session_name);
