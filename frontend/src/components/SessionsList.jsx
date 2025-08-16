@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Spinner from './UI/Spinner';
 import SessionTile from './SessionTile';
 
-const SessionsList = ({ sessions, loading, error, isOwnJournal, profileUser }) => {
+const SessionsList = ({ sessions, loading, error, isOwnJournal, profileUser, isFiltered }) => {
   return (
     <div className="space-y-6 p-4">
       {loading && (
@@ -20,8 +20,13 @@ const SessionsList = ({ sessions, loading, error, isOwnJournal, profileUser }) =
       )}
 
       {!loading && !error && sessions.length === 0 && (
-        <div className="text-center text-gray-700 p-8 bg-blue-50 rounded-lg shadow-inner">
-          {isOwnJournal ? (
+        <div className="text-center text-gray-700 p-8 bg-gray-50 rounded-lg shadow-inner">
+          {isFiltered ? (
+            <>
+              <p className="text-xl font-semibold mb-2">No Sessions Found</p>
+              <p className="text-lg">Try adjusting your filter criteria.</p>
+            </>
+          ) : isOwnJournal ? (
             <>
               <p className="text-xl font-semibold mb-2">You're dry mate</p>
               <p className="text-lg mb-4">get your ass in the water</p>
@@ -33,7 +38,8 @@ const SessionsList = ({ sessions, loading, error, isOwnJournal, profileUser }) =
             <>
               <p className="text-xl font-semibold mb-2">{profileUser?.display_name}'s dry</p>
               <p className="text-lg">get that ass in the water</p>
-            </>)}
+            </>
+          )}
         </div>
       )}
 
