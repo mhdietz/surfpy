@@ -87,6 +87,7 @@ def get_session_detail(session_id, current_user_id):
                     s.session_started_at, s.session_ended_at,
                     u.email as user_email,
                     sp.slug as location_slug,
+                    sp.timezone as location_timezone,
                     COALESCE(
                         u.raw_user_meta_data->>'display_name',
                         NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),

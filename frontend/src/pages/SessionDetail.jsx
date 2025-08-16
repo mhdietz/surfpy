@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'; // Impor
 import { useAuth } from '../context/AuthContext';
 import Card from '../components/UI/Card';
 import Spinner from '../components/UI/Spinner';
-import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { apiCall, deleteSession, toggleShaka, getSessionShakas } from '../services/api'; // Import deleteSession
 import toast from 'react-hot-toast'; // Import toast
 
@@ -70,13 +70,31 @@ const SessionDetail = () => {
 
   // Helper to format date and time
   const formatSessionTime = (start, end) => {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    // Format: Mon, Aug 11, 2025, 10:10 PM - 12:10 AM
-    const datePart = format(startDate, "EEE, MMM d, yyyy");
-    const startTimePart = format(startDate, "h:mm a");
-    const endTimePart = format(endDate, "h:mm a");
-    return `${datePart}, ${startTimePart} - ${endTimePart}`;
+    console.log("--- Timezone Debug ---");
+    console.log("Raw start string:", start);
+    console.log("Raw end string:", end);
+
+    try {
+      // Get the user's timezone from the browser
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      console.log("Detected timezone:", timeZone);
+      
+      // Format the date and time parts in the user's local timezone
+      const datePart = formatInTimeZone(start, timeZone, "EEE, MMM d, yyyy");
+      const startTimePart = formatInTimeZone(start, timeZone, "h:mm a");
+      const endTimePart = formatInTimeZone(end, timeZone, "h:mm a");
+      
+      const formattedString = `${datePart}, ${startTimePart} - ${endTimePart}`;
+      console.log("Formatted output:", formattedString);
+      console.log("--- End Timezone Debug ---");
+      return formattedString;
+    } catch (error) {
+      console.error("Error formatting session time:", error);
+      // Fallback to a simple format if an error occurs
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      return `${startDate.toLocaleDateString()} ${startDate.toLocaleTimeString()} - ${endDate.toLocaleTimeString()}`;
+    }
   };
 
   const handleDeleteSession = async () => {
