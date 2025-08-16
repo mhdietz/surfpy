@@ -1,36 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 const AddToHomeScreenPrompt = () => {
-  const [showPrompt, setShowPrompt] = useState(false);
-
-  useEffect(() => {
-    // Check if already dismissed
-    const dismissed = localStorage.getItem('pwaPromptDismissed');
-    if (dismissed) {
-      return;
-    }
-
-    // Check if running in standalone mode (already installed)
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    if (isStandalone) {
-      return;
-    }
-
-    // Check for Safari on iOS/iPadOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-    if (isIOS && isSafari) {
-      setShowPrompt(true);
-    }
-  }, []);
+  const { showPwaPrompt, setShowPwaPrompt } = useAuth();
 
   const handleDismiss = () => {
-    localStorage.setItem('pwaPromptDismissed', 'true');
-    setShowPrompt(false);
+    setShowPwaPrompt(false);
   };
 
-  if (!showPrompt) {
+  if (!showPwaPrompt) {
     return null;
   }
 

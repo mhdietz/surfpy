@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showPwaPrompt, setShowPwaPrompt] = useState(false); // New state for PWA prompt
 
   useEffect(() => {
     const verifyUser = async () => {
@@ -45,6 +46,14 @@ export const AuthProvider = ({ children }) => {
     const userData = await authService.login(email, password);
     setUser(userData);
     setIsAuthenticated(true);
+
+    // Check if this is the first login to show PWA prompt
+    const hasSeenPrompt = localStorage.getItem('hasSeenPwaPrompt');
+    if (!hasSeenPrompt) {
+      setShowPwaPrompt(true);
+      localStorage.setItem('hasSeenPwaPrompt', 'true');
+    }
+
     return userData;
   };
 
@@ -52,6 +61,9 @@ export const AuthProvider = ({ children }) => {
     const userData = await authService.signup(email, password, firstName, lastName);
     setUser(userData);
     setIsAuthenticated(true);
+    // Also trigger prompt on first signup
+    setShowPwaPrompt(true);
+    localStorage.setItem('hasSeenPwaPrompt', 'true');
     return userData;
   };
 
@@ -64,7 +76,9 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     isAuthenticated,
-    isLoading, // Expose isLoading state
+    isLoading,
+    showPwaPrompt,      // Expose new state
+    setShowPwaPrompt,   // Expose new setter
     login,
     signup,
     logout,
