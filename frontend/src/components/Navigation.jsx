@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import UserSearch from './UserSearch';
 import Logo from './UI/Logo'; // Import the Logo component
+import AddToHomeScreenPrompt from './UI/AddToHomeScreenPrompt';
 
 const Navigation = () => {
   const location = useLocation();
@@ -91,6 +92,9 @@ const Navigation = () => {
 
       {/* User Search Modal */}
       {isSearchOpen && <UserSearch onClose={() => setIsSearchOpen(false)} />}
+
+      {/* Add to Home Screen Prompt */}
+      <AddToHomeScreenPrompt />
     </>
   );
 };
