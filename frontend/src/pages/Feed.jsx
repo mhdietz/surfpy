@@ -58,7 +58,7 @@ const Feed = () => {
       <main className="max-w-2xl mx-auto">
         <PageTabs tabs={feedTabs} />
 
-        <div className="w-full bg-white rounded-lg shadow-md mt-10">
+        <div className="w-full bg-white rounded-lg shadow-md"> 
           {currentTab === 'feed' && (
             <div>
               {/* Removed Community Feed Heading */}
