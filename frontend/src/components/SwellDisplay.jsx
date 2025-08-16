@@ -1,4 +1,5 @@
 import React from 'react';
+import ArrowIcon from './UI/ArrowIcon';
 
 const SwellDisplay = ({ swellData }) => {
   if (!swellData || swellData.length === 0) {
@@ -28,7 +29,12 @@ const SwellDisplay = ({ swellData }) => {
         <h2 className="text-xl font-bold mb-2">Swell</h2>
         {swells.map((swell) => {
           const swellString = `${swell.height.toFixed(1)}ft @ ${swell.period.toFixed(1)}s ${formatDirection(swell.direction)} (${swell.direction.toFixed(0)}°)`;
-          return <p key={swell.name} className="text-sm">{swellString}</p>;
+          return (
+            <p key={swell.name} className="text-sm flex items-center gap-2">
+              <ArrowIcon rotation={swell.direction + 180} />
+              <span>{swellString}</span>
+            </p>
+          );
         })}
       </div>
     </div>
