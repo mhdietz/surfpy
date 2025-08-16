@@ -107,7 +107,7 @@ const AuthPage = () => {
         </div>
       </Card>
       <div className="mt-4 text-center">
-        <Link to="/about" className="text-sm text-gray-600 hover:underline">
+        <Link to="/about" className="text-sm text-blue-600 hover:underline">
           About
         </Link>
       </div>
