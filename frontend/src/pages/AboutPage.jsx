@@ -7,7 +7,7 @@ const AboutPage = () => {
       
       <div className="space-y-4">
         <p>Welcome to the slapp.</p>
-        <p>Shaka Rob and Shaka Rob founded the slapp in the third Tuesday of their Wednesday, August 19, 2023.</p>
+        <p>Shaka Rob and Shaka Bob founded the slapp in the third Tuesday of their Wednesday, August 19, 2023.</p>
         <p>Shaka Bob was pissed mate.</p>
         <p>He rolled up to the Rockaways expecting tasty waves.</p>
         <p>But it was bad.</p>
