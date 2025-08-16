@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Spinner from './UI/Spinner';
 import SessionTile from './SessionTile';
 
 const SessionsList = ({ sessions, loading, error, isOwnJournal, profileUser }) => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       {loading && (
         <div className="flex justify-center items-center h-32">
           <Spinner />
@@ -23,7 +24,10 @@ const SessionsList = ({ sessions, loading, error, isOwnJournal, profileUser }) =
           {isOwnJournal ? (
             <>
               <p className="text-xl font-semibold mb-2">You're dry mate</p>
-              <p className="text-lg">get your ass in the water</p>
+              <p className="text-lg mb-4">get your ass in the water</p>
+              <Link to="/create-session" className="inline-block bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition-colors">
+                Log a Session
+              </Link>
             </>
           ) : (
             <>
@@ -34,7 +38,7 @@ const SessionsList = ({ sessions, loading, error, isOwnJournal, profileUser }) =
       )}
 
       {!loading && !error && sessions.length > 0 && (
-        <div className="grid grid-cols-1">
+        <div className="grid grid-cols-1 gap-4">
           {sessions.map((session) => (
             <SessionTile key={session.id} session={session} />
           ))}
