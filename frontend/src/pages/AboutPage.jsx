@@ -12,7 +12,7 @@ const AboutPage = () => {
         <p>He rolled up to the Rockaways expecting tasty waves.</p>
         <p>But it was bad.</p>
         <p>How about a tide log?</p>
-        <p>Alright side a tide log. Whatta vibe. To scribe in a real ass book. Maybe like what captains do</p>
+        <p>Alright sick. A tide log. Whatta vibe. To scribe in a real ass book. Maybe like what captains do</p>
         <p>Maritime kinda sea life nature vibes.</p>
         <p>Shaka Rob had recently sold his soul to become a consultant. But he could format a mean spreadsheet.</p>
         <p>In comes Shaka Dani. She’s like dude, you’re still cross referencing Surlfine and Buoys?</p>
