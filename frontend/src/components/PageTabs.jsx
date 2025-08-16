@@ -25,8 +25,8 @@ const PageTabs = ({ tabs }) => {
   };
 
   return (
-    <div className="fixed top-16 left-0 w-full bg-white shadow-md z-10"> {/* top-16 for 64px below main header */}
-      <div className="container mx-auto flex justify-around items-center border-b border-gray-200">
+    <div className="w-full bg-white shadow-md">
+      <div className="flex justify-around items-center border-b border-gray-200">
         {tabs.map((tab) => (
           <Link key={tab.path} to={tab.path} className={getTabClasses(tab.path)}>
             {tab.label}
