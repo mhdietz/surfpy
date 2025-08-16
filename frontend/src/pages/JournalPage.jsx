@@ -112,7 +112,9 @@ function JournalPage() {
     if (userId === 'me' || (currentUser && profileUser.id === currentUser.id)) {
       journalOwnerPrefix = 'My';
     } else {
-      journalOwnerPrefix = `${profileUser.display_name}'s`;
+      // Use first name if available, otherwise fall back to the full display name
+      const nameToDisplay = profileUser.first_name || profileUser.display_name;
+      journalOwnerPrefix = `${nameToDisplay}'s`;
     }
   }
 
