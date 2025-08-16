@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Button from '../components/UI/Button';
 import Input from '../components/UI/Input';
 import Card from '../components/UI/Card';
+import Logo from '../components/UI/Logo';
 import toast from 'react-hot-toast';
 
 const AuthPage = () => {
@@ -33,6 +34,11 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center p-4">
+      <div className="flex flex-col items-center mb-8"> 
+        <Logo className="h-20 w-20 text-blue-600" />
+        <h1 className="text-6xl font-bold text-gray-800 tracking-tight">slapp</h1> 
+      </div>
+      
       <Card>
         <div className="text-center">
           <h2 className="text-3xl font-bold">{isLogin ? 'Login' : 'Sign Up'}</h2>
