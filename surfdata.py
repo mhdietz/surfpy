@@ -890,5 +890,22 @@ def get_regions(user_id):
         traceback.print_exc()
         return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
 
+@app.route('/api/users/me/profile', methods=['GET'])
+@token_required
+def get_current_user_profile(user_id):
+    """
+    Get the profile of the currently authenticated user.
+    """
+    try:
+        user_profile = database_utils.get_user_profile_by_id(user_id)
+        if not user_profile:
+            return jsonify({"status": "fail", "message": "User not found"}), 404
+        return jsonify({"status": "success", "data": user_profile}), 200
+    except Exception as e:
+        print(f"Error retrieving current user profile: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

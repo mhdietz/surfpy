@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../config/api';
-import { getToken } from './auth';
+import { getToken, logout } from './auth'; // Import logout
 
 /**
  * A centralized API call function.
@@ -28,6 +28,13 @@ export const apiCall = async (endpoint, options = {}) => {
   };
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+
+  // Check for 401 Unauthorized specifically
+  if (response.status === 401) {
+    logout(); // Clear the token
+    window.location.assign('/auth/login'); // Redirect to login
+    throw new Error('Session expired. Please log in again.');
+  }
 
   const data = await response.json();
 

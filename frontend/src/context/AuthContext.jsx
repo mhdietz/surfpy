@@ -15,24 +15,29 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = authService.getToken();
-    if (token) {
-      const decoded = parseJwt(token);
-      // Check if token is expired
-      if (decoded && decoded.exp * 1000 > Date.now()) {
-        // In a real app, you'd fetch the user profile here
-        // For now, we'll just use the decoded token data
-        setUser({ id: decoded.sub }); 
-        setIsAuthenticated(true);
-      } else {
-        // Token is expired, remove it
-        authService.logout();
+    const verifyUser = async () => {
+      const token = authService.getToken();
+      if (token) {
+        try {
+          // Verify token with the backend and get user profile
+          const response = await apiCall('/api/users/me/profile');
+          setUser(response.data);
+          setIsAuthenticated(true);
+        } catch (error) {
+          // If token is invalid, logout
+          console.error("Session validation failed", error);
+          authService.logout();
+          setUser(null);
+          setIsAuthenticated(false);
+        }
       }
-    }
-    setLoading(false);
+      setIsLoading(false);
+    };
+
+    verifyUser();
   }, []);
 
   const login = async (email, password) => {
@@ -58,6 +63,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     isAuthenticated,
+    isLoading, // Expose isLoading state
     login,
     signup,
     logout,
@@ -66,7 +72,7 @@ export const AuthProvider = ({ children }) => {
   // Don't render children until the initial auth check is complete
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {!isLoading && children}
     </AuthContext.Provider>
   );
 };
