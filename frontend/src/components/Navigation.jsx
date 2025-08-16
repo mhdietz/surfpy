@@ -11,9 +11,13 @@ const Navigation = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const getLinkClasses = (path) => {
-    const baseClasses = "flex flex-col items-center text-gray-600 hover:text-blue-600";
-    const activeClasses = "text-blue-600 font-bold";
-    return `${baseClasses} ${location.pathname === path ? activeClasses : ""}`;
+    const baseClasses = "flex flex-col items-center hover:text-blue-600"; // Base styles without color
+    const isActive = location.pathname.startsWith(path);
+
+    const activeClasses = "text-blue-600 font-bold";   // Active state: blue and bold
+    const inactiveClasses = "text-gray-600"; // Inactive state: gray
+
+    return `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`;
   };
 
   const handleLogout = () => {
