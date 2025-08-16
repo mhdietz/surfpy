@@ -31,7 +31,7 @@ const JournalFilter = ({ filters, onFilterChange }) => {
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   return (
-    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg mb-4">
+    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg">
       {/* Clickable Filter Bar */}
       <div
         className="flex justify-between items-center p-3 cursor-pointer"
