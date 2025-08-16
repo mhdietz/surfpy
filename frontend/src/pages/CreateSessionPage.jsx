@@ -191,7 +191,7 @@ function CreateSessionPage() {
           </div>
 
           <div>
-            <label htmlFor="fun_rating" className="block text-sm font-medium text-gray-700">Fun Rating</label>
+            <label htmlFor="fun_rating" className="block text-sm font-medium text-gray-700">Stoke</label>
             <div className="flex items-center space-x-4">
               <Input 
                 type="range" 
