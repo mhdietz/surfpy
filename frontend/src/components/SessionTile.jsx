@@ -35,7 +35,7 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
   };
 
   return (
-    <div onClick={onNavigate} className="bg-white rounded-lg shadow border border-gray-200 flex cursor-pointer hover:shadow-lg transition-shadow overflow-hidden">
+    <div onClick={onNavigate} className="bg-white shadow border border-gray-200 flex cursor-pointer hover:shadow-lg transition-shadow overflow-hidden">
       {/* Date Column (LHS) */}
       <div className="flex flex-col justify-center items-center w-20 flex-shrink-0 bg-gray-50 p-2 border-r border-gray-200">
         <p className="text-sm font-semibold text-red-500 tracking-wider">{month}</p>
@@ -63,7 +63,7 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
         {/* Body */}
         <div className="flex-grow space-y-3 mt-2">
                     {session_notes && 
-            <div className="bg-gray-50 p-3 rounded-md">
+            <div className="bg-gray-50 p-3">
               <p className="text-sm text-gray-600 line-clamp-3">
                 {session_notes}
               </p>
