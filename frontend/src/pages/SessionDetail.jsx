@@ -183,7 +183,7 @@ const SessionDetail = () => {
           {session.raw_met && <WindDisplay windData={session.raw_met} />}
 
           {/* Tide Display Component */}
-          {session.tide && <TideDisplay tideData={session.tide} />}
+          {session.tide && <TideDisplay tideData={session.tide} location_timezone={session.location_timezone} />}
 
           {session.session_notes && (
             <div className="mt-4 mb-4">

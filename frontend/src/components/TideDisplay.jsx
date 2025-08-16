@@ -1,7 +1,7 @@
 import React from 'react';
-import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
-const TideDisplay = ({ tideData }) => {
+const TideDisplay = ({ tideData, location_timezone }) => {
   if (!tideData) {
     return null; // Don't render if no data
   }
@@ -9,10 +9,15 @@ const TideDisplay = ({ tideData }) => {
   const { water_level, direction, next_event_at, next_event_height, next_event_type } = tideData;
 
   const formatTideTime = (dateString) => {
-    if (!dateString) return null; // Handle missing/null dates
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return null; // Handle invalid dates
-    return format(date, "h:mm a");
+    if (!dateString) return null;
+    try {
+      // Use the timezone from the session data, with a fallback to UTC.
+      const tz = location_timezone || 'UTC';
+      return formatInTimeZone(dateString, tz, "h:mm a");
+    } catch (error) {
+      console.error("Error formatting tide time:", error);
+      return new Date(dateString).toLocaleTimeString(); // Fallback
+    }
   };
 
   return (
