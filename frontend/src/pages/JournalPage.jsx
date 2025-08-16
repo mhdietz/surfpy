@@ -135,14 +135,12 @@ function JournalPage() {
         <PageTabs tabs={journalTabs} />
 
         {currentTab === 'log' && (
-          <>
-            <div className="w-full flex justify-end p-4">
+          <div className="w-full bg-white rounded-lg shadow-md">
+            <div className="w-full flex justify-end px-4 mb-2">
               <JournalFilter filters={filters} onFilterChange={handleFilterChange} />
             </div>
-            <div className="w-full bg-white rounded-lg shadow-md">
-              <SessionsList sessions={sessions} loading={loading} error={error} isOwnJournal={isOwnJournal} profileUser={profileUser} />
-            </div>
-          </>
+            <SessionsList sessions={sessions} loading={loading} error={error} isOwnJournal={isOwnJournal} profileUser={profileUser} />
+          </div>
         )}
 
         {currentTab === 'stats' && (
