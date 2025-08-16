@@ -79,7 +79,12 @@ const AuthPage = () => {
             />
           </div>
           <div>
-            <label htmlFor="password" className="text-sm font-medium text-gray-700">Password</label>
+            <div className="flex justify-between items-center">
+              <label htmlFor="password" className="text-sm font-medium text-gray-700">Password</label>
+              {!isLogin && (
+                <span className="text-xs text-gray-500">you only get one shot don't be a kook</span>
+              )}
+            </div>
             <Input
               id="password"
               type="password"
