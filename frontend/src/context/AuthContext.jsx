@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import * as authService from '../services/auth';
+import { apiCall } from '../services/api';
 
 // Helper function to parse JWT
 const parseJwt = (token) => {
