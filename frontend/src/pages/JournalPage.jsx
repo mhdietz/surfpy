@@ -139,9 +139,11 @@ function JournalPage() {
 
         {currentTab === 'log' && (
           <div className="w-full bg-white rounded-lg shadow-md">
-            <div className="w-full flex justify-end px-4 mb-2">
-              <JournalFilter filters={filters} onFilterChange={handleFilterChange} />
-            </div>
+            {!loading && sessions.length > 0 && (
+              <div className="w-full flex justify-end px-4 mb-2">
+                <JournalFilter filters={filters} onFilterChange={handleFilterChange} />
+              </div>
+            )}
             <SessionsList sessions={sessions} loading={loading} error={error} isOwnJournal={isOwnJournal} profileUser={profileUser} isFiltered={isFiltered} />
           </div>
         )}
