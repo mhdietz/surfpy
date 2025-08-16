@@ -425,6 +425,7 @@ def get_user_profile_by_id(user_id):
                 SELECT 
                     id, 
                     email,
+                    raw_user_meta_data->>'first_name' as first_name,
                     COALESCE(
                         raw_user_meta_data->>'display_name',
                         NULLIF(TRIM(COALESCE(raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(raw_user_meta_data->>'last_name', '')), ''),
