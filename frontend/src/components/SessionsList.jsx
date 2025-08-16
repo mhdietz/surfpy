@@ -44,7 +44,7 @@ const SessionsList = ({ sessions, loading, error, isOwnJournal, profileUser, isF
       )}
 
       {!loading && !error && sessions.length > 0 && (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1">
           {sessions.map((session) => (
             <SessionTile key={session.id} session={session} />
           ))}
