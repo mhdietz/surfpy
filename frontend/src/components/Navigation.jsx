@@ -53,6 +53,9 @@ const Navigation = () => {
                   </svg>
                 </button>
                 <div className={`absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ${isProfileOpen ? 'block' : 'hidden'}`}>
+                  <Link to="/about" className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    About
+                  </Link>
                   <button onClick={handleLogout} className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Logout</button>
                 </div>
               </div>

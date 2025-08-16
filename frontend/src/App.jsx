@@ -8,6 +8,7 @@ import CreateSessionPage from './pages/CreateSessionPage.jsx'; // Import CreateS
 import EditSessionPage from './pages/EditSessionPage.jsx'; // Import EditSessionPage
 import JournalPage from './pages/JournalPage.jsx'; // Import JournalPage
 import SessionDetail from './pages/SessionDetail.jsx'; // Import SessionDetail
+import AboutPage from './pages/AboutPage.jsx'; // Import AboutPage
 import { Toaster } from 'react-hot-toast';
 import Navigation from './components/Navigation'; // Import Navigation component
 
@@ -65,6 +66,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <EditSessionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/about"
+            element={
+              <ProtectedRoute>
+                <AboutPage />
               </ProtectedRoute>
             }
           />
