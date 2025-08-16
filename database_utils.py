@@ -502,8 +502,17 @@ def get_leaderboard(year=None, stat='sessions'):
 
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Base query
-            query = """
+            params = []
+            join_condition = "s ON u.id = s.user_id"
+
+            # If a year is provided, add the condition to the JOIN
+            # This is crucial for LEFT JOIN to work correctly and not filter out users
+            if year:
+                join_condition += " AND EXTRACT(YEAR FROM s.session_started_at) = %s"
+                params.append(year)
+
+            # Base query with dynamic join condition
+            query = f"""
                 SELECT
                     u.id as user_id,
                     COALESCE(
@@ -513,26 +522,20 @@ def get_leaderboard(year=None, stat='sessions'):
                     ) as display_name,
                     COUNT(s.id) as total_sessions,
                     ROUND(COALESCE(SUM(EXTRACT(EPOCH FROM (s.session_ended_at - s.session_started_at))) / 60, 0))::integer as total_surf_time_minutes,
-                    ROUND(AVG(s.fun_rating)::numeric, 2) as average_fun_rating
+                    COALESCE(ROUND(AVG(s.fun_rating)::numeric, 2), 0.0) as average_fun_rating
                 FROM auth.users u
-                JOIN surf_sessions_duplicate s ON u.id = s.user_id
+                LEFT JOIN surf_sessions_duplicate {join_condition}
+                GROUP BY u.id
             """
-            params = []
-
-            # Year filter
-            if year:
-                query += " WHERE EXTRACT(YEAR FROM s.session_started_at) = %s"
-                params.append(year)
-
-            query += " GROUP BY u.id"
 
             # Order by the selected statistic
             if stat == 'time':
-                query += " ORDER BY total_surf_time_minutes DESC"
+                query += " ORDER BY total_surf_time_minutes DESC, total_sessions DESC"
             elif stat == 'rating':
-                query += " ORDER BY average_fun_rating DESC NULLS LAST"
+                # For rating, also sort by number of sessions to rank users with 0 sessions fairly
+                query += " ORDER BY average_fun_rating DESC NULLS LAST, total_sessions DESC"
             else: # Default to sessions
-                query += " ORDER BY total_sessions DESC"
+                query += " ORDER BY total_sessions DESC, total_surf_time_minutes DESC"
             
             query += " LIMIT 100" # Limit to top 100
 
