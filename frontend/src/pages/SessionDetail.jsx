@@ -172,7 +172,14 @@ const SessionDetail = () => {
     <div className="max-w-2xl mx-auto">
       <Card>
         <div className="p-1">
-          <h1 className="text-3xl font-bold mb-2">{session.session_name}</h1>
+          <div className="flex items-center gap-2 mb-2"> {/* Flex container for button and title */}
+            <button onClick={() => navigate(-1)} className="text-gray-600 hover:text-blue-600">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </button>
+            <h1 className="text-3xl font-bold">{session.session_name}</h1> {/* Removed mb-2 from h1 */}
+          </div>
           <p className="text-lg mb-2">{session.location}</p>
           <p className="text-md mb-4">{formatSessionTime(session.session_started_at, session.session_ended_at, session.location_timezone)}</p>
 
