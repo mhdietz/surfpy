@@ -69,31 +69,21 @@ const SessionDetail = () => {
   }, [session?.shakas]);
 
   // Helper to format date and time
-  const formatSessionTime = (start, end) => {
-    console.log("--- Timezone Debug ---");
-    console.log("Raw start string:", start);
-    console.log("Raw end string:", end);
-
+  const formatSessionTime = (start, end, timeZone) => {
     try {
-      // Get the user's timezone from the browser
-      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      console.log("Detected timezone:", timeZone);
+      // Use the timezone from the session data, with a fallback to UTC.
+      const tz = timeZone || 'UTC';
       
-      // Format the date and time parts in the user's local timezone
-      const datePart = formatInTimeZone(start, timeZone, "EEE, MMM d, yyyy");
-      const startTimePart = formatInTimeZone(start, timeZone, "h:mm a");
-      const endTimePart = formatInTimeZone(end, timeZone, "h:mm a");
+      const datePart = formatInTimeZone(start, tz, "EEE, MMM d, yyyy");
+      const startTimePart = formatInTimeZone(start, tz, "h:mm a");
+      const endTimePart = formatInTimeZone(end, tz, "h:mm a");
       
-      const formattedString = `${datePart}, ${startTimePart} - ${endTimePart}`;
-      console.log("Formatted output:", formattedString);
-      console.log("--- End Timezone Debug ---");
-      return formattedString;
+      return `${datePart}, ${startTimePart} - ${endTimePart}`;
     } catch (error) {
       console.error("Error formatting session time:", error);
-      // Fallback to a simple format if an error occurs
+      // Fallback for safety
       const startDate = new Date(start);
-      const endDate = new Date(end);
-      return `${startDate.toLocaleDateString()} ${startDate.toLocaleTimeString()} - ${endDate.toLocaleTimeString()}`;
+      return `${startDate.toLocaleDateString()}`;
     }
   };
 
@@ -184,7 +174,7 @@ const SessionDetail = () => {
         <div className="p-4">
           <h1 className="text-3xl font-bold mb-2">{session.session_name}</h1>
           <p className="text-lg mb-2">{session.location}</p>
-          <p className="text-md mb-4">{formatSessionTime(session.session_started_at, session.session_ended_at)}</p>
+          <p className="text-md mb-4">{formatSessionTime(session.session_started_at, session.session_ended_at, session.location_timezone)}</p>
 
           {/* Swell Display Component */}
           {session.raw_swell && <SwellDisplay swellData={session.raw_swell} />}
