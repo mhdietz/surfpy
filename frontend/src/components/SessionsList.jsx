@@ -5,7 +5,7 @@ import SessionTile from './SessionTile';
 
 const SessionsList = ({ sessions, loading, error, isOwnJournal, profileUser, isFiltered }) => {
   return (
-    <div className="space-y-6 py-4">
+    <div className="space-y-6 pb-4">
       {loading && (
         <div className="flex justify-center items-center h-32">
           <Spinner />
