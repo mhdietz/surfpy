@@ -117,6 +117,7 @@ function JournalPage() {
   }
 
   const isOwnJournal = userId === 'me' || (currentUser && profileUser && profileUser.id === currentUser.id);
+  const isFiltered = Object.values(filters).some(val => val !== '');
 
   const journalTabs = [
     { label: `${journalOwnerPrefix} Surf Log`, path: `/journal/${userId || 'me'}?tab=log` },
@@ -139,7 +140,7 @@ function JournalPage() {
             <div className="w-full flex justify-end px-4 mb-2">
               <JournalFilter filters={filters} onFilterChange={handleFilterChange} />
             </div>
-            <SessionsList sessions={sessions} loading={loading} error={error} isOwnJournal={isOwnJournal} profileUser={profileUser} />
+            <SessionsList sessions={sessions} loading={loading} error={error} isOwnJournal={isOwnJournal} profileUser={profileUser} isFiltered={isFiltered} />
           </div>
         )}
 
