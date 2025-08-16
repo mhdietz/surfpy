@@ -27,8 +27,7 @@ const SwellDisplay = ({ swellData }) => {
       <div className="text-gray-800 bg-white p-3 rounded-lg space-y-1 border border-black">
         <h2 className="text-xl font-bold mb-2">Swell</h2>
         {swells.map((swell) => {
-          const displayName = swell.name.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()); // Format as "Swell 1"
-          const swellString = `${displayName}: ${swell.height.toFixed(1)}ft @ ${swell.period.toFixed(1)}s ${formatDirection(swell.direction)} (${swell.direction.toFixed(0)}°)`;
+          const swellString = `${swell.height.toFixed(1)}ft @ ${swell.period.toFixed(1)}s ${formatDirection(swell.direction)} (${swell.direction.toFixed(0)}°)`;
           return <p key={swell.name} className="text-sm">{swellString}</p>;
         })}
       </div>
