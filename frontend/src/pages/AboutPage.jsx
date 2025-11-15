@@ -56,6 +56,9 @@ where         //it’s all in the where clause
         <p>3 months later</p>
         <p>Claude: Here is your slapp</p>
         <p>Do with it as you please</p>
+        <p>____________</p>
+        <p>Massive credit to this open sourced python surf math library: https://github.com/mpiannucci/surfpy</p>
+        <p>for the buoy data basis of the slapp</p>
       </div>
 
     </div>
