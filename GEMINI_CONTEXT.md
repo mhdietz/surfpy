@@ -20,7 +20,7 @@ The application is a full-stack surf logging and forecasting platform. The backe
 
 -   **Architecture**: The frontend follows a modern React structure, separating concerns into distinct directories:
     -   `pages/`: For top-level page components (e.g., `AuthPage`, `Feed`).
-    -   `components/`: For reusable components, including route guards like `ProtectedRoute`.
+    -   `components/`: For reusable components, including route guards like `ProtectedRoute`, and data display components such as `SwellDisplay`, `WindDisplay`, `TideDisplay`, `StatsDisplay`, `Leaderboard`.
     -   `components/UI/`: For generic, reusable UI components (e.g., `Button`, `Input`, `Card`, `Spinner`).
     -   `context/`: For global state management via React Context (e.g., `AuthContext`).
     -   `services/`: For communication with the backend API (e.g., `auth.js`, `api.js`).
@@ -55,6 +55,14 @@ The application is a full-stack surf logging and forecasting platform. The backe
 -   **Relational Session Tagging**: The application uses a relational model for tagging users in a session. Instead of duplicating sessions, a single session record is created, and all participants (the creator and tagged users) are linked to it via records in the `session_participants` table. This approach ensures data integrity, simplifies queries, and is highly scalable.
 -   **Shaka Reactions**: Users can give a "shaka" to any surf session. This is handled by a `POST /api/surf-sessions/<session_id>/shaka` endpoint that toggles the reaction. All session retrieval endpoints now include a `shakas` object containing the total count, a preview of users who have reacted, and a `viewer_has_shakaed` boolean flag.
 
+### c. User Statistics & Journal
+-   **Flow**: Users can view their own journal (`/journal`) or a friend's journal (`/journal/:userId`), which includes a `Log` tab for sessions and a `Stats` tab for aggregate data.
+-   **API Integration**: The `Stats` tab fetches data from the dedicated `/api/users/:id/stats` endpoint, providing total sessions, total surf time, and average fun rating.
+
+### d. Community Leaderboards
+-   **Flow**: A community leaderboard (`/feed?tab=leaderboard`) displays top users based on various statistics (sessions, time, rating), filterable by year.
+-   **API Integration**: The leaderboard data is fetched from the dedicated `/api/leaderboard` endpoint, which supports filtering by year and statistic.
+
 ## 4. Key Technical Decisions & Concepts
 
 ### Backend Decisions
@@ -75,7 +83,7 @@ The application is a full-stack surf logging and forecasting platform. The backe
 
 ### c. Lightweight Session Endpoints & Filtering
 -   **Performance Optimization**: Session list views (main feed, user journals) now utilize lightweight API responses, excluding large `raw_swell`, `raw_met`, and detailed tide data. This significantly improves frontend performance.
--   **Server-Side Filtering**: These lightweight endpoints support server-side filtering by swell height, period, and direction, ensuring only relevant data is transferred. The regional filter is planned for a future iteration.
+-   **Server-Side Filtering**: These lightweight endpoints support server-side filtering by swell height, period, direction, and region, ensuring only relevant data is transferred.
 
 ## 5. Development Setup
 
