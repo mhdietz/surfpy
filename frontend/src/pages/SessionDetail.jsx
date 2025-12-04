@@ -11,6 +11,7 @@ import SwellDisplay from '../components/SwellDisplay';
 import WindDisplay from '../components/WindDisplay';
 import TideDisplay from '../components/TideDisplay';
 import ShakaModal from '../components/ShakaModal';
+import CommentModal from '../components/CommentModal';
 
 const SessionDetail = () => {
   const { id } = useParams();
@@ -23,6 +24,7 @@ const SessionDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isShakaModalOpen, setIsShakaModalOpen] = useState(false);
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [shakaData, setShakaData] = useState({
     shakaCount: 0,
     hasViewerShakaed: false,
@@ -103,9 +105,6 @@ const SessionDetail = () => {
     }
   };
 
-  const openShakaModal = () => setIsShakaModalOpen(true);
-  const closeShakaModal = () => setIsShakaModalOpen(false);
-
   const handleToggleShaka = async () => {
     const wasShaked = shakaData.hasViewerShakaed;
     setShakaData(prev => ({ ...prev, hasViewerShakaed: !wasShaked, shakaCount: wasShaked ? prev.shakaCount - 1 : prev.shakaCount + 1 }));
@@ -134,6 +133,8 @@ const SessionDetail = () => {
       }
     }
   };
+
+  const openCommentModal = () => setIsCommentModalOpen(true);
 
   if (!isAuthenticated) {
     return (
@@ -201,11 +202,20 @@ const SessionDetail = () => {
             </div>
           )}
 
-          <div className="flex items-center gap-4 mb-6"> {/* New flex container for Shaka Group and Stoke Tile */}
+          <div className="flex items-stretch gap-4 mb-6"> {/* Use items-stretch for equal height */}
+            {/* Comments Group */}
+            <div onClick={openCommentModal} className="flex flex-col gap-2 flex-shrink-0 border border-black p-3 rounded-lg flex-1 cursor-pointer hover:bg-gray-50">
+              <h2 className="text-xl font-bold">Comments</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">💬</span>
+                <span className="font-bold text-blue-600 text-sm">{session.comment_count || 0}</span>
+              </div>
+            </div>
+            
             {/* Shaka Group */}
-            <div className="flex flex-col gap-2 flex-shrink-0 border border-black p-3 rounded-lg flex-1"> {/* Added flex-1 */}
+            <div className="flex flex-col gap-2 flex-shrink-0 border border-black p-3 rounded-lg flex-1">
               <h2 className="text-xl font-bold">Shakas</h2>
-              <div className="flex items-center gap-2"> {/* This div keeps icon and count side-by-side */}
+              <div className="flex items-center gap-2">
                 <span onClick={handleToggleShaka} className={`text-xl cursor-pointer transition-all ${shakaData.hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}>🤙</span>
                 <div onClick={handleOpenShakaModal} className="cursor-pointer">
                   <span className="font-bold text-blue-600 text-sm">{shakaData.shakaCount}</span>
@@ -214,7 +224,7 @@ const SessionDetail = () => {
             </div>
 
             {/* Stoke Tile */}
-            <div className="flex flex-col gap-2 text-gray-800 bg-white p-3 rounded-lg border border-black flex-1"> {/* Match Shaka structure */}
+            <div className="flex flex-col gap-2 text-gray-800 bg-white p-3 rounded-lg border border-black flex-1">
               <h2 className="text-xl font-bold">Stoke</h2>
               <p className="text-xl">{session.fun_rating}<span className="text-sm text-gray-800">/10</span></p>
             </div>
@@ -265,6 +275,13 @@ const SessionDetail = () => {
             setShakaAllUsers([]);
           }}
           loading={loadingShakaUsers}
+        />
+      )}
+
+      {isCommentModalOpen && (
+        <CommentModal 
+          session_id={id}
+          onClose={() => setIsCommentModalOpen(false)}
         />
       )}
     </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ShakaModal from './ShakaModal';
+import CommentModal from './CommentModal';
 import { toggleShaka, getSessionShakas } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -12,8 +13,8 @@ const formatSessionDate = (dateStr) => {
 };
 
 // Journal-style Tile
-const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaModal, shakaData }) => {
-  const { id, user_id, session_name, location, fun_rating, session_started_at, display_name, participants, session_notes } = session;
+const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaModal, onOpenCommentModal, shakaData }) => {
+  const { id, user_id, session_name, location, fun_rating, session_started_at, display_name, participants, session_notes, comment_count } = session;
   const { shakaCount, hasViewerShakaed } = shakaData;
 
   const date = new Date(session_started_at);
@@ -81,12 +82,20 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
             )}
           </div>
 
-          {/* Shaka Controls */}
+          {/* Social Controls */}
           <div className="flex justify-end items-center">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span onClick={onShaka} className={`text-xl cursor-pointer transition-all ${hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}>🤙</span>
-              <div onClick={onOpenShakaModal} className="cursor-pointer">
-                <span className="font-bold text-blue-600">{shakaCount}</span>
+            <div className="flex items-center gap-4 flex-shrink-0">
+              {/* Comments */}
+              <div onClick={onOpenCommentModal} className="flex items-center gap-2 cursor-pointer">
+                <span className="text-xl">💬</span>
+                <span className="font-bold text-blue-600">{comment_count || 0}</span>
+              </div>
+              {/* Shakas */}
+              <div className="flex items-center gap-2">
+                <span onClick={onShaka} className={`text-xl cursor-pointer transition-all ${hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}>🤙</span>
+                <div onClick={onOpenShakaModal} className="cursor-pointer">
+                  <span className="font-bold text-blue-600">{shakaCount}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -103,6 +112,7 @@ const SessionTile = ({ session, variant = 'journal' }) => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const [isShakaModalOpen, setIsShakaModalOpen] = useState(false);
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
 
   const [shakaData, setShakaData] = useState({
     shakaCount: 0,
@@ -150,6 +160,11 @@ const SessionTile = ({ session, variant = 'journal' }) => {
     }
   };
 
+  const handleOpenCommentModal = (e) => {
+    e.stopPropagation();
+    setIsCommentModalOpen(true);
+  };
+
   const handleToggleShaka = async (e) => {
     e.stopPropagation();
     const wasShaked = shakaData.hasViewerShakaed;
@@ -170,6 +185,7 @@ const SessionTile = ({ session, variant = 'journal' }) => {
     onUserClick: handleNavigateToJournal,
     onShaka: handleToggleShaka,
     onOpenShakaModal: handleOpenShakaModal,
+    onOpenCommentModal: handleOpenCommentModal,
     shakaData,
   };
 
@@ -185,6 +201,13 @@ const SessionTile = ({ session, variant = 'journal' }) => {
             setShakaAllUsers([]);
           }}
           loading={loadingShakaUsers}
+        />
+      )}
+
+      {isCommentModalOpen && (
+        <CommentModal 
+          session_id={session.id}
+          onClose={() => setIsCommentModalOpen(false)}
         />
       )}
     </>

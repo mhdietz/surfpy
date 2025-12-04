@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiCall } from '../services/api';
-import { Spinner } from './UI/Spinner';
+import Spinner from './UI/Spinner';
 
 // Helper to format date
 const formatDate = (isoString) => {
