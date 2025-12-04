@@ -128,7 +128,8 @@ def get_session_detail(session_id, current_user_id):
                                 LIMIT 2
                             ) as shaka_user
                         ), '[]'::jsonb)
-                    ) as shakas
+                    ) as shakas,
+                    (SELECT COUNT(*) FROM comments WHERE session_id = s.id) as comment_count
                 FROM surf_sessions_duplicate s
                 LEFT JOIN auth.users u ON s.user_id = u.id
                 LEFT JOIN surf_spots sp ON s.location = sp.name
@@ -392,6 +393,94 @@ def get_session_shakas(session_id):
     except Exception as e:
         print(f"Error getting session shakas: {e}")
         return None
+    finally:
+        conn.close()
+
+def create_comment(session_id, user_id, comment_text):
+    """Create a new comment for a session."""
+    conn = get_db_connection()
+    if not conn:
+        return None
+    
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                INSERT INTO comments (session_id, user_id, comment_text)
+                VALUES (%s, %s, %s)
+                RETURNING id, session_id, user_id, comment_text, created_at;
+            """, (session_id, user_id, comment_text))
+            
+            new_comment = cur.fetchone()
+            if new_comment:
+                new_comment['comment_id'] = new_comment.pop('id')
+            
+            # Now, fetch the display_name for the user who commented
+            cur.execute("""
+                SELECT 
+                    COALESCE(
+                        raw_user_meta_data->>'display_name',
+                        NULLIF(TRIM(COALESCE(raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(raw_user_meta_data->>'last_name', '')), ''),
+                        split_part(email, '@', 1)
+                    ) as display_name
+                FROM auth.users
+                WHERE id = %s
+            """, (user_id,))
+            
+            user_info = cur.fetchone()
+            new_comment['display_name'] = user_info['display_name']
+            
+            # Format timestamp
+            if isinstance(new_comment['created_at'], datetime):
+                new_comment['created_at'] = new_comment['created_at'].isoformat()
+                
+            conn.commit()
+            return new_comment
+            
+    except Exception as e:
+        print(f"Error creating comment: {e}")
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+def get_comments_for_session(session_id):
+    """Retrieve all comments for a specific session."""
+    conn = get_db_connection()
+    if not conn:
+        return []
+
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT 
+                    c.id as comment_id,
+                    c.session_id,
+                    c.user_id,
+                    c.comment_text,
+                    c.created_at,
+                    COALESCE(
+                        u.raw_user_meta_data->>'display_name',
+                        NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
+                        split_part(u.email, '@', 1)
+                    ) as display_name
+                FROM comments c
+                JOIN auth.users u ON c.user_id = u.id
+                WHERE c.session_id = %s
+                ORDER BY c.created_at DESC
+            """, (session_id,))
+            
+            comments = cur.fetchall()
+            
+            # Format timestamps
+            for comment in comments:
+                if isinstance(comment['created_at'], datetime):
+                    comment['created_at'] = comment['created_at'].isoformat()
+            
+            return comments
+
+    except Exception as e:
+        print(f"Error getting comments for session: {e}")
+        raise
     finally:
         conn.close()
 
@@ -939,7 +1028,8 @@ def get_session_summary_list(viewer_id, profile_user_id_filter=None, filters={})
                                 LIMIT 2
                             ) as shaka_user
                         ), '[]'::jsonb)
-                    ) as shakas
+                    ) as shakas,
+                    (SELECT COUNT(*) FROM comments WHERE session_id = s.id) as comment_count
                 FROM surf_sessions_duplicate s
                 LEFT JOIN auth.users u ON s.user_id = u.id
                 LEFT JOIN surf_spots sp ON s.location = sp.name
