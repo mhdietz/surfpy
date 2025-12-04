@@ -4,7 +4,7 @@ from flask_caching import Cache
 from datetime import datetime, timezone, timedelta
 import surfpy
 import database_utils
-from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location, get_all_regions, get_user_profile_by_id, get_user_stats, get_leaderboard
+from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location, get_all_regions, get_user_profile_by_id, get_user_stats, get_leaderboard, create_comment, get_comments_for_session
 import json
 from json_utils import CustomJSONEncoder
 import math
@@ -596,6 +596,50 @@ def get_session_shakas_route(user_id, session_id):
             "status": "error", 
             "message": f"An error occurred: {str(e)}"
         }), 500
+
+@app.route('/api/surf-sessions/<int:session_id>/comments', methods=['POST'])
+@token_required
+def create_comment_route(user_id, session_id):
+    """Create a new comment on a specific surf session."""
+    try:
+        data = request.get_json()
+        comment_text = data.get('comment_text')
+
+        if not comment_text or not comment_text.strip():
+            return jsonify({"status": "fail", "message": "Comment text is required"}), 400
+        
+        # The database constraint will handle the max length check
+
+        new_comment = database_utils.create_comment(session_id, user_id, comment_text.strip())
+        
+        if new_comment:
+            return jsonify({"status": "success", "data": new_comment}), 201
+        else:
+            return jsonify({"status": "fail", "message": "Failed to create comment"}), 500
+
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/api/surf-sessions/<int:session_id>/comments', methods=['GET'])
+@token_required
+def get_comments_route(user_id, session_id):
+    """Get all comments for a specific surf session."""
+    try:
+        comments = database_utils.get_comments_for_session(session_id)
+        return jsonify({
+            "status": "success",
+            "data": {
+                "comments": comments,
+                "count": len(comments)
+            }
+        }), 200
+
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
 
 @app.route('/api/test', methods=['GET'])
 def test_route():
