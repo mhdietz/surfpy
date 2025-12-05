@@ -180,8 +180,10 @@ const SessionTile = ({ session, variant = 'journal' }) => {
     }
   };
 
-  const handleOpenCommentModal = async (e) => { // Modified to fetch comments
-    e.stopPropagation();
+  const handleOpenCommentModal = async (e) => { // 'e' is optional
+    if (e && e.stopPropagation) { // Only call stopPropagation if 'e' is a valid event object
+      e.stopPropagation();
+    }
     setIsCommentModalOpen(true);
     setLoadingComments(true); // Set loading true when modal opens
 
@@ -224,6 +226,7 @@ const SessionTile = ({ session, variant = 'journal' }) => {
 
       {isCommentModalOpen && ( // Conditionally render CommentModal
         <CommentModal 
+          sessionId={session.id} // Pass session ID
           sessionTitle={session.session_name}
           comments={sessionComments} // Pass fetched comments
           loading={loadingComments}   // Pass loading state
@@ -231,6 +234,7 @@ const SessionTile = ({ session, variant = 'journal' }) => {
             setIsCommentModalOpen(false);
             setSessionComments([]); // Clear comments when closing
           }}
+          onCommentPosted={handleOpenCommentModal} // Callback to refresh comments after posting
         />
       )}
     </>
