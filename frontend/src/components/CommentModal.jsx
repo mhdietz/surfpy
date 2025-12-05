@@ -49,7 +49,7 @@ const CommentModal = ({ sessionId, sessionTitle, comments = [], onClose, onComme
                       {comment.display_name || 'Anonymous'}
                     </Link>
                     <span className="text-gray-500 ml-2 text-xs">
-                      {new Date(comment.created_at).toLocaleString()}
+                      {new Date(comment.created_at).toLocaleDateString()} {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                   <p className="text-gray-700 text-sm">{comment.comment_text}</p>
