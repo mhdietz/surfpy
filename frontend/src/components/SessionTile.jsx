@@ -12,7 +12,7 @@ const formatSessionDate = (dateStr) => {
 };
 
 // Journal-style Tile
-const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaModal, shakaData }) => {
+const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaModal, shakaData, commentCount }) => {
   const { id, user_id, session_name, location, fun_rating, session_started_at, display_name, participants, session_notes } = session;
   const { shakaCount, hasViewerShakaed } = shakaData;
 
@@ -81,14 +81,25 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
             )}
           </div>
 
-          {/* Shaka Controls */}
-          <div className="flex justify-end items-center">
+          {/* Shaka Controls and Comment Controls */}
+          <div className="flex justify-end items-center gap-4">
+            {/* Shaka Controls */}
             <div className="flex items-center gap-2 flex-shrink-0">
               <span onClick={onShaka} className={`text-xl cursor-pointer transition-all ${hasViewerShakaed ? 'grayscale-0' : 'grayscale'}`}>🤙</span>
               <div onClick={onOpenShakaModal} className="cursor-pointer">
                 <span className="font-bold text-blue-600">{shakaCount}</span>
               </div>
             </div>
+
+            {/* Comment Controls */}
+            {commentCount !== undefined && (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-xl">💬</span> {/* Comment icon */}
+                <div className="cursor-pointer">
+                  <span className="font-bold text-blue-600">{commentCount}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -171,6 +182,7 @@ const SessionTile = ({ session, variant = 'journal' }) => {
     onShaka: handleToggleShaka,
     onOpenShakaModal: handleOpenShakaModal,
     shakaData,
+    commentCount: session.comment_count, // Pass comment count here
   };
 
   return (
@@ -192,3 +204,4 @@ const SessionTile = ({ session, variant = 'journal' }) => {
 };
 
 export default SessionTile;
+

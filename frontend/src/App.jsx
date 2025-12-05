@@ -11,6 +11,7 @@ import SessionDetail from './pages/SessionDetail.jsx'; // Import SessionDetail
 import AboutPage from './pages/AboutPage.jsx'; // Import AboutPage
 import { Toaster } from 'react-hot-toast';
 import Navigation from './components/Navigation'; // Import Navigation component
+import TestComments from './components/TestComments'; // Import TestComments
 
 // A component to handle the root URL path, redirecting based on auth state.
 const Home = () => {
@@ -25,6 +26,7 @@ const AppContent = () => {
     <Router>
       {isAuthenticated && <Navigation />}
       <div className={isAuthenticated ? "pt-16 pb-16" : ""}>
+        <TestComments /> {/* Temporary component for testing comment API */}
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth/login" element={<AuthPage />} />
