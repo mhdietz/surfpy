@@ -466,7 +466,7 @@ def get_comments_for_session(session_id):
                 FROM comments c
                 JOIN auth.users u ON c.user_id = u.id
                 WHERE c.session_id = %s
-                ORDER BY c.created_at DESC
+                ORDER BY c.created_at ASC
             """, (session_id,))
             
             comments = cur.fetchall()
