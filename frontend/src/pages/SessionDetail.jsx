@@ -12,6 +12,7 @@ import WindDisplay from '../components/WindDisplay';
 import TideDisplay from '../components/TideDisplay';
 import ShakaModal from '../components/ShakaModal';
 import CommentModal from '../components/CommentModal'; // Import CommentModal
+import { getCommentsForSession } from '../services/comments'; // Import comments service
 
 const SessionDetail = () => {
   const { id } = useParams();
@@ -32,6 +33,9 @@ const SessionDetail = () => {
   });
   const [shakaAllUsers, setShakaAllUsers] = useState([]);
   const [loadingShakaUsers, setLoadingShakaUsers] = useState(false);
+  const [sessionComments, setSessionComments] = useState([]); // New state for comments
+  const [loadingComments, setLoadingComments] = useState(false); // New state for comment loading
+
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -137,8 +141,19 @@ const SessionDetail = () => {
     }
   };
 
-  const handleOpenCommentModal = () => { // New function to open CommentModal
+  const handleOpenCommentModal = async () => {
     setIsCommentModalOpen(true);
+    setLoadingComments(true); // Set loading true when modal opens
+
+    try {
+      const fetchedComments = await getCommentsForSession(id); // Use 'id' from useParams
+      setSessionComments(fetchedComments);
+    } catch (error) {
+      console.error('💬 Failed to load comments:', error);
+      setSessionComments([]); // Reset comments on error
+    } finally {
+      setLoadingComments(false); // Set loading false after fetch attempt
+    }
   };
 
   if (!isAuthenticated) {
@@ -288,8 +303,12 @@ const SessionDetail = () => {
       {isCommentModalOpen && ( // Conditionally render CommentModal
         <CommentModal 
           sessionTitle={session.session_name}
-          comments={[]} // For now, pass an empty array
-          onClose={() => setIsCommentModalOpen(false)}
+          comments={sessionComments} // Pass fetched comments
+          loading={loadingComments}   // Pass loading state
+          onClose={() => {
+            setIsCommentModalOpen(false);
+            setSessionComments([]); // Clear comments when closing
+          }}
         />
       )}
     </div>

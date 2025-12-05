@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import ShakaModal from './ShakaModal';
 import CommentModal from './CommentModal'; // Import CommentModal
 import { toggleShaka, getSessionShakas } from '../services/api';
+import { getCommentsForSession } from '../services/comments'; // Import comments service
 import { useAuth } from '../context/AuthContext';
 
 // Helper function for date formatting
@@ -124,6 +125,8 @@ const SessionTile = ({ session, variant = 'journal' }) => {
   });
   const [shakaAllUsers, setShakaAllUsers] = useState([]);
   const [loadingShakaUsers, setLoadingShakaUsers] = useState(false);
+  const [sessionComments, setSessionComments] = useState([]); // New state for comments
+  const [loadingComments, setLoadingComments] = useState(false); // New state for comment loading
 
   useEffect(() => {
     if (session?.shakas) {
@@ -177,9 +180,20 @@ const SessionTile = ({ session, variant = 'journal' }) => {
     }
   };
 
-  const handleOpenCommentModal = (e) => { // New function to open CommentModal
+  const handleOpenCommentModal = async (e) => { // Modified to fetch comments
     e.stopPropagation();
     setIsCommentModalOpen(true);
+    setLoadingComments(true); // Set loading true when modal opens
+
+    try {
+      const fetchedComments = await getCommentsForSession(session.id);
+      setSessionComments(fetchedComments);
+    } catch (error) {
+      console.error('💬 Failed to load comments:', error);
+      setSessionComments([]); // Reset comments on error
+    } finally {
+      setLoadingComments(false); // Set loading false after fetch attempt
+    }
   };
 
   const tileProps = {
@@ -211,8 +225,12 @@ const SessionTile = ({ session, variant = 'journal' }) => {
       {isCommentModalOpen && ( // Conditionally render CommentModal
         <CommentModal 
           sessionTitle={session.session_name}
-          comments={[]} // For now, pass an empty array
-          onClose={() => setIsCommentModalOpen(false)}
+          comments={sessionComments} // Pass fetched comments
+          loading={loadingComments}   // Pass loading state
+          onClose={() => {
+            setIsCommentModalOpen(false);
+            setSessionComments([]); // Clear comments when closing
+          }}
         />
       )}
     </>
@@ -220,5 +238,6 @@ const SessionTile = ({ session, variant = 'journal' }) => {
 };
 
 export default SessionTile;
+
 
 
