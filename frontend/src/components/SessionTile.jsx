@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ShakaModal from './ShakaModal';
+import CommentModal from './CommentModal'; // Import CommentModal
 import { toggleShaka, getSessionShakas } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -12,7 +13,7 @@ const formatSessionDate = (dateStr) => {
 };
 
 // Journal-style Tile
-const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaModal, shakaData, commentCount }) => {
+const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaModal, shakaData, commentCount, onOpenCommentModal }) => {
   const { id, user_id, session_name, location, fun_rating, session_started_at, display_name, participants, session_notes } = session;
   const { shakaCount, hasViewerShakaed } = shakaData;
 
@@ -93,9 +94,9 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
 
             {/* Comment Controls */}
             {commentCount !== undefined && (
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div onClick={onOpenCommentModal} className="flex items-center gap-2 flex-shrink-0 cursor-pointer">
                 <span className="text-xl">💬</span> {/* Comment icon */}
-                <div className="cursor-pointer">
+                <div>
                   <span className="font-bold text-blue-600">{commentCount}</span>
                 </div>
               </div>
@@ -114,6 +115,7 @@ const SessionTile = ({ session, variant = 'journal' }) => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const [isShakaModalOpen, setIsShakaModalOpen] = useState(false);
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false); // New state for CommentModal
 
   const [shakaData, setShakaData] = useState({
     shakaCount: 0,
@@ -175,6 +177,11 @@ const SessionTile = ({ session, variant = 'journal' }) => {
     }
   };
 
+  const handleOpenCommentModal = (e) => { // New function to open CommentModal
+    e.stopPropagation();
+    setIsCommentModalOpen(true);
+  };
+
   const tileProps = {
     session,
     onNavigate: handleNavigateToSession,
@@ -182,7 +189,8 @@ const SessionTile = ({ session, variant = 'journal' }) => {
     onShaka: handleToggleShaka,
     onOpenShakaModal: handleOpenShakaModal,
     shakaData,
-    commentCount: session.comment_count, // Pass comment count here
+    commentCount: session.comment_count,
+    onOpenCommentModal: handleOpenCommentModal, // Pass to JournalTile
   };
 
   return (
@@ -199,9 +207,18 @@ const SessionTile = ({ session, variant = 'journal' }) => {
           loading={loadingShakaUsers}
         />
       )}
+
+      {isCommentModalOpen && ( // Conditionally render CommentModal
+        <CommentModal 
+          sessionTitle={session.session_name}
+          comments={[]} // For now, pass an empty array
+          onClose={() => setIsCommentModalOpen(false)}
+        />
+      )}
     </>
   );
 };
 
 export default SessionTile;
+
 

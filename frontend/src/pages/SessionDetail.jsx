@@ -11,6 +11,7 @@ import SwellDisplay from '../components/SwellDisplay';
 import WindDisplay from '../components/WindDisplay';
 import TideDisplay from '../components/TideDisplay';
 import ShakaModal from '../components/ShakaModal';
+import CommentModal from '../components/CommentModal'; // Import CommentModal
 
 const SessionDetail = () => {
   const { id } = useParams();
@@ -23,6 +24,7 @@ const SessionDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isShakaModalOpen, setIsShakaModalOpen] = useState(false);
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false); // New state for CommentModal
   const [shakaData, setShakaData] = useState({
     shakaCount: 0,
     hasViewerShakaed: false,
@@ -135,6 +137,10 @@ const SessionDetail = () => {
     }
   };
 
+  const handleOpenCommentModal = () => { // New function to open CommentModal
+    setIsCommentModalOpen(true);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="text-center p-4 text-red-500">
@@ -221,7 +227,7 @@ const SessionDetail = () => {
 
             {/* Comment Count */}
             {session.comment_count !== undefined && (
-              <div className="flex flex-col gap-2 text-gray-800 bg-white p-3 rounded-lg border border-black flex-1">
+              <div onClick={handleOpenCommentModal} className="flex flex-col gap-2 text-gray-800 bg-white p-3 rounded-lg border border-black flex-1 cursor-pointer">
                 <h2 className="text-xl font-bold">Comments</h2>
                 <div className="flex items-center gap-2">
                   <span className="text-xl">💬</span>
@@ -276,6 +282,14 @@ const SessionDetail = () => {
             setShakaAllUsers([]);
           }}
           loading={loadingShakaUsers}
+        />
+      )}
+
+      {isCommentModalOpen && ( // Conditionally render CommentModal
+        <CommentModal 
+          sessionTitle={session.session_name}
+          comments={[]} // For now, pass an empty array
+          onClose={() => setIsCommentModalOpen(false)}
         />
       )}
     </div>
