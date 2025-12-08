@@ -54,7 +54,7 @@ const NotificationDropdown = ({ onMarkAsRead }) => {
     try {
       const response = await apiCall(`/api/surf-sessions/${notification.session_id}/snake`, { method: 'POST' });
       if (response.status === 'success') {
-        toast.success('Session snaked successfully! Redirecting to edit.');
+        toast.success('Session snaked successfully! Redirecting to edit.', { duration: 5000 });
         if (!notification.read) {
             markAsRead(notification.id);
         }
