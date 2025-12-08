@@ -183,6 +183,12 @@ def create_session(session_data, user_id):
             if 'raw_met' in session_data:
                 session_data['raw_met'] = Json(session_data['raw_met'])
 
+            # FIX: Handle tide_station_id which is incorrectly typed as jsonb
+            if 'tide_station_id' in session_data and session_data['tide_station_id'] is not None:
+                # The value might be an integer or already a JSON object.
+                # psycopg2's Json adapter can handle both.
+                session_data['tide_station_id'] = Json(session_data['tide_station_id'])
+
             # Remove deprecated fields
             session_data.pop('date', None)
             session_data.pop('time', None)
@@ -440,6 +446,236 @@ def create_comment(session_id, user_id, comment_text):
         print(f"Error creating comment: {e}")
         conn.rollback()
         raise
+    finally:
+        conn.close()
+
+def create_notification(recipient_user_id, sender_user_id, session_id, notification_type):
+    """
+    Creates a new notification in the database.
+    """
+    conn = get_db_connection()
+    if not conn:
+        return None
+
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                INSERT INTO notifications (recipient_user_id, sender_user_id, session_id, type)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id, recipient_user_id, sender_user_id, session_id, type, read, created_at
+            """, (recipient_user_id, sender_user_id, session_id, notification_type))
+            
+            new_notification = cur.fetchone()
+            conn.commit()
+            return new_notification
+    except Exception as e:
+        print(f"Error creating notification: {e}")
+        conn.rollback()
+        # Log the specific error for debugging
+        import traceback
+        traceback.print_exc()
+        return None
+    finally:
+        conn.close()
+
+def get_notifications(user_id):
+    """
+    Retrieves all notifications for a given user, including sender and session details.
+    """
+    conn = get_db_connection()
+    if not conn:
+        return []
+
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT
+                    n.id,
+                    n.recipient_user_id,
+                    n.sender_user_id,
+                    COALESCE(
+                        sender_u.raw_user_meta_data->>'display_name',
+                        NULLIF(TRIM(COALESCE(sender_u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(sender_u.raw_user_meta_data->>'last_name', '')), ''),
+                        split_part(sender_u.email, '@', 1)
+                    ) AS sender_display_name,
+                    n.session_id,
+                    s.session_name AS session_title,
+                    s.location AS session_spot,
+                    s.session_started_at AS session_date,
+                    n.type,
+                    n.read,
+                    n.created_at
+                FROM notifications n
+                JOIN auth.users sender_u ON n.sender_user_id = sender_u.id
+                JOIN surf_sessions_duplicate s ON n.session_id = s.id
+                WHERE n.recipient_user_id = %s
+                ORDER BY n.created_at DESC
+            """, (user_id,))
+            
+            notifications = cur.fetchall()
+            
+            # Format timestamps for JSON serialization
+            formatted_notifications = []
+            for notification in notifications:
+                formatted_notification = dict(notification)
+                if isinstance(formatted_notification['created_at'], datetime):
+                    formatted_notification['created_at'] = formatted_notification['created_at'].isoformat()
+                if isinstance(formatted_notification['session_date'], datetime):
+                    formatted_notification['session_date'] = formatted_notification['session_date'].isoformat()
+                formatted_notifications.append(formatted_notification)
+            
+            return formatted_notifications
+    except Exception as e:
+        print(f"Error retrieving notifications: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+    finally:
+        conn.close()
+
+def get_unread_notifications_count(user_id):
+    """
+    Retrieves the count of unread notifications for a given user.
+    """
+    conn = get_db_connection()
+    if not conn:
+        return 0
+
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT COUNT(*) AS unread_count
+                FROM notifications
+                WHERE recipient_user_id = %s AND read = FALSE
+            """, (user_id,))
+            
+            result = cur.fetchone()
+            return result['unread_count'] if result else 0
+    except Exception as e:
+        print(f"Error retrieving unread notifications count: {e}")
+        import traceback
+        traceback.print_exc()
+        return 0
+    finally:
+        conn.close()
+
+def mark_notification_read(notification_id, user_id):
+    """
+    Marks a specific notification as read.
+    Includes a user_id check to ensure only the recipient can mark it as read.
+    """
+    conn = get_db_connection()
+    if not conn:
+        return False
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE notifications
+                SET read = TRUE
+                WHERE id = %s AND recipient_user_id = %s
+                RETURNING id
+            """, (notification_id, user_id))
+            
+            updated = cur.fetchone()
+            conn.commit()
+            return updated is not None
+    except Exception as e:
+        print(f"Error marking notification as read: {e}")
+        conn.rollback()
+        import traceback
+        traceback.print_exc()
+        return False
+    finally:
+        conn.close()
+
+def copy_session_as_new_user(original_session_id, new_user_id, sender_user_id):
+    """
+    Copies an existing session and creates a new one for a different user.
+    Participants from the original session are copied, but no notifications are sent to them.
+    Notes and fun_rating are reset. A 'session_snake' notification is created for the new user.
+    """
+    conn = get_db_connection()
+    if not conn:
+        return None
+
+    try:
+        # Get the original session details
+        original_session = get_session_detail(original_session_id, sender_user_id) # Use sender_user_id as current_user_id for detail retrieval
+        if not original_session:
+            return None
+
+        # Prepare new session data
+        new_session_data = {
+            'session_name': original_session.get('session_name'),
+            'location': original_session.get('location'),
+            'session_started_at': original_session.get('session_started_at'),
+            'session_ended_at': original_session.get('session_ended_at'),
+            'raw_swell': original_session.get('raw_swell'),
+            'swell_buoy_id': original_session.get('swell_buoy_id'),
+            'raw_met': original_session.get('raw_met'),
+            'met_buoy_id': original_session.get('met_buoy_id'),
+            'tide_station_id': original_session.get('tide_station_id'),
+            'session_water_level': original_session.get('tide', {}).get('water_level'),
+            'tide_direction': original_session.get('tide', {}).get('direction'),
+            'next_tide_event_type': original_session.get('tide', {}).get('next_event_type'),
+            'next_tide_event_at': original_session.get('tide', {}).get('next_event_at'),
+            'next_tide_event_height': original_session.get('tide', {}).get('next_event_height'),
+            'session_notes': None,  # Reset notes
+            'fun_rating': None      # Reset fun rating
+        }
+
+        # Extract participants from the original session for copying
+        original_participants = original_session.get('participants', [])
+        # The list of users to be tagged in the new session includes everyone
+        # from the original session (both creator and tagged users) EXCEPT for the
+        # person who is snaking the session (the new creator).
+        tagged_user_ids = [p['user_id'] for p in original_participants if p['user_id'] != new_user_id] 
+
+        # Create the new session for the new user
+        # Pass send_notifications=False to prevent notifying copied participants
+        created_session_result = create_session_with_participants(
+            session_data=new_session_data,
+            creator_user_id=new_user_id,
+            tagged_user_ids=tagged_user_ids,
+            send_notifications=False  # Do NOT send notifications to copied participants
+        )
+
+        if not created_session_result:
+            return None
+
+        new_session = created_session_result['session']
+        new_session_id = new_session['id']
+
+        # Create a notification for the new user who "snaked" the session
+        # The sender of this notification is the user who clicked "snake it", i.e. new_user_id
+        # The recipient of this notification is the user who "snaked" the session, i.e. new_user_id
+        # This seems counterintuitive based on the spec, let's re-read the spec.
+        # "User B clicks "Snake It" -> System creates NEW session for User B...
+        # System creates a notification for User B"
+        # "Frank creates session #1, tags Martin -> notification created for Martin
+        # Martin clicks "Snake It" -> System creates session #2 for Martin"
+        # The notification for the "snaked" session is for the user who snaked it, to confirm it was created.
+        # This notification should come from the system, not a specific user.
+        # Let's adjust create_notification to allow a "system" sender.
+        # For now, let's use the new_user_id as sender_user_id to fulfill the NOT NULL constraint,
+        # but mark this for potential future refinement if a "system" sender is needed.
+        create_notification(
+            recipient_user_id=new_user_id,
+            sender_user_id=new_user_id, # For now, set new_user_id as sender (to avoid NULL), refine later if 'system' sender is desired
+            session_id=new_session_id,
+            notification_type='session_snake'
+        )
+
+        conn.commit() # Commit changes if successful
+
+        return new_session
+    except Exception as e:
+        print(f"Error copying session: {e}")
+        conn.rollback()
+        import traceback
+        traceback.print_exc()
+        return None
     finally:
         conn.close()
 
@@ -856,7 +1092,7 @@ def generate_session_group_id():
     """Generate a unique UUID for linking related sessions"""
     return str(uuid.uuid4())
 
-def create_session_with_participants(session_data, creator_user_id, tagged_user_ids=None):
+def create_session_with_participants(session_data, creator_user_id, tagged_user_ids=None, send_notifications=True):
     """
     Create a session with optional tagged participants.
     This creates a single session and then adds participants to it.
@@ -893,15 +1129,26 @@ def create_session_with_participants(session_data, creator_user_id, tagged_user_
             # 3. Create participant records for tagged users
             if tagged_user_ids:
                 for tagged_user_id in tagged_user_ids:
-                    cur.execute("""
-                        INSERT INTO session_participants (session_id, user_id, tagged_by_user_id, role)
-                        VALUES (%s, %s, %s, %s)
-                        RETURNING *
-                    """, (new_session_id, tagged_user_id, creator_user_id, 'tagged_participant'))
-                    
-                    tagged_participant = cur.fetchone()
-                    if tagged_participant:
-                        participant_records.append(dict(tagged_participant))
+                    # Ensure the tagged user is not the creator themselves
+                    # and ensure the tagged_user_id is not None
+                    if tagged_user_id and str(tagged_user_id) != str(creator_user_id):
+                        cur.execute("""
+                            INSERT INTO session_participants (session_id, user_id, tagged_by_user_id, role)
+                            VALUES (%s, %s, %s, %s)
+                            RETURNING *
+                        """, (new_session_id, tagged_user_id, creator_user_id, 'tagged_participant'))
+                        
+                        tagged_participant = cur.fetchone()
+                        if tagged_participant:
+                            participant_records.append(dict(tagged_participant))
+                            # Create a notification for the tagged user only if send_notifications is True
+                            if send_notifications:
+                                create_notification(
+                                    recipient_user_id=tagged_user_id,
+                                    sender_user_id=creator_user_id,
+                                    session_id=new_session_id,
+                                    notification_type='session_tag'
+                                )
             
             # Commit the entire transaction
             conn.commit()
