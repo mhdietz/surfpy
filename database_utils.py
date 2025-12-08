@@ -647,26 +647,6 @@ def copy_session_as_new_user(original_session_id, new_user_id, sender_user_id):
         new_session = created_session_result['session']
         new_session_id = new_session['id']
 
-        # Create a notification for the new user who "snaked" the session
-        # The sender of this notification is the user who clicked "snake it", i.e. new_user_id
-        # The recipient of this notification is the user who "snaked" the session, i.e. new_user_id
-        # This seems counterintuitive based on the spec, let's re-read the spec.
-        # "User B clicks "Snake It" -> System creates NEW session for User B...
-        # System creates a notification for User B"
-        # "Frank creates session #1, tags Martin -> notification created for Martin
-        # Martin clicks "Snake It" -> System creates session #2 for Martin"
-        # The notification for the "snaked" session is for the user who snaked it, to confirm it was created.
-        # This notification should come from the system, not a specific user.
-        # Let's adjust create_notification to allow a "system" sender.
-        # For now, let's use the new_user_id as sender_user_id to fulfill the NOT NULL constraint,
-        # but mark this for potential future refinement if a "system" sender is needed.
-        create_notification(
-            recipient_user_id=new_user_id,
-            sender_user_id=new_user_id, # For now, set new_user_id as sender (to avoid NULL), refine later if 'system' sender is desired
-            session_id=new_session_id,
-            notification_type='session_snake'
-        )
-
         conn.commit() # Commit changes if successful
 
         return new_session
