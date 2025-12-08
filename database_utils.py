@@ -132,7 +132,7 @@ def get_session_detail(session_id, current_user_id):
                     (SELECT COUNT(*) FROM comments WHERE session_id = s.id) as comment_count
                 FROM surf_sessions_duplicate s
                 LEFT JOIN auth.users u ON s.user_id = u.id
-                LEFT JOIN surf_spots sp ON s.location = sp.name
+                LEFT JOIN surf_spots_backup sp ON s.location = sp.name
                 WHERE s.id = %s
             """, (current_user_id, session_id))
             session = cur.fetchone()
@@ -1259,7 +1259,7 @@ def get_session_summary_list(viewer_id, profile_user_id_filter=None, filters={})
                     (SELECT COUNT(*) FROM comments WHERE session_id = s.id) as comment_count
                 FROM surf_sessions_duplicate s
                 LEFT JOIN auth.users u ON s.user_id = u.id
-                LEFT JOIN surf_spots sp ON s.location = sp.name
+                LEFT JOIN surf_spots_backup sp ON s.location = sp.name
             """
             params = [viewer_id]
             where_clauses = []
@@ -1472,7 +1472,7 @@ def get_surf_spot_by_slug(slug):
                     id, created_at, slug, name, swell_buoy_id, tide_station_id, 
                     wind_lat, wind_long, breaking_wave_depth, breaking_wave_angle, 
                     breaking_wave_slope, timezone, met_buoy_id
-                FROM surf_spots
+                FROM surf_spots_backup
                 WHERE slug ILIKE %s
             """, (slug,))
             spot = cur.fetchone()
@@ -1495,7 +1495,7 @@ def get_all_surf_spots():
                     id, created_at, slug, name, swell_buoy_id, tide_station_id, 
                     wind_lat, wind_long, breaking_wave_depth, breaking_wave_angle, 
                     breaking_wave_slope, timezone, region
-                FROM surf_spots
+                FROM surf_spots_backup
                 ORDER BY name
             """)
             spots = cur.fetchall()
@@ -1521,7 +1521,7 @@ def get_surf_spots_by_slugs(slugs):
                     id, created_at, slug, name, swell_buoy_id, tide_station_id, 
                     wind_lat, wind_long, breaking_wave_depth, breaking_wave_angle, 
                     breaking_wave_slope, timezone
-                FROM surf_spots
+                FROM surf_spots_backup
                 WHERE slug IN %s
                 ORDER BY name
             """
@@ -1546,7 +1546,7 @@ def get_surf_spot_by_name(name):
                     id, created_at, slug, name, swell_buoy_id, tide_station_id, 
                     wind_lat, wind_long, breaking_wave_depth, breaking_wave_angle, 
                     breaking_wave_slope, timezone, met_buoy_id
-                FROM surf_spots
+                FROM surf_spots_backup
                 WHERE name ILIKE %s
             """, (name,))
             spot = cur.fetchone()
@@ -1566,7 +1566,7 @@ def get_all_regions():
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT DISTINCT region 
-                FROM surf_spots 
+                FROM surf_spots_backup 
                 WHERE region IS NOT NULL AND region <> '' 
                 ORDER BY region;
             """)
@@ -1574,6 +1574,30 @@ def get_all_regions():
             return regions
     except Exception as e:
         print(f"Error retrieving all regions: {e}")
+        return []
+    finally:
+        conn.close()
+
+def get_all_spots_for_typeahead():
+    """
+    Retrieve all surf spots for the typeahead component.
+    Includes id, name, slug, country, region, and has_surf_data.
+    """
+    conn = get_db_connection()
+    if not conn:
+        return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT 
+                    id, name, slug, country, region, has_surf_data
+                FROM surf_spots_backup
+                ORDER BY name
+            """)
+            spots = cur.fetchall()
+            return list(spots)
+    except Exception as e:
+        print(f"Error retrieving all spots for typeahead: {e}")
         return []
     finally:
         conn.close()

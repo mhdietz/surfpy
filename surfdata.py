@@ -4,7 +4,7 @@ from flask_caching import Cache
 from datetime import datetime, timezone, timedelta
 import surfpy
 import database_utils
-from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location, get_all_regions, get_user_profile_by_id, get_user_stats, get_leaderboard, create_comment, get_comments_for_session
+from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location, get_all_regions, get_user_profile_by_id, get_user_stats, get_leaderboard, create_comment, get_comments_for_session, get_all_spots_for_typeahead
 import json
 from json_utils import CustomJSONEncoder
 import math
@@ -1005,6 +1005,21 @@ def get_regions(user_id):
         return jsonify({"status": "success", "data": regions}), 200
     except Exception as e:
         print(f"Error retrieving regions: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/api/spots', methods=['GET'])
+def get_spots():
+    """
+    Get all surf spots for typeahead component.
+    Returns all spots with id, name, slug, country, region, has_surf_data.
+    """
+    try:
+        spots = database_utils.get_all_spots_for_typeahead()
+        return jsonify({"status": "success", "data": spots}), 200
+    except Exception as e:
+        print(f"Error fetching spots for typeahead: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
