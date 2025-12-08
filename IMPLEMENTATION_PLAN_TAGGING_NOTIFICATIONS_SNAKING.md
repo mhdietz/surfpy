@@ -108,21 +108,17 @@ This is the most complex flow, combining session creation, participant copying, 
    - **Action**: Integrate the existing `UserSearch.jsx` component or similar functionality into the session creation and editing forms.
    - **Goal**: Allow users to select and tag other users when creating or updating a session.
 
-### 2. Notification User Interface
-   - **Action**: Add a notification icon with an unread count badge to the `Navigation.jsx` component. This badge will fetch its count from `GET /api/notifications/count`.
-   - **Action**: Create a new page component, `NotificationsPage.jsx`, accessible via a route (e.g., `/notifications`).
+### 2. Notification Dropdown
+   - **Action**: Add a notification icon-button with an unread count badge to the **top** navigation bar in `Navigation.jsx`, placed to the right of the search icon.
+   - **Action**: Implement a dropdown menu that is displayed when the notification icon is clicked.
    - **Functionality**:
-     - Fetches and displays the user's notifications using `GET /api/notifications`.
-     - Each notification item will display the sender, session title, spot, and date.
-     - Each notification will include two buttons:
-       - **"View"**: Navigates to the `SessionDetailPage.jsx` for the associated session.
-       - **"Snake It"**: Initiates the session copying process.
-
-### 3. "Snake It" Workflow (Client-Side)
-   - **Action**: Implement click handler for the "Snake It" button on notification items.
-   - **Functionality**:
-     - Calls the `POST /api/surf-sessions/<session_id>/snake` API endpoint.
-     - Upon successful response, redirects the user to the edit page for the newly created session (e.g., `/sessions/edit/<new_session_id>`), allowing them to adjust details before saving.
+     - The dropdown will fetch and display a list of notifications from the `GET /api/notifications` endpoint.
+     - Each notification item in the dropdown will display the sender, session title, and other relevant context.
+     - Each item will feature two buttons:
+       - **"View"**: Navigates the user to the corresponding session detail page.
+       - **"Snake It"**: Initiates the session copying process directly from the dropdown. This involves calling the `POST /api/surf-sessions/<session_id>/snake` endpoint and, upon success, redirecting the user to the edit page for the newly created session.
+     - Clicking either "View" or "Snake It" will also trigger a call to mark the notification as read.
+   - **Note**: This approach replaces the previous plan of having a dedicated `/notifications` page, centralizing the notification experience into a dropdown menu for quicker access.
 
 ## Backend Implementation Notes & Fixes
 
