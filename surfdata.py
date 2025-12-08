@@ -559,6 +559,33 @@ def delete_surf_session(user_id, session_id):
         print(traceback.format_exc())
         return jsonify({"status": "fail", "message": f"Error deleting surf session: {str(e)}"}), 500
 
+@app.route('/api/surf-sessions/<int:session_id>/snake', methods=['POST'])
+@token_required
+def snake_session_route(user_id, session_id):
+    """
+    Creates a new session for the authenticated user by copying an existing session.
+    """
+    try:
+        new_session = database_utils.copy_session_as_new_user(
+            original_session_id=session_id,
+            new_user_id=user_id,
+            sender_user_id=user_id # The user initiating the snake is the sender of any related notification
+        )
+
+        if new_session:
+            return jsonify({
+                "status": "success",
+                "message": "Session successfully snaked!",
+                "data": {"new_session_id": new_session['id']}
+            }), 201
+        else:
+            return jsonify({"status": "fail", "message": "Failed to snake session"}), 500
+    except Exception as e:
+        print(f"Error in snake_session_route: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
+
 @app.route('/api/surf-sessions/<int:session_id>/shaka', methods=['POST'])
 @token_required
 def toggle_shaka_route(user_id, session_id):
@@ -639,6 +666,54 @@ def get_comments_route(user_id, session_id):
     except Exception as e:
         import traceback
         print(traceback.format_exc())
+        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/api/notifications', methods=['GET'])
+@token_required
+def get_user_notifications_route(user_id):
+    """
+    Retrieves all notifications for the authenticated user.
+    """
+    try:
+        notifications = database_utils.get_notifications(user_id)
+        return jsonify({"status": "success", "data": notifications}), 200
+    except Exception as e:
+        print(f"Error in get_user_notifications_route: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/api/notifications/count', methods=['GET'])
+@token_required
+def get_unread_notifications_count_route(user_id):
+    """
+    Retrieves the count of unread notifications for the authenticated user.
+    """
+    try:
+        unread_count = database_utils.get_unread_notifications_count(user_id)
+        return jsonify({"status": "success", "data": {"unread_count": unread_count}}), 200
+    except Exception as e:
+        print(f"Error in get_unread_notifications_count_route: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/api/notifications/<int:notification_id>/read', methods=['POST'])
+@token_required
+def mark_notification_read_route(user_id, notification_id):
+    """
+    Marks a specific notification as read for the authenticated user.
+    """
+    try:
+        success = database_utils.mark_notification_read(notification_id, user_id)
+        if success:
+            return jsonify({"status": "success", "message": "Notification marked as read"}), 200
+        else:
+            return jsonify({"status": "fail", "message": "Notification not found or not authorized"}), 404
+    except Exception as e:
+        print(f"Error in mark_notification_read_route: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
 
 @app.route('/api/test', methods=['GET'])
