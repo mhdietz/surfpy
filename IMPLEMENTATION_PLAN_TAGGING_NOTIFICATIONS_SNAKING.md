@@ -131,3 +131,4 @@ During the backend development and testing phase, two bugs were identified and r
 2.  **Incorrect Participant Copying in "Snake It"**:
     -   **Issue**: When a session was "snaked," the original creator of that session was not being added as a participant to the new session.
     -   **Fix**: The logic in `copy_session_as_new_user` was corrected. It now correctly gathers all participants from the original session (including the creator) and only filters out the user who is performing the "snake" action, as they become the new creator.
+
