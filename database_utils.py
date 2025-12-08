@@ -622,7 +622,7 @@ def copy_session_as_new_user(original_session_id, new_user_id, sender_user_id):
             'next_tide_event_at': original_session.get('tide', {}).get('next_event_at'),
             'next_tide_event_height': original_session.get('tide', {}).get('next_event_height'),
             'session_notes': None,  # Reset notes
-            'fun_rating': None      # Reset fun rating
+            'fun_rating': 5      # Reset fun rating to a default of 5
         }
 
         # Extract participants from the original session for copying
