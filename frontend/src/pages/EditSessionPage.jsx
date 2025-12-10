@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { formatInTimeZone } from 'date-fns-tz';
-import { apiCall } from '../services/api';
+import { apiCall, getSpots } from '../services/api'; // Import getSpots
 import Card from '../components/UI/Card';
 import Input from '../components/UI/Input';
 import Button from '../components/UI/Button';
-import { toast } from 'react-hot-toast'; // Import toast for notifications
-import { useNavigate, useParams } from 'react-router-dom'; // Import useNavigate for redirection
+import { toast } from 'react-hot-toast';
+import { useNavigate, useParams } from 'react-router-dom';
+import Select from 'react-select'; // Import react-select
 
 function EditSessionPage() {
   const navigate = useNavigate();
@@ -21,7 +22,8 @@ function EditSessionPage() {
   const [notes, setNotes] = useState('');
 
   // Other states
-  const [locations, setLocations] = useState([]);
+  const [spotOptions, setSpotOptions] = useState([]); // For react-select
+  const [isLoadingSpots, setIsLoadingSpots] = useState(true); // Differentiated loading state
   const [isLoading, setIsLoading] = useState(true);
   const [taggedUsers, setTaggedUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,34 +31,37 @@ function EditSessionPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch locations on component mount
+  // Fetch spots on component mount
   useEffect(() => {
-    const fetchLocations = async () => {
+    const fetchSpots = async () => {
+      setIsLoadingSpots(true);
       try {
-        const response = await apiCall('/api/surf-spots-by-region');
-        setLocations(response.data || []);
+        const spots = await getSpots();
+        const options = spots.map(spot => ({
+          value: spot.slug,
+          label: `${spot.name} (${spot.region}, ${spot.country})`
+        }));
+        setSpotOptions(options);
       } catch (error) {
-        console.error("Failed to fetch locations:", error);
+        console.error("Failed to fetch spots:", error);
         toast.error("Failed to load surf spots.");
       } finally {
-        setIsLoading(false);
+        setIsLoadingSpots(false);
       }
     };
 
-    fetchLocations();
+    fetchSpots();
   }, []);
 
   // Fetch existing session data on component mount
   useEffect(() => {
     const fetchSessionData = async () => {
-      // Set loading state for the main form as well
       setIsLoading(true);
       try {
         const response = await apiCall(`/api/surf-sessions/${id}`);
         if (response.status === 'success') {
           const session = response.data;
           
-          // Format and set state for form fields using the spot's timezone
           const tz = session.location_timezone || 'UTC'; // Fallback to UTC
 
           setDate(formatInTimeZone(session.session_started_at, tz, 'yyyy-MM-dd'));
@@ -78,7 +83,6 @@ function EditSessionPage() {
         toast.error('An error occurred while fetching session data.');
         console.error(error);
       } finally {
-        // Ensure loading is turned off for the main form
         setIsLoading(false);
       }
     };
@@ -100,7 +104,6 @@ function EditSessionPage() {
     const debounceTimeout = setTimeout(async () => {
       try {
         const response = await apiCall(`/api/users/search?q=${searchQuery}`);
-        // Filter out already tagged users from search results
         const filteredResults = response.data.filter(resultUser => 
           !taggedUsers.some(taggedUser => taggedUser.user_id === resultUser.user_id)
         );
@@ -112,17 +115,16 @@ function EditSessionPage() {
       } finally {
         setIsSearching(false);
       }
-    }, 300); // 300ms debounce
+    }, 300);
 
     return () => clearTimeout(debounceTimeout);
-  }, [searchQuery, taggedUsers]); // Re-run when searchQuery or taggedUsers change
+  }, [searchQuery, taggedUsers]);
 
   const handleSelectUser = (user) => {
-    // Add user if not already tagged
     if (!taggedUsers.some(taggedUser => taggedUser.user_id === user.user_id)) {
       setTaggedUsers([...taggedUsers, user]);
-      setSearchQuery(''); // Clear search input
-      setSearchResults([]); // Clear search results
+      setSearchQuery('');
+      setSearchResults([]);
     }
   };
 
@@ -134,7 +136,6 @@ function EditSessionPage() {
     event.preventDefault();
     setIsSubmitting(true);
 
-    // Full validation
     if (!date || !location || !sessionName || !startTime || !endTime || !funRating) {
       toast.error("Please fill in all required fields.");
       setIsSubmitting(false);
@@ -150,13 +151,13 @@ function EditSessionPage() {
     try {
       const payload = {
         date: date,
-        location: location, // This is the slug
+        location: location,
         session_name: sessionName,
         time: startTime,
         end_time: endTime,
         fun_rating: parseFloat(funRating),
         session_notes: notes,
-        tagged_users: taggedUsers.map(user => user.user_id), // Send updated participants
+        tagged_users: taggedUsers.map(user => user.user_id),
       };
 
       const response = await apiCall(`/api/surf-sessions/${id}`, {
@@ -169,7 +170,6 @@ function EditSessionPage() {
 
       if (response.status === 'success') {
         toast.success("Surf session updated successfully!");
-        // Redirect back to the session's detail page, passing the updated data
         navigate(`/session/${id}`, { state: { updatedSession: response.data }, replace: true }); 
       } else {
         toast.error(response.message || "Failed to update surf session.");
@@ -181,6 +181,10 @@ function EditSessionPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return <div className="text-center p-4">Loading session data...</div>;
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-4">
@@ -194,24 +198,21 @@ function EditSessionPage() {
 
           <div>
             <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
-            <Input as="select" id="location" name="location" value={location} onChange={(e) => setLocation(e.target.value)} isPlaceholder={!location}>
-              {isLoading ? (
-                <option>Loading locations...</option>
-              ) : (
-                <>
-                  <option value="">Select a spot</option>
-                  {locations.map(region => (
-                    <optgroup key={region.region} label={region.region}>
-                      {region.spots.map(spot => (
-                        <option key={spot.slug} value={spot.slug}>
-                          {spot.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </>
-              )}
-            </Input>
+            <Select
+              id="location"
+              name="location"
+              options={spotOptions}
+              isLoading={isLoadingSpots}
+              onChange={(selectedOption) => setLocation(selectedOption ? selectedOption.value : '')}
+              isClearable
+              placeholder="Search for a surf spot..."
+              value={spotOptions.find(option => option.value === location)}
+              className="mt-1"
+              classNamePrefix="react-select"
+              styles={{
+                input: (base) => ({ ...base, 'input:focus': { boxShadow: 'none' } }),
+              }}
+            />
           </div>
 
           <div>

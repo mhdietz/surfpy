@@ -88,6 +88,7 @@ def get_session_detail(session_id, current_user_id):
                     u.email as user_email,
                     sp.slug as location_slug,
                     sp.timezone as location_timezone,
+                    sp.has_surf_data,
                     COALESCE(
                         u.raw_user_meta_data->>'display_name',
                         NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
@@ -1215,6 +1216,7 @@ def get_session_summary_list(viewer_id, profile_user_id_filter=None, filters={})
                     s.swell_buoy_id, s.met_buoy_id, s.tide_station_id, s.user_id, s.session_group_id,
                     s.session_started_at, s.session_ended_at,
                     u.email as user_email,
+                    sp.has_surf_data,
                     COALESCE(
                         u.raw_user_meta_data->>'display_name',
                         NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
