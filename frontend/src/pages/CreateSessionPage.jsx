@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { apiCall } from '../services/api';
+import { apiCall, getSpots } from '../services/api';
 import Card from '../components/UI/Card';
 import Input from '../components/UI/Input';
 import Button from '../components/UI/Button';
 import { toast } from 'react-hot-toast'; // Import toast for notifications
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for redirection
+import Select from 'react-select'; // Import react-select
 
 function CreateSessionPage() {
   const navigate = useNavigate();
@@ -25,29 +26,33 @@ function CreateSessionPage() {
   const [notes, setNotes] = useState('');
 
   // Other states
-  const [locations, setLocations] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [spotOptions, setSpotOptions] = useState([]); // For react-select
+  const [isLoadingSpots, setIsLoadingSpots] = useState(true);
   const [taggedUsers, setTaggedUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch locations on component mount
+  // Fetch spots on component mount
   useEffect(() => {
-    const fetchLocations = async () => {
+    const fetchSpots = async () => {
       try {
-        const response = await apiCall('/api/surf-spots-by-region');
-        setLocations(response.data || []);
+        const spots = await getSpots(); // Use the new service
+        const options = spots.map(spot => ({
+          value: spot.slug,
+          label: `${spot.name} (${spot.region}, ${spot.country})`
+        }));
+        setSpotOptions(options);
       } catch (error) {
-        console.error("Failed to fetch locations:", error);
+        console.error("Failed to fetch spots:", error);
         toast.error("Failed to load surf spots.");
       } finally {
-        setIsLoading(false);
+        setIsLoadingSpots(false);
       }
     };
 
-    fetchLocations();
+    fetchSpots();
   }, []);
 
   // Debounced user search
@@ -156,24 +161,26 @@ function CreateSessionPage() {
 
           <div>
             <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
-            <Input as="select" id="location" name="location" value={location} onChange={(e) => setLocation(e.target.value)} isPlaceholder={!location}>
-              {isLoading ? (
-                <option>Loading locations...</option>
-              ) : (
-                <>
-                  <option value="">Select a spot</option>
-                  {locations.map(region => (
-                    <optgroup key={region.region} label={region.region}>
-                      {region.spots.map(spot => (
-                        <option key={spot.slug} value={spot.slug}>
-                          {spot.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </>
-              )}
-            </Input>
+            <Select
+              id="location"
+              name="location"
+              options={spotOptions}
+              isLoading={isLoadingSpots}
+              onChange={(selectedOption) => setLocation(selectedOption ? selectedOption.value : '')}
+              isClearable
+              placeholder="Search for a surf spot..."
+              value={spotOptions.find(option => option.value === location)}
+              className="mt-1"
+              classNamePrefix="react-select"
+              styles={{
+                input: (base) => ({
+                  ...base,
+                  'input:focus': {
+                    boxShadow: 'none',
+                  },
+                }),
+              }}
+            />
           </div>
 
           <div>

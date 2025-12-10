@@ -207,14 +207,18 @@ const SessionDetail = () => {
           <p className="text-lg mb-2">{session.location}</p>
           <p className="text-md mb-4">{formatSessionTime(session.session_started_at, session.session_ended_at, session.location_timezone)}</p>
 
-          {/* Swell Display Component */}
-          {session.raw_swell && <SwellDisplay swellData={session.raw_swell} />}
+          {session.has_surf_data && (
+            <>
+              {/* Swell Display Component */}
+              <SwellDisplay swellData={session.raw_swell} />
 
-          {/* Wind Display Component */}
-          {session.raw_met && <WindDisplay windData={session.raw_met} />}
+              {/* Wind Display Component */}
+              <WindDisplay windData={session.raw_met} />
 
-          {/* Tide Display Component */}
-          {session.tide && <TideDisplay tideData={session.tide} location_timezone={session.location_timezone} />}
+              {/* Tide Display Component */}
+              <TideDisplay tideData={session.tide} location_timezone={session.location_timezone} />
+            </>
+          )}
 
           {session.session_notes && (
             <div className="mt-4 mb-4">

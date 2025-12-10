@@ -4,7 +4,7 @@ from flask_caching import Cache
 from datetime import datetime, timezone, timedelta
 import surfpy
 import database_utils
-from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location, get_all_regions, get_user_profile_by_id, get_user_stats, get_leaderboard, create_comment, get_comments_for_session
+from database_utils import get_db_connection, create_session, update_session, get_session_detail, get_all_sessions, get_user_sessions, delete_session, verify_user_session, get_dashboard_stats, get_sessions_by_location, get_all_regions, get_user_profile_by_id, get_user_stats, get_leaderboard, create_comment, get_comments_for_session, get_all_spots_for_typeahead
 import json
 from json_utils import CustomJSONEncoder
 import math
@@ -254,11 +254,6 @@ def create_surf_session(user_id):
             }), 400
         session_data['location'] = spot_config['name']
             
-        # Get buoy mapping using the ocean_data module (can use spot_config directly)
-        swell_buoy_id = spot_config["swell_buoy_id"]
-        met_buoy_id = spot_config.get("met_buoy_id", spot_config["swell_buoy_id"]) # Prioritize met_buoy_id, fallback to swell_buoy_id
-        tide_station_id = spot_config["tide_station_id"]
-
         # Combine date and time to create a datetime object, localized to the spot's timezone
         try:
             start_datetime_str = f"{session_date}T{session_time}"
@@ -288,28 +283,47 @@ def create_surf_session(user_id):
                 "message": "Invalid date/time format. Use ISO format for date (YYYY-MM-DD) and time (HH:MM:SS)"
             }), 400
 
-        # 1. Fetch swell buoy data using the ocean_data module
-        swell_data = fetch_swell_data(swell_buoy_id, utc_start_datetime, count=500)
-        session_data['raw_swell'] = swell_data
-        
-        # 2. Fetch meteorological buoy data using the ocean_data module
-        met_data = fetch_meteorological_data(met_buoy_id, utc_start_datetime, count=500, use_imperial_units=True)
-        session_data['raw_met'] = met_data
+        # Conditionally fetch oceanographic data
+        if spot_config.get('has_surf_data', False):
+            # Get buoy mapping using the ocean_data module
+            swell_buoy_id = spot_config["swell_buoy_id"]
+            met_buoy_id = spot_config.get("met_buoy_id", swell_buoy_id)
+            tide_station_id = spot_config["tide_station_id"]
 
-        # 3. Fetch tide data
-        detailed_tide_data = fetch_tide_data(tide_station_id, utc_start_datetime, use_imperial_units=True)
-        
-        if detailed_tide_data:
-            session_data['session_water_level'] = detailed_tide_data.get('water_level')
-            session_data['tide_direction'] = detailed_tide_data.get('direction')
-            session_data['next_tide_event_type'] = detailed_tide_data.get('next_event_type')
-            session_data['next_tide_event_at'] = detailed_tide_data.get('next_event_at')
-            session_data['next_tide_event_height'] = detailed_tide_data.get('next_event_height')
-        
-        # Add buoy IDs to session data
-        session_data['swell_buoy_id'] = swell_buoy_id
-        session_data['met_buoy_id'] = met_buoy_id
-        session_data['tide_station_id'] = tide_station_id
+            # 1. Fetch swell buoy data
+            swell_data = fetch_swell_data(swell_buoy_id, utc_start_datetime, count=500)
+            session_data['raw_swell'] = swell_data
+            
+            # 2. Fetch meteorological buoy data
+            met_data = fetch_meteorological_data(met_buoy_id, utc_start_datetime, count=500, use_imperial_units=True)
+            session_data['raw_met'] = met_data
+
+            # 3. Fetch tide data
+            detailed_tide_data = fetch_tide_data(tide_station_id, utc_start_datetime, use_imperial_units=True)
+            
+            if detailed_tide_data:
+                session_data['session_water_level'] = detailed_tide_data.get('water_level')
+                session_data['tide_direction'] = detailed_tide_data.get('direction')
+                session_data['next_tide_event_type'] = detailed_tide_data.get('next_event_type')
+                session_data['next_tide_event_at'] = detailed_tide_data.get('next_event_at')
+                session_data['next_tide_event_height'] = detailed_tide_data.get('next_event_height')
+            
+            # Add buoy IDs to session data
+            session_data['swell_buoy_id'] = swell_buoy_id
+            session_data['met_buoy_id'] = met_buoy_id
+            session_data['tide_station_id'] = tide_station_id
+        else:
+            # If no surf data, set all related fields to None
+            session_data['raw_swell'] = None
+            session_data['raw_met'] = None
+            session_data['session_water_level'] = None
+            session_data['tide_direction'] = None
+            session_data['next_tide_event_type'] = None
+            session_data['next_tide_event_at'] = None
+            session_data['next_tide_event_height'] = None
+            session_data['swell_buoy_id'] = None
+            session_data['met_buoy_id'] = None
+            session_data['tide_station_id'] = None
         
         # Remove tagged_users from session_data before database operations
         if 'tagged_users' in session_data:
@@ -498,21 +512,34 @@ def update_surf_session(user_id, session_id):
             except ValueError:
                 return jsonify({"status": "fail", "message": "Invalid date/time format"}), 400
 
-            # Re-fetch oceanographic data
-            update_data['raw_swell'] = fetch_swell_data(swell_buoy_id, utc_start_datetime, count=500)
-            update_data['raw_met'] = fetch_meteorological_data(met_buoy_id, utc_start_datetime, count=500, use_imperial_units=True)
-            
-            detailed_tide_data = fetch_tide_data(tide_station_id, utc_start_datetime, use_imperial_units=True)
-            if detailed_tide_data:
-                update_data['session_water_level'] = detailed_tide_data.get('water_level')
-                update_data['tide_direction'] = detailed_tide_data.get('direction')
-                update_data['next_tide_event_type'] = detailed_tide_data.get('next_event_type')
-                update_data['next_tide_event_at'] = detailed_tide_data.get('next_event_at')
-                update_data['next_tide_event_height'] = detailed_tide_data.get('next_event_height')
-            
-            update_data['swell_buoy_id'] = swell_buoy_id
-            update_data['met_buoy_id'] = met_buoy_id
-            update_data['tide_station_id'] = tide_station_id
+            # Conditionally re-fetch oceanographic data
+            if spot_config.get('has_surf_data', False):
+                update_data['raw_swell'] = fetch_swell_data(swell_buoy_id, utc_start_datetime, count=500)
+                update_data['raw_met'] = fetch_meteorological_data(met_buoy_id, utc_start_datetime, count=500, use_imperial_units=True)
+                
+                detailed_tide_data = fetch_tide_data(tide_station_id, utc_start_datetime, use_imperial_units=True)
+                if detailed_tide_data:
+                    update_data['session_water_level'] = detailed_tide_data.get('water_level')
+                    update_data['tide_direction'] = detailed_tide_data.get('direction')
+                    update_data['next_tide_event_type'] = detailed_tide_data.get('next_event_type')
+                    update_data['next_tide_event_at'] = detailed_tide_data.get('next_event_at')
+                    update_data['next_tide_event_height'] = detailed_tide_data.get('next_event_height')
+                
+                update_data['swell_buoy_id'] = swell_buoy_id
+                update_data['met_buoy_id'] = met_buoy_id
+                update_data['tide_station_id'] = tide_station_id
+            else:
+                # If no surf data, set all related fields to None
+                update_data['raw_swell'] = None
+                update_data['raw_met'] = None
+                update_data['session_water_level'] = None
+                update_data['tide_direction'] = None
+                update_data['next_tide_event_type'] = None
+                update_data['next_tide_event_at'] = None
+                update_data['next_tide_event_height'] = None
+                update_data['swell_buoy_id'] = None
+                update_data['met_buoy_id'] = None
+                update_data['tide_station_id'] = None
 
         # Check if there is anything to update
         if not update_data and tagged_users is None:
@@ -959,40 +986,7 @@ def get_surf_spots():
         traceback.print_exc()
         return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
 
-@app.route('/api/surf-spots-by-region', methods=['GET'])
-def get_surf_spots_by_region():
-    """
-    API endpoint to get a list of all supported surf spots, grouped by region.
-    """
-    try:
-        all_spots = database_utils.get_all_surf_spots()
-        
-        # Group spots by region
-        regional_spots = {}
-        for spot in all_spots:
-            region = spot.get('region', 'Uncategorized') # Default to 'Uncategorized' if region is null
-            if region not in regional_spots:
-                regional_spots[region] = []
-            regional_spots[region].append({
-                "slug": spot["slug"],
-                "name": spot["name"]
-            })
-        
-        # Convert dictionary to a list of objects for ordered display on frontend
-        # You might want to define a specific order for regions if needed
-        formatted_regions = []
-        for region_name, spots_list in regional_spots.items():
-            formatted_regions.append({
-                "region": region_name,
-                "spots": spots_list
-            })
-            
-        return jsonify({"status": "success", "data": formatted_regions}), 200
-    except Exception as e:
-        print(f"Error retrieving surf spots by region: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
+
 
 @app.route('/api/regions', methods=['GET'])
 @token_required
@@ -1005,6 +999,21 @@ def get_regions(user_id):
         return jsonify({"status": "success", "data": regions}), 200
     except Exception as e:
         print(f"Error retrieving regions: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/api/spots', methods=['GET'])
+def get_spots():
+    """
+    Get all surf spots for typeahead component.
+    Returns all spots with id, name, slug, country, region, has_surf_data.
+    """
+    try:
+        spots = database_utils.get_all_spots_for_typeahead()
+        return jsonify({"status": "success", "data": spots}), 200
+    except Exception as e:
+        print(f"Error fetching spots for typeahead: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500

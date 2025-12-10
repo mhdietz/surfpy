@@ -88,6 +88,7 @@ def get_session_detail(session_id, current_user_id):
                     u.email as user_email,
                     sp.slug as location_slug,
                     sp.timezone as location_timezone,
+                    sp.has_surf_data,
                     COALESCE(
                         u.raw_user_meta_data->>'display_name',
                         NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
@@ -1215,6 +1216,7 @@ def get_session_summary_list(viewer_id, profile_user_id_filter=None, filters={})
                     s.swell_buoy_id, s.met_buoy_id, s.tide_station_id, s.user_id, s.session_group_id,
                     s.session_started_at, s.session_ended_at,
                     u.email as user_email,
+                    sp.has_surf_data,
                     COALESCE(
                         u.raw_user_meta_data->>'display_name',
                         NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
@@ -1471,7 +1473,7 @@ def get_surf_spot_by_slug(slug):
                 SELECT 
                     id, created_at, slug, name, swell_buoy_id, tide_station_id, 
                     wind_lat, wind_long, breaking_wave_depth, breaking_wave_angle, 
-                    breaking_wave_slope, timezone, met_buoy_id
+                    breaking_wave_slope, timezone, met_buoy_id, has_surf_data
                 FROM surf_spots
                 WHERE slug ILIKE %s
             """, (slug,))
@@ -1545,7 +1547,7 @@ def get_surf_spot_by_name(name):
                 SELECT 
                     id, created_at, slug, name, swell_buoy_id, tide_station_id, 
                     wind_lat, wind_long, breaking_wave_depth, breaking_wave_angle, 
-                    breaking_wave_slope, timezone, met_buoy_id
+                    breaking_wave_slope, timezone, met_buoy_id, has_surf_data
                 FROM surf_spots
                 WHERE name ILIKE %s
             """, (name,))
@@ -1574,6 +1576,30 @@ def get_all_regions():
             return regions
     except Exception as e:
         print(f"Error retrieving all regions: {e}")
+        return []
+    finally:
+        conn.close()
+
+def get_all_spots_for_typeahead():
+    """
+    Retrieve all surf spots for the typeahead component.
+    Includes id, name, slug, country, region, and has_surf_data.
+    """
+    conn = get_db_connection()
+    if not conn:
+        return []
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT 
+                    id, name, slug, country, region, has_surf_data
+                FROM surf_spots
+                ORDER BY name
+            """)
+            spots = cur.fetchall()
+            return list(spots)
+    except Exception as e:
+        print(f"Error retrieving all spots for typeahead: {e}")
         return []
     finally:
         conn.close()

@@ -107,3 +107,21 @@ export const deleteSession = async (sessionId) => {
     throw error;
   }
 };
+
+/**
+ * Get all surf spots for the typeahead component.
+ * @returns {Promise<array>} Array of surf spot objects.
+ */
+export const getSpots = async () => {
+  console.log('Fetching all surf spots...');
+  try {
+    const response = await apiCall('/api/spots', {
+      method: 'GET'
+    });
+    console.log('Surf spots response:', response);
+    return response.data; // Return the array directly
+  } catch (error) {
+    console.error('Failed to fetch surf spots:', error);
+    throw error;
+  }
+};

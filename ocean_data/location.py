@@ -48,7 +48,8 @@ def get_spot_config(spot_name):
                 "slope": spot["breaking_wave_slope"]
             },
             "timezone": spot["timezone"],
-            "met_buoy_id": spot["met_buoy_id"]
+            "met_buoy_id": spot["met_buoy_id"],
+            "has_surf_data": spot["has_surf_data"]
         }
     return None
 
