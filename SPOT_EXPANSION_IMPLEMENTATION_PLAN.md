@@ -69,7 +69,7 @@ def get_spots():
     # ... implementation ...
 ```
 
-### 2.5 Update Session Logging to Handle Missing Surf Data (To Do)
+### 2.5 Update Session Logging to Handle Missing Surf Data ✓ COMPLETE
 **File:** `surfdata.py` - Update `create_surf_session` and `update_surf_session`
 
 In the session creation/update logic, add a check for `has_surf_data` on the `spot_config` object. If `false`, the logic to fetch swell, meteorology, and tide data should be skipped.

@@ -1471,7 +1471,7 @@ def get_surf_spot_by_slug(slug):
                 SELECT 
                     id, created_at, slug, name, swell_buoy_id, tide_station_id, 
                     wind_lat, wind_long, breaking_wave_depth, breaking_wave_angle, 
-                    breaking_wave_slope, timezone, met_buoy_id
+                    breaking_wave_slope, timezone, met_buoy_id, has_surf_data
                 FROM surf_spots_backup
                 WHERE slug ILIKE %s
             """, (slug,))
@@ -1545,7 +1545,7 @@ def get_surf_spot_by_name(name):
                 SELECT 
                     id, created_at, slug, name, swell_buoy_id, tide_station_id, 
                     wind_lat, wind_long, breaking_wave_depth, breaking_wave_angle, 
-                    breaking_wave_slope, timezone, met_buoy_id
+                    breaking_wave_slope, timezone, met_buoy_id, has_surf_data
                 FROM surf_spots_backup
                 WHERE name ILIKE %s
             """, (name,))
