@@ -9,10 +9,9 @@ The application is a full-stack surf logging and forecasting platform. The backe
 ### Backend
 -   **Backend (`surfdata.py`)**: The core of the application is a **Flask API**. It handles all incoming requests, user authentication, and API routing. It uses `Flask-Caching` for performance on data-intensive endpoints.
 
--   **Database (`database_utils.py`)**: All persistent data is stored in a **PostgreSQL** database, managed via the `database_utils.py` module. This module uses the `psycopg2` library to interact with the database. Key tables include `surf_sessions_duplicate` for session logs, `auth.users` for user data, `surf_spots` for location configurations, `session_participants` for tagging, and `session_shakas` for reactions.
+-   **Database (`database_utils.py`)**: All persistent data is stored in a **PostgreSQL** database, managed via the `database_utils.py` module. This module uses the `psycopg2` library to interact with the database. Key tables include `surf_sessions_duplicate` for session logs, `auth.users` for user data, `surf_spots` for location configurations, `session_participants` for tagging, `session_shakas` for reactions, and `notifications` for the notification system.
 
 -   **Data Abstraction Layer (`ocean_data/`)**: This Python package serves as a high-level interface for all external oceanographic data. It abstracts the complexities of fetching and processing data, providing simple functions like `fetch_swell_data` to the main application.
-
 -   **Core Data Engine (`surfpy/`)**: This is a powerful, low-level library that acts as the engine for all data fetching and processing. It interfaces directly with external data sources like NOAA buoys and tide stations.
 
 ### Frontend
@@ -20,7 +19,7 @@ The application is a full-stack surf logging and forecasting platform. The backe
 
 -   **Architecture**: The frontend follows a modern React structure, separating concerns into distinct directories:
     -   `pages/`: For top-level page components (e.g., `AuthPage`, `Feed`).
-    -   `components/`: For reusable components, including route guards like `ProtectedRoute`, and data display components such as `SwellDisplay`, `WindDisplay`, `TideDisplay`, `StatsDisplay`, `Leaderboard`.
+    -   `components/`: For reusable components, including route guards like `ProtectedRoute`, and data display components such as `SwellDisplay`, `WindDisplay`, `TideDisplay`, `StatsDisplay`, `Leaderboard`, and `NotificationDropdown`.
     -   `components/UI/`: For generic, reusable UI components (e.g., `Button`, `Input`, `Card`, `Spinner`).
     -   `context/`: For global state management via React Context (e.g., `AuthContext`).
     -   `services/`: For communication with the backend API (e.g., `auth.js`, `api.js`).
@@ -66,6 +65,15 @@ The application is a full-stack surf logging and forecasting platform. The backe
 ### e. Expanded Surf Spots & Typeahead Search
 -   **Backend**: The number of surf spots has been expanded to over 200, with many spots now existing as simple locations without direct oceanographic data feeds (`has_surf_data=false`). A new, unauthenticated `/api/spots` endpoint was created to serve this full list of spots (including `id`, `name`, `slug`, `region`, `country`) to the frontend for a new typeahead search component.
 -   **Frontend**: To support the expanded list of spots, the simple location dropdown on the session creation and editing pages has been replaced with a searchable `react-select` typeahead component, providing a much-improved user experience for finding a location.
+
+### f. In-App Notifications & Session Snaking
+-   **Flow**: Notifications are generated for key user interactions, such as being tagged in a surf session (`session_tag`).
+-   **API Endpoints**: The system is supported by several backend endpoints:
+    - `GET /api/notifications`: Fetches a list of notifications for the authenticated user.
+    - `GET /api/notifications/count`: Provides a lightweight count of unread notifications for UI badges.
+    - `POST /api/notifications/<id>/read`: Marks a specific notification as read.
+-   **Frontend UI**: A `NotificationDropdown` component in the main navigation bar displays unread notifications. Each notification provides context about the event and actions, such as "View" or "Snake It".
+-   **Session Snaking**: From a notification, a user can "snake" another user's session. This action calls `POST /api/surf-sessions/<id>/snake`, which creates a new session for the current user, copying the original session's data but resetting the notes and fun rating. The logic carefully handles participant copying to prevent notification loops.
 
 ## 4. Key Technical Decisions & Concepts
 
