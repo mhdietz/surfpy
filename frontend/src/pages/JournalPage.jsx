@@ -6,7 +6,7 @@ import Spinner from '../components/UI/Spinner';
 import SessionsList from '../components/SessionsList';
 import PageTabs from '../components/PageTabs';
 import JournalFilter from '../components/JournalFilter';
-import StatsDisplay from '../components/StatsDisplay'; // Import the new component
+import StatsDisplay from '../components/StatsDisplay';
 
 // Helper function to parse URL search params into filter state
 const parseSearchParams = (params) => {
@@ -27,13 +27,14 @@ function JournalPage() {
   const { user: currentUser } = useAuth();
   const [profileUser, setProfileUser] = useState(null);
   const [sessions, setSessions] = useState([]);
-  const [stats, setStats] = useState(null); // State for stats data
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear()); // New state for year filter
 
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const currentTab = searchParams.get('tab') || 'log'; // Default to 'log'
+  const currentTab = searchParams.get('tab') || 'log';
 
   // Initialize filters from URL search params
   const [filters, setFilters] = useState(() => parseSearchParams(searchParams));
@@ -62,7 +63,7 @@ function JournalPage() {
 
       try {
         setLoading(true);
-        setError(null); // Reset error state
+        setError(null);
         const effectiveUserId = userId === 'me' ? currentUser.id : userId;
 
         if (!effectiveUserId) {
@@ -71,19 +72,18 @@ function JournalPage() {
           return;
         }
 
-        // Fetch profile data if not already fetched
         if (!profileUser || profileUser.id !== effectiveUserId) {
           const profileResponse = await apiCall(`/api/users/${effectiveUserId}/profile`);
           setProfileUser(profileResponse.data);
         }
 
-        // Fetch data based on the active tab
         if (currentTab === 'log') {
           const queryString = new URLSearchParams(filters).toString();
           const sessionsResponse = await apiCall(`/api/users/${effectiveUserId}/sessions?${queryString}`);
           setSessions(sessionsResponse.data);
         } else if (currentTab === 'stats') {
-          const statsResponse = await apiCall(`/api/users/${effectiveUserId}/stats`);
+          // Pass selectedYear to the API call for stats
+          const statsResponse = await apiCall(`/api/users/${effectiveUserId}/stats?year=${selectedYear}`);
           setStats(statsResponse.data);
         }
 
@@ -96,23 +96,21 @@ function JournalPage() {
     };
 
     fetchData();
-  }, [userId, currentUser, currentTab, filters, profileUser]); // Add profileUser to dependencies
+  }, [userId, currentUser, currentTab, filters, profileUser, selectedYear]); // Add selectedYear to dependencies
 
   if (loading && !profileUser) {
     return <Spinner />;
   }
 
-  if (error && !profileUser) { // Only show full-page error if profile hasn't loaded
+  if (error && !profileUser) {
     return <div className="text-red-500 text-center p-4">Error: {error}</div>;
   }
 
-  // Determine the prefix for tab labels dynamically
-  let journalOwnerPrefix = 'Surf Log'; // Default fallback   
+  let journalOwnerPrefix = 'Surf Log';
   if (profileUser) {
     if (userId === 'me' || (currentUser && profileUser.id === currentUser.id)) {
       journalOwnerPrefix = 'My';
     } else {
-      // Use first name if available, otherwise fall back to the full display name
       const nameToDisplay = profileUser.first_name || profileUser.display_name;
       journalOwnerPrefix = `${nameToDisplay}'s`;
     }
@@ -140,7 +138,7 @@ function JournalPage() {
 
         {currentTab === 'stats' && (
           <div className="w-full bg-white rounded-b-lg shadow-md pb-4"> 
-            <StatsDisplay stats={stats} loading={loading} error={error} />
+            <StatsDisplay stats={stats} loading={loading} error={error} selectedYear={selectedYear} setSelectedYear={setSelectedYear} />
           </div>
         )}
       </main>

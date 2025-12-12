@@ -945,7 +945,7 @@ def get_user_journal_sessions(viewer_user_id, profile_user_id):
 @token_required
 def get_user_stats_route(viewer_user_id, profile_user_id):
     """
-    Get statistics for a specific user.
+    Get statistics for a specific user, optionally filtered by year.
     Handles 'me' as an alias for the authenticated user.
     """
     try:
@@ -953,7 +953,12 @@ def get_user_stats_route(viewer_user_id, profile_user_id):
         if profile_user_id == 'me':
             profile_user_id = viewer_user_id
 
-        stats = get_user_stats(profile_user_id)
+        # Get year from query parameters, default to current year if not provided
+        year = request.args.get('year', type=int)
+        if year is None:
+            year = datetime.now().year
+
+        stats = database_utils.get_user_stats_by_year(profile_user_id, year)
         
         if stats is None:
             return jsonify({"status": "fail", "message": "Failed to retrieve user stats"}), 500

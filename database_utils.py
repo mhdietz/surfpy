@@ -5,6 +5,7 @@ from datetime import datetime, time, date
 import uuid
 from psycopg2.extras import Json
 from ocean_data.location import LEGACY_LOCATION_MAP
+from collections import OrderedDict
 
 import os
 
@@ -1063,6 +1064,155 @@ def get_dashboard_stats(current_user_id):
             
     except Exception as e:
         print(f"Error getting dashboard stats: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+    finally:
+        conn.close()
+
+def get_user_stats_by_year(user_id, year):
+    """
+    Retrieves comprehensive statistics for a given user for a specific year,
+    including total sessions, surf time, average fun rating, top sessions,
+    sessions by month, stoke by month, and most frequent surf buddy.
+    """
+    conn = get_db_connection()
+    if not conn:
+        return None
+
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            month_names = OrderedDict([
+                (1, "Jan"), (2, "Feb"), (3, "Mar"), (4, "Apr"),
+                (5, "May"), (6, "Jun"), (7, "Jul"), (8, "Aug"),
+                (9, "Sep"), (10, "Oct"), (11, "Nov"), (12, "Dec")
+            ])
+
+            results = {}
+
+            # 1. Overall Stats
+            cur.execute("""
+                SELECT
+                    COUNT(id) AS total_sessions,
+                    COALESCE(SUM(EXTRACT(EPOCH FROM (session_ended_at - session_started_at))) / 3600.0, 0.0) AS total_hours,
+                    COALESCE(ROUND(AVG(fun_rating)::numeric, 2), 0.0) AS average_stoke
+                FROM surf_sessions_duplicate
+                WHERE user_id = %s AND EXTRACT(YEAR FROM session_started_at) = %s
+            """, (user_id, year))
+            overall_stats = cur.fetchone()
+            
+            if overall_stats and overall_stats['total_sessions'] > 0:
+                results['total_sessions'] = overall_stats['total_sessions']
+                results['total_hours'] = float(overall_stats['total_hours'])
+                results['average_stoke'] = float(overall_stats['average_stoke'])
+            else:
+                results['total_sessions'] = 0
+                results['total_hours'] = 0.0
+                results['average_stoke'] = 0.0
+
+            # Handle case where no sessions exist for the year
+            if results['total_sessions'] == 0:
+                results['year'] = year
+                results['top_sessions'] = []
+                results['sessions_by_month'] = [{"month": name, "count": 0} for num, name in month_names.items()]
+                results['stoke_by_month'] = [{"month": name, "avg_stoke": None} for num, name in month_names.items()]
+                results['most_frequent_buddy'] = None
+                return results
+
+            # 2. Top 3 Sessions
+            cur.execute("""
+                SELECT
+                    id,
+                    session_name AS title,
+                    location AS spot,
+                    session_started_at AS date,
+                    fun_rating AS stoke
+                FROM surf_sessions_duplicate
+                WHERE user_id = %s AND EXTRACT(YEAR FROM session_started_at) = %s
+                ORDER BY fun_rating DESC, session_started_at DESC
+                LIMIT 3
+            """, (user_id, year))
+            top_sessions = cur.fetchall()
+            results['top_sessions'] = []
+            for session in top_sessions:
+                formatted_session = {k: v for k, v in session.items()}
+                if 'date' in formatted_session and isinstance(formatted_session['date'], datetime):
+                    formatted_session['date'] = formatted_session['date'].isoformat()
+                if 'stoke' in formatted_session:
+                    formatted_session['stoke'] = float(formatted_session['stoke'])
+                results['top_sessions'].append(formatted_session)
+
+            # 3. Sessions by Month (Now done in a single, more efficient SQL query)
+            cur.execute("""
+                WITH months AS (SELECT generate_series(1, 12) AS month_num)
+                SELECT
+                    m.month_num,
+                    COUNT(s.id) AS count
+                FROM months m
+                LEFT JOIN surf_sessions_duplicate s
+                  ON m.month_num = EXTRACT(MONTH FROM s.session_started_at)
+                 AND s.user_id = %s
+                 AND EXTRACT(YEAR FROM s.session_started_at) = %s
+                GROUP BY m.month_num
+                ORDER BY m.month_num;
+            """, (user_id, year))
+            sessions_by_month_data = cur.fetchall()
+            results['sessions_by_month'] = [
+                {"month": month_names[row['month_num']], "count": row['count']}
+                for row in sessions_by_month_data
+            ]
+
+            # 4. Stoke by Month (Now returns all 12 months)
+            cur.execute("""
+                WITH months AS (SELECT generate_series(1, 12) AS month_num)
+                SELECT
+                    m.month_num,
+                    ROUND(AVG(s.fun_rating)::numeric, 2) AS avg_stoke
+                FROM months m
+                LEFT JOIN surf_sessions_duplicate s
+                  ON m.month_num = EXTRACT(MONTH FROM s.session_started_at)
+                 AND s.user_id = %s
+                 AND EXTRACT(YEAR FROM s.session_started_at) = %s
+                GROUP BY m.month_num
+                ORDER BY m.month_num;
+            """, (user_id, year))
+            stoke_by_month_data = cur.fetchall()
+            results['stoke_by_month'] = [
+                {
+                    "month": month_names[row['month_num']],
+                    "avg_stoke": float(row['avg_stoke']) if row['avg_stoke'] is not None else None
+                }
+                for row in stoke_by_month_data
+            ]
+
+            # 5. Most Frequent Surf Buddy
+            cur.execute("""
+                SELECT
+                    p.user_id AS buddy_user_id,
+                    COALESCE(
+                        u.raw_user_meta_data->>'display_name',
+                        NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name', '')), ''),
+                        split_part(u.email, '@', 1)
+                    ) AS name,
+                    COUNT(DISTINCT p.session_id) AS count
+                FROM session_participants p
+                JOIN surf_sessions_duplicate s ON p.session_id = s.id
+                JOIN auth.users u ON p.user_id = u.id
+                WHERE s.user_id = %s -- Sessions created by the user
+                  AND EXTRACT(YEAR FROM s.session_started_at) = %s
+                  AND p.user_id != %s -- Exclude the user themselves
+                GROUP BY p.user_id, u.raw_user_meta_data, u.email
+                ORDER BY count DESC
+                LIMIT 1
+            """, (user_id, year, user_id))
+            most_frequent_buddy = cur.fetchone()
+            results['most_frequent_buddy'] = most_frequent_buddy if most_frequent_buddy else None
+            
+            results['year'] = year
+
+            return results
+    except Exception as e:
+        print(f"Error getting user stats by year: {e}")
         import traceback
         traceback.print_exc()
         return None
