@@ -47,7 +47,7 @@ function StatsDisplay({ stats, loading, error, selectedYear, setSelectedYear }) 
         <div className="text-center p-4 text-gray-600">
           <p className="text-lg mb-2">You haven't logged any sessions in {selectedYear}.</p>
           <p className="mb-4">Start logging to build your stats!</p>
-          <a href="/sessions/create" className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+          <a href="/create-session" className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
             Log Your First Session
           </a>
         </div>

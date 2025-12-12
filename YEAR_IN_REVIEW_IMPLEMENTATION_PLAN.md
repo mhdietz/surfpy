@@ -50,10 +50,10 @@ This phase focuses on connecting the frontend to the new API endpoint and buildi
 ### 2.5 Validation (Browser)
 -   **Your Task**: Navigate to your stats page (`/journal/me?tab=stats`) on your local frontend deployment.
 -   **Checkpoints**:
-    *   Are the year filter buttons displayed and functional?
+    *   Are the new year filter buttons displayed and functional?
     *   Do the basic stats update correctly when the year is changed?
     *   Does the empty state message appear correctly for a year with no sessions?
--   **Status**: `[ ] Pending`
+-   **Status**: `[x] Completed`
 
 ## Phase 3: Frontend - Charts and Detailed Components
 
