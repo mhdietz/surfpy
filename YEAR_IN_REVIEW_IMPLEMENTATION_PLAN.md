@@ -62,27 +62,29 @@ This phase builds the data visualizations and detailed lists.
 ### 3.1 Install Dependencies
 -   **Action**: Install `recharts` and `html2canvas`.
 -   **Command**: `npm install recharts html2canvas` in the `frontend` directory.
--   **Status**: `[ ] Pending`
+-   **Status**: `[x] Completed`
 
 ### 3.2 Create "Top Sessions" Component
 -   **Action**: Implement a new React component to display the `top_sessions` array.
 -   **Logic**: Each session entry should be clickable and link to its corresponding session detail page.
--   **Status**: `[ ] Pending`
+-   **Status**: `[x] Completed`
 
 ### 3.3 Create Chart Components
 -   **Action**: Implement two new React components for the "Sessions by Month" and "Stoke by Month" charts using `recharts`.
--   **Status**: `[ ] Pending`
+-   **Status**: `[x] Completed`
 
 ### 3.4 Create "Most Frequent Buddy" Component
 -   **Action**: Implement a component to display the `most_frequent_buddy` data, rendering it conditionally.
--   **Status**: `[ ] Pending`
+-   **Status**: `[x] Completed`
 
 ### 3.5 Validation (Browser)
 -   **Your Task**: View the stats page for a user with sufficient data to populate all new components.
 -   **Checkpoints**:
     *   Do all new components render correctly?
     *   Are the charts and links functional?
--   **Status**: `[ ] Pending`
+-   **Status**: `[x] Completed`
+
+*Note: The complex "Most Frequent Buddy" logic, accounting for real-world events vs. database records and fuzzy time matching, has been deferred to a future implementation and is documented in `REFINING_THE_BUDDY_SCORE.md`.*
 
 ## Phase 4: Shareable Image Generation
 
