@@ -13,13 +13,11 @@ The goal of this phase is to create a robust and correct API endpoint that provi
     *   Top 3 sessions, ordered by `fun_rating` (descending).
     *   Session counts for all 12 months of the year (returning 0 for months with no sessions).
     *   Average stoke for months that have sessions (only include months with data).
-    *   The most frequent surf buddy, derived by joining `session_participants`.
--   **Status**: `[ ] Pending`
+    *   -   **Status**: `[x] Completed`
 
 ### 1.2 Enhance the API Endpoint (`surfdata.py`)
 -   **Action**: Modify the existing `/api/users/<profile_user_id>/stats` endpoint.
--   **Logic**: The endpoint will now accept an optional `year` query parameter. If the parameter is not provided, it will default to the current year. It will then call the new `get_user_stats_by_year` function.
--   **Status**: `[ ] Pending`
+-   **Status**: `[x] Completed`
 
 ### 1.3 Validation (Postman)
 -   **Your Task**: Once steps 1.1 & 1.2 are complete, I'll ask you to run a Postman request against your local server: `GET http://localhost:5000/api/users/me/stats?year=2025` (with a valid auth token).
@@ -27,8 +25,8 @@ The goal of this phase is to create a robust and correct API endpoint that provi
     *   Does the API response structure exactly match the specification from `my_stats_enhancement_year_in_review.md`?
     *   Do the calculated values seem correct for a user with data?
     *   Does the API handle years with zero sessions gracefully (e.g., `total_sessions: 0`, empty arrays for `top_sessions`, `sessions_by_month` with all 0s, `stoke_by_month` empty)?
-    *   Does it correctly return a `null` or empty object for `most_frequent_buddy` if the user has no sessions with others?
--   **Status**: `[ ] Pending`
+    *   `most_frequent_buddy`: If you have sessions with tagged users, does it correctly identify the user with whom the `profile_user_id` has the most sessions? Does it include their `name` and `count`? Does it correctly return `null` if no buddy is found or no shared sessions?
+-   **Status**: `[x] Completed`
 
 ## Phase 2: Frontend - Basic UI & Data Integration
 
@@ -133,6 +131,10 @@ This phase leverages the existing notification system to announce the feature.
         *   `session_id` set to `NULL` (as it's not tied to a specific session).
         *   `read` set to `FALSE`.
 -   **Temporary Endpoint**: I will add a temporary, secure endpoint to `surfdata.py` (e.g., `POST /api/admin/trigger-year-in-review-notifications`) that calls this function for testing purposes. This endpoint will be removed before deployment.
+-   **Cleanup Note**: After running your tests and verifying the notifications on the frontend, you **must manually delete** these test notifications from the database to prevent them from appearing to live users when the new frontend code is deployed. You can use the following SQL command:
+    ```sql
+    DELETE FROM notifications WHERE type = 'year_in_review';
+    ```
 -   **Status**: `[ ] Pending`
 
 ### 5.2 Frontend - Notification Display (Existing `NotificationDropdown`)
