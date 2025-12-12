@@ -121,7 +121,30 @@ export const getSpots = async () => {
     console.log('Surf spots response:', response);
     return response.data; // Return the array directly
   } catch (error) {
-    console.error('Failed to fetch surf spots:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches comprehensive statistics for a specific user, optionally filtered by year.
+ * @param {string} userId - The ID of the user whose stats to fetch ('me' for current user).
+ * @param {number} [year] - Optional. The year to filter stats by. Defaults to current year if not provided.
+ * @returns {Promise<object>} An object containing the user's year-in-review statistics.
+ */
+export const getUserStats = async (userId, year) => {
+  console.log(`Fetching stats for user ${userId} for year ${year || 'current year'}...`);
+  try {
+    let endpoint = `/api/users/${userId}/stats`;
+    if (year) {
+      endpoint += `?year=${year}`;
+    }
+    const response = await apiCall(endpoint, {
+      method: 'GET'
+    });
+    console.log('User stats response:', response);
+    return response.data; // The backend returns { status: "success", data: ... }
+  } catch (error) {
+    console.error(`Failed to fetch stats for user ${userId} for year ${year}:`, error);
     throw error;
   }
 };
