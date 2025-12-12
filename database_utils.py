@@ -1082,7 +1082,6 @@ def get_user_stats_by_year(user_id, year):
 
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Month names for formatting, using OrderedDict for consistent order
             month_names = OrderedDict([
                 (1, "Jan"), (2, "Feb"), (3, "Mar"), (4, "Apr"),
                 (5, "May"), (6, "Jun"), (7, "Jul"), (8, "Aug"),
@@ -1110,13 +1109,13 @@ def get_user_stats_by_year(user_id, year):
                 results['total_sessions'] = 0
                 results['total_hours'] = 0.0
                 results['average_stoke'] = 0.0
-            
+
             # Handle case where no sessions exist for the year
             if results['total_sessions'] == 0:
                 results['year'] = year
                 results['top_sessions'] = []
                 results['sessions_by_month'] = [{"month": name, "count": 0} for num, name in month_names.items()]
-                results['stoke_by_month'] = []
+                results['stoke_by_month'] = [{"month": name, "avg_stoke": None} for num, name in month_names.items()]
                 results['most_frequent_buddy'] = None
                 return results
 
@@ -1143,41 +1142,48 @@ def get_user_stats_by_year(user_id, year):
                     formatted_session['stoke'] = float(formatted_session['stoke'])
                 results['top_sessions'].append(formatted_session)
 
-            # 3. Sessions by Month
+            # 3. Sessions by Month (Now done in a single, more efficient SQL query)
             cur.execute("""
+                WITH months AS (SELECT generate_series(1, 12) AS month_num)
                 SELECT
-                    EXTRACT(MONTH FROM session_started_at) AS month_num,
-                    COUNT(id) AS count
-                FROM surf_sessions_duplicate
-                WHERE user_id = %s AND EXTRACT(YEAR FROM session_started_at) = %s
-                GROUP BY month_num
-                ORDER BY month_num
+                    m.month_num,
+                    COUNT(s.id) AS count
+                FROM months m
+                LEFT JOIN surf_sessions_duplicate s
+                  ON m.month_num = EXTRACT(MONTH FROM s.session_started_at)
+                 AND s.user_id = %s
+                 AND EXTRACT(YEAR FROM s.session_started_at) = %s
+                GROUP BY m.month_num
+                ORDER BY m.month_num;
             """, (user_id, year))
-            raw_sessions_by_month = cur.fetchall()
-            
-            sessions_by_month_dict = {row['month_num']: row['count'] for row in raw_sessions_by_month}
+            sessions_by_month_data = cur.fetchall()
             results['sessions_by_month'] = [
-                {"month": month_names[num], "count": sessions_by_month_dict.get(num, 0)}
-                for num in month_names
+                {"month": month_names[row['month_num']], "count": row['count']}
+                for row in sessions_by_month_data
             ]
 
-            # 4. Stoke by Month
+            # 4. Stoke by Month (Now returns all 12 months)
             cur.execute("""
+                WITH months AS (SELECT generate_series(1, 12) AS month_num)
                 SELECT
-                    EXTRACT(MONTH FROM session_started_at) AS month_num,
-                    ROUND(AVG(fun_rating)::numeric, 2) AS avg_stoke
-                FROM surf_sessions_duplicate
-                WHERE user_id = %s AND EXTRACT(YEAR FROM session_started_at) = %s
-                GROUP BY month_num
-                ORDER BY month_num
+                    m.month_num,
+                    ROUND(AVG(s.fun_rating)::numeric, 2) AS avg_stoke
+                FROM months m
+                LEFT JOIN surf_sessions_duplicate s
+                  ON m.month_num = EXTRACT(MONTH FROM s.session_started_at)
+                 AND s.user_id = %s
+                 AND EXTRACT(YEAR FROM s.session_started_at) = %s
+                GROUP BY m.month_num
+                ORDER BY m.month_num;
             """, (user_id, year))
-            raw_stoke_by_month = cur.fetchall()
-            results['stoke_by_month'] = []
-            for row in raw_stoke_by_month:
-                results['stoke_by_month'].append({
+            stoke_by_month_data = cur.fetchall()
+            results['stoke_by_month'] = [
+                {
                     "month": month_names[row['month_num']],
-                    "avg_stoke": float(row['avg_stoke']) if row['avg_stoke'] is not None else 0.0
-                })
+                    "avg_stoke": float(row['avg_stoke']) if row['avg_stoke'] is not None else None
+                }
+                for row in stoke_by_month_data
+            ]
 
             # 5. Most Frequent Surf Buddy
             cur.execute("""

@@ -1,6 +1,9 @@
 import React from 'react';
 import Spinner from './UI/Spinner';
-// import Card from './UI/Card'; // Card is imported but not used, will remove it
+import TopSessions from './TopSessions'; // Import the new component
+import SessionsByMonthChart from './SessionsByMonthChart'; // Import the chart component
+import StokeByMonthChart from './StokeByMonthChart'; // Import the new chart component
+import MostFrequentBuddy from './MostFrequentBuddy'; // Import the buddy component
 
 // Accept new props: selectedYear, setSelectedYear
 function StatsDisplay({ stats, loading, error, selectedYear, setSelectedYear }) {
@@ -115,7 +118,26 @@ function StatsDisplay({ stats, loading, error, selectedYear, setSelectedYear }) 
           <p className="text-4xl font-bold text-gray-800">{stats.average_stoke ? stats.average_stoke.toFixed(2) : 'N/A'}</p>
         </div>
       </div>
-      {/* Additional stats will go here in later steps */}
+      
+      {/* Render TopSessions component if data is available */}
+      {stats.top_sessions && stats.top_sessions.length > 0 && (
+        <TopSessions sessions={stats.top_sessions} />
+      )}
+
+      {/* Render SessionsByMonthChart component if data is available */}
+      {stats.sessions_by_month && stats.sessions_by_month.length > 0 && (
+        <SessionsByMonthChart data={stats.sessions_by_month} />
+      )}
+
+      {/* Render StokeByMonthChart component if data is available */}
+      {stats.stoke_by_month && stats.stoke_by_month.length > 0 && (
+        <StokeByMonthChart data={stats.stoke_by_month} />
+      )}
+
+      {/* Render MostFrequentBuddy component if data is available */}
+      {stats.most_frequent_buddy && (
+        <MostFrequentBuddy buddy={stats.most_frequent_buddy} />
+      )}
     </div>
   );
 }
