@@ -1,12 +1,33 @@
 import React from 'react';
+import html2canvas from 'html2canvas';
 import Spinner from './UI/Spinner';
-import TopSessions from './TopSessions'; // Import the new component
-import SessionsByMonthChart from './SessionsByMonthChart'; // Import the chart component
-import StokeByMonthChart from './StokeByMonthChart'; // Import the new chart component
-import MostFrequentBuddy from './MostFrequentBuddy'; // Import the buddy component
+import TopSessions from './TopSessions';
+import SessionsByMonthChart from './SessionsByMonthChart';
+import StokeByMonthChart from './StokeByMonthChart';
+import MostFrequentBuddy from './MostFrequentBuddy';
+import ShareableYearInReview from './ShareableYearInReview';
+import { useAuth } from '../context/AuthContext';
+import { ShareIcon } from '@heroicons/react/24/outline';
 
-// Accept new props: selectedYear, setSelectedYear
 function StatsDisplay({ stats, loading, error, selectedYear, setSelectedYear }) {
+  const { user: currentUser } = useAuth();
+  const profileDisplayName = currentUser?.raw_user_meta_data?.display_name || currentUser?.email?.split('@')[0] || 'Surfer';
+
+  const handleShare = () => {
+    const card = document.getElementById('shareable-card');
+    if (card) {
+      html2canvas(card, {
+        useCORS: true,
+        scale: 2, // Increase scale for better resolution
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `surfpy-review-${selectedYear}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    }
+  };
+
   if (loading) {
     return <Spinner />;
   }
@@ -15,65 +36,48 @@ function StatsDisplay({ stats, loading, error, selectedYear, setSelectedYear }) 
     return <div className="text-red-500 text-center p-4">Error: {error}</div>;
   }
 
-  // Generate years for filter (e.g., from 2023 to current year)
   const currentYear = new Date().getFullYear();
-  const years = [];
-  for (let y = 2023; y <= currentYear; y++) {
-    years.push(y);
-  }
-  years.sort((a, b) => b - a); // Sort descending
+  const years = Array.from({ length: currentYear - 2023 + 1 }, (_, i) => currentYear - i);
 
-  // Check if stats are available AND if they indicate no sessions for the selected year
-  // The backend now returns { total_sessions: 0, ... } for no sessions
   const hasNoSessions = stats && stats.total_sessions === 0;
 
-  // Render a specific message if no sessions for the selected year
   if (hasNoSessions) {
     return (
-      <div className="p-4">
-        {/* Year Filter UI */}
-        <div className="flex justify-center space-x-2 mb-6">
-          {years.map((year) => (
-            <button
-              key={year}
-              onClick={() => setSelectedYear(year)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                selectedYear === year
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              {year}
-            </button>
-          ))}
+      <>
+        <div className="p-4">
+          <div className="flex justify-center space-x-2 mb-6">
+            {years.map(year => (
+              <button
+                key={year}
+                onClick={() => setSelectedYear(year)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${selectedYear === year ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                {year}
+              </button>
+            ))}
+          </div>
+          <div className="text-center p-4 text-gray-600">
+            <p className="text-lg mb-2">You haven't logged any sessions in {selectedYear}.</p>
+            <p className="mb-4">Start logging to build your stats!</p>
+            <a href="/create-session" className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+              Log Your First Session
+            </a>
+          </div>
         </div>
-        <div className="text-center p-4 text-gray-600">
-          <p className="text-lg mb-2">You haven't logged any sessions in {selectedYear}.</p>
-          <p className="mb-4">Start logging to build your stats!</p>
-          <a href="/create-session" className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
-            Log Your First Session
-          </a>
-        </div>
-      </div>
+        <ShareableYearInReview stats={stats} selectedYear={selectedYear} profileDisplayName={profileDisplayName} />
+      </>
     );
   }
 
-  // If no stats at all (e.g., first load and nothing came back, or API error handled above),
-  // but not necessarily `total_sessions: 0`. This is a fallback if `stats` is null/undefined
   if (!stats) {
     return (
       <div className="p-4">
-        {/* Year Filter UI */}
         <div className="flex justify-center space-x-2 mb-6">
-          {years.map((year) => (
+          {years.map(year => (
             <button
               key={year}
               onClick={() => setSelectedYear(year)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                selectedYear === year
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className={`px-4 py-2 rounded-lg text-sm font-medium ${selectedYear === year ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
             >
               {year}
             </button>
@@ -85,25 +89,27 @@ function StatsDisplay({ stats, loading, error, selectedYear, setSelectedYear }) 
   }
 
   return (
-    <div className="p-4">
-      {/* Year Filter UI */}
+    <div className="p-4 relative">
+      <button
+        onClick={handleShare}
+        className="absolute top-4 right-4 p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        aria-label="Share your year in review"
+      >
+        <ShareIcon className="h-6 w-6" />
+      </button>
+
       <div className="flex justify-center space-x-2 mb-6">
-        {years.map((year) => (
+        {years.map(year => (
           <button
             key={year}
             onClick={() => setSelectedYear(year)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${
-              selectedYear === year
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${selectedYear === year ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
           >
             {year}
           </button>
         ))}
       </div>
 
-      {/* Existing basic stats display, adapted for new stats object structure */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-8">
         <div>
           <h3 className="text-lg font-semibold text-gray-600">Total Sessions</h3>
@@ -119,25 +125,23 @@ function StatsDisplay({ stats, loading, error, selectedYear, setSelectedYear }) 
         </div>
       </div>
       
-      {/* Render TopSessions component if data is available */}
       {stats.top_sessions && stats.top_sessions.length > 0 && (
         <TopSessions sessions={stats.top_sessions} />
       )}
 
-      {/* Render SessionsByMonthChart component if data is available */}
       {stats.sessions_by_month && stats.sessions_by_month.length > 0 && (
         <SessionsByMonthChart data={stats.sessions_by_month} />
       )}
 
-      {/* Render StokeByMonthChart component if data is available */}
       {stats.stoke_by_month && stats.stoke_by_month.length > 0 && (
         <StokeByMonthChart data={stats.stoke_by_month} />
       )}
 
-      {/* Render MostFrequentBuddy component if data is available */}
       {stats.most_frequent_buddy && (
         <MostFrequentBuddy buddy={stats.most_frequent_buddy} />
       )}
+
+      <ShareableYearInReview stats={stats} selectedYear={selectedYear} profileDisplayName={profileDisplayName} />
     </div>
   );
 }

@@ -91,7 +91,7 @@ This phase builds the data visualizations and detailed lists.
 This phase implements the social sharing feature.
 
 ### 4.1 Create Hidden Shareable Card Component
--   **Action**: Implement a new, off-screen React component styled to be the 1080x1080px shareable image.
+-   **Action**: Implement a new, off-screen React component styled to be the 1080x1080px shareable image. It should include only the user's name, the selected year, the three main stats (Total Sessions, Total Hours, Avg Stoke), and the single top-rated session.
 -   **Status**: `[ ] Pending`
 
 ### 4.2 Implement Share Button & Logic
