@@ -1,16 +1,11 @@
 import React from 'react';
 
-const Card = ({ children, className = '' }) => {
-
-  const baseStyle = 'w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md';
-
-  const combinedClassName = `${baseStyle} ${className}`;
-
+function Card({ children, className = '' }) {
   return (
-    <div className={combinedClassName}>
+    <div className={`bg-white border border-gray-200 rounded-lg shadow-sm p-4 sm:p-6 ${className}`}>
       {children}
     </div>
   );
-};
+}
 
 export default Card;

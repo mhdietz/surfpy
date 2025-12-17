@@ -9,10 +9,9 @@ The application is a full-stack surf logging and forecasting platform. The backe
 ### Backend
 -   **Backend (`surfdata.py`)**: The core of the application is a **Flask API**. It handles all incoming requests, user authentication, and API routing. It uses `Flask-Caching` for performance on data-intensive endpoints.
 
--   **Database (`database_utils.py`)**: All persistent data is stored in a **PostgreSQL** database, managed via the `database_utils.py` module. This module uses the `psycopg2` library to interact with the database. Key tables include `surf_sessions_duplicate` for session logs, `auth.users` for user data, `surf_spots` for location configurations, `session_participants` for tagging, and `session_shakas` for reactions.
+-   **Database (`database_utils.py`)**: All persistent data is stored in a **PostgreSQL** database, managed via the `database_utils.py` module. This module uses the `psycopg2` library to interact with the database. Key tables include `surf_sessions_duplicate` for session logs, `auth.users` for user data, `surf_spots` for location configurations, `session_participants` for tagging, `session_shakas` for reactions, and `notifications` for the notification system.
 
 -   **Data Abstraction Layer (`ocean_data/`)**: This Python package serves as a high-level interface for all external oceanographic data. It abstracts the complexities of fetching and processing data, providing simple functions like `fetch_swell_data` to the main application.
-
 -   **Core Data Engine (`surfpy/`)**: This is a powerful, low-level library that acts as the engine for all data fetching and processing. It interfaces directly with external data sources like NOAA buoys and tide stations.
 
 ### Frontend
@@ -20,7 +19,7 @@ The application is a full-stack surf logging and forecasting platform. The backe
 
 -   **Architecture**: The frontend follows a modern React structure, separating concerns into distinct directories:
     -   `pages/`: For top-level page components (e.g., `AuthPage`, `Feed`).
-    -   `components/`: For reusable components, including route guards like `ProtectedRoute`, and data display components such as `SwellDisplay`, `WindDisplay`, `TideDisplay`, `StatsDisplay`, `Leaderboard`.
+    -   `components/`: For reusable components, including route guards like `ProtectedRoute`, and data display components such as `SwellDisplay`, `WindDisplay`, `TideDisplay`, `StatsDisplay`, `Leaderboard`, and `NotificationDropdown`.
     -   `components/UI/`: For generic, reusable UI components (e.g., `Button`, `Input`, `Card`, `Spinner`).
     -   `context/`: For global state management via React Context (e.g., `AuthContext`).
     -   `services/`: For communication with the backend API (e.g., `auth.js`, `api.js`).
@@ -51,7 +50,7 @@ The application is a full-stack surf logging and forecasting platform. The backe
 -   **User Search**: The `/api/users/search` endpoint allows for finding other users on the platform.
 
 ### b. Surf Session Logging (CRUD)
--   **Flow**: When a user logs a session, the backend fetches the relevant historical swell, meteorological, and tide data and saves it to the database with the session details.
+-   **Flow**: When a user logs a session, the backend checks if the selected location has associated oceanographic data (`has_surf_data=true`). If so, it fetches the relevant historical swell, meteorological, and tide data and saves it to the database. If not, the session is logged without this data, allowing users to log sessions at a much wider range of locations.
 -   **Relational Session Tagging**: The application uses a relational model for tagging users in a session. Instead of duplicating sessions, a single session record is created, and all participants (the creator and tagged users) are linked to it via records in the `session_participants` table. This approach ensures data integrity, simplifies queries, and is highly scalable.
 -   **Shaka Reactions**: Users can give a "shaka" to any surf session. This is handled by a `POST /api/surf-sessions/<session_id>/shaka` endpoint that toggles the reaction. All session retrieval endpoints now include a `shakas` object containing the total count, a preview of users who have reacted, and a `viewer_has_shakaed` boolean flag.
 
@@ -63,10 +62,23 @@ The application is a full-stack surf logging and forecasting platform. The backe
 -   **Flow**: A community leaderboard (`/feed?tab=leaderboard`) displays top users based on various statistics (sessions, time, rating), filterable by year.
 -   **API Integration**: The leaderboard data is fetched from the dedicated `/api/leaderboard` endpoint, which supports filtering by year and statistic.
 
+### e. Expanded Surf Spots & Typeahead Search
+-   **Backend**: The number of surf spots has been expanded to over 200, with many spots now existing as simple locations without direct oceanographic data feeds (`has_surf_data=false`). A new, unauthenticated `/api/spots` endpoint was created to serve this full list of spots (including `id`, `name`, `slug`, `region`, `country`) to the frontend for a new typeahead search component.
+-   **Frontend**: To support the expanded list of spots, the simple location dropdown on the session creation and editing pages has been replaced with a searchable `react-select` typeahead component, providing a much-improved user experience for finding a location.
+
+### f. In-App Notifications & Session Snaking
+-   **Flow**: Notifications are generated for key user interactions, such as being tagged in a surf session (`session_tag`).
+-   **API Endpoints**: The system is supported by several backend endpoints:
+    - `GET /api/notifications`: Fetches a list of notifications for the authenticated user.
+    - `GET /api/notifications/count`: Provides a lightweight count of unread notifications for UI badges.
+    - `POST /api/notifications/<id>/read`: Marks a specific notification as read.
+-   **Frontend UI**: A `NotificationDropdown` component in the main navigation bar displays unread notifications. Each notification provides context about the event and actions, such as "View" or "Snake It".
+-   **Session Snaking**: From a notification, a user can "snake" another user's session. This action calls `POST /api/surf-sessions/<id>/snake`, which creates a new session for the current user, copying the original session's data but resetting the notes and fun rating. The logic carefully handles participant copying to prevent notification loops.
+
 ## 4. Key Technical Decisions & Concepts
 
 ### Backend Decisions
--   **Database-Driven Configuration**: All surf spot configurations, including names, slugs, data source IDs, and breaking wave parameters, are stored in the `surf_spots` database table. This makes the system scalable and easy to manage.
+-   **Database-Driven Configuration**: All surf spot configurations are stored in the `surf_spots` database table. This includes not only data-rich spots (with `swell_buoy_id`, `tide_station_id`, etc.) but also data-light spots, identified by a `has_surf_data` flag. The table was expanded to include `country` and `region` to support better filtering and organization. This makes the system highly scalable and easy to manage.
 
 -   **Relational Data Model**: The session tagging feature was explicitly refactored from a data duplication model to a proper relational model using the `session_participants` table. This was done to ensure data integrity via foreign keys and to allow for efficient, scalable querying.
 
