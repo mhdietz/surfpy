@@ -6,9 +6,11 @@ import Button from './UI/Button';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { toZonedTime, format, fromZonedTime } from 'date-fns-tz';
+import { useAuth } from '../context/AuthContext';
 
 const SnakeSessionModal = ({ originalSession, isOpen, onClose, onSessionSnaked }) => {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth(); // Get current user
   const [sessionName, setSessionName] = useState('');
   const [funRating, setFunRating] = useState('5');
   const [notes, setNotes] = useState('');
@@ -16,6 +18,12 @@ const SnakeSessionModal = ({ originalSession, isOpen, onClose, onSessionSnaked }
   const [endTime, setEndTime] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeError, setTimeError] = useState('');
+
+  // Tagging state
+  const [taggedUsers, setTaggedUsers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Validate times
   useEffect(() => {
@@ -28,10 +36,14 @@ const SnakeSessionModal = ({ originalSession, isOpen, onClose, onSessionSnaked }
 
   // Initialize form state when originalSession changes
   useEffect(() => {
-    if (originalSession) {
+    if (originalSession && currentUser) {
       setSessionName(originalSession.session_name || '');
       setFunRating('5'); // Default to 5
       setNotes(''); // Default to empty
+      
+      // Exclude the current user from the list of tagged surfers
+      const otherParticipants = originalSession.participants.filter(p => p.user_id !== currentUser.id);
+      setTaggedUsers(otherParticipants || []);
       
       const timeZone = originalSession.location_timezone || 'UTC';
       if (originalSession.session_started_at) {
@@ -44,6 +56,48 @@ const SnakeSessionModal = ({ originalSession, isOpen, onClose, onSessionSnaked }
       }
     }
   }, [originalSession]);
+
+  // Debounced user search
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const debounceTimeout = setTimeout(async () => {
+      try {
+        const response = await apiCall(`/api/users/search?q=${searchQuery}`);
+        // Filter out already tagged users from search results
+        const filteredResults = response.data.filter(resultUser => 
+          !taggedUsers.some(taggedUser => taggedUser.user_id === resultUser.user_id)
+        );
+        setSearchResults(filteredResults || []);
+      } catch (error) {
+        console.error("Failed to search users:", error);
+        toast.error("Failed to search users.");
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(debounceTimeout);
+  }, [searchQuery, taggedUsers]); // Re-run when searchQuery or taggedUsers change
+
+  const handleSelectUser = (user) => {
+    // Add user if not already tagged
+    if (!taggedUsers.some(taggedUser => taggedUser.user_id === user.user_id)) {
+      setTaggedUsers([...taggedUsers, user]);
+      setSearchQuery(''); // Clear search input
+      setSearchResults([]); // Clear search results
+    }
+  };
+
+  const handleRemoveUser = (userId) => {
+    setTaggedUsers(taggedUsers.filter(user => user.user_id !== userId));
+  };
 
   if (!isOpen || !originalSession) return null;
 
@@ -113,7 +167,8 @@ const SnakeSessionModal = ({ originalSession, isOpen, onClose, onSessionSnaked }
             fun_rating: parseFloat(funRating),
             session_notes: notes,
             session_started_at: session_started_at,
-            session_ended_at: session_ended_at
+            session_ended_at: session_ended_at,
+            tagged_users: taggedUsers.map(user => user.user_id)
         })
       });
 
@@ -224,6 +279,45 @@ const SnakeSessionModal = ({ originalSession, isOpen, onClose, onSessionSnaked }
                     placeholder="Add your own notes..."
                 ></Input>
             </div>
+
+            <div>
+              <label htmlFor="user_search" className="block text-sm font-medium text-gray-700">Tag Surfers</label>
+              <Input 
+                type="text" 
+                id="user_search" 
+                name="user_search" 
+                placeholder="Search by name or email..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="mt-1"
+              />
+              {isSearching && <p className="text-gray-400 text-sm mt-1">Searching...</p>}
+              {searchResults.length > 0 && (
+                <div className="mt-2 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto z-10">
+                  {searchResults.map(user => (
+                    <button 
+                      key={user.user_id} 
+                      type="button" 
+                      onClick={() => handleSelectUser(user)}
+                      className="block w-full text-left px-4 py-2 text-gray-900 hover:bg-gray-100"
+                    >
+                      {user.display_name || user.email}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="mt-2 flex flex-wrap gap-2">
+                {taggedUsers.map(user => (
+                  <div key={user.user_id} className="flex items-center bg-gray-200 text-gray-800 text-sm font-medium pl-2 pr-1 py-1 rounded-full">
+                    <span>{user.display_name || user.username}</span>
+                    <button type="button" onClick={() => handleRemoveUser(user.user_id)} className="ml-2 text-gray-500 hover:text-gray-700">
+                      &times;
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
 
             <div className="flex justify-end space-x-3 pt-4">
                 <Button variant="secondary" onClick={onClose} type="button" disabled={isSubmitting}>
