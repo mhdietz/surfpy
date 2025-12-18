@@ -15,6 +15,16 @@ const SnakeSessionModal = ({ originalSession, isOpen, onClose, onSessionSnaked }
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timeError, setTimeError] = useState('');
+
+  // Validate times
+  useEffect(() => {
+    if (startTime && endTime && endTime <= startTime) {
+      setTimeError('End time must be after start time.');
+    } else {
+      setTimeError('');
+    }
+  }, [startTime, endTime]);
 
   // Initialize form state when originalSession changes
   useEffect(() => {
@@ -54,6 +64,12 @@ const SnakeSessionModal = ({ originalSession, isOpen, onClose, onSessionSnaked }
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (timeError) {
+      toast.error(timeError);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -179,6 +195,8 @@ const SnakeSessionModal = ({ originalSession, isOpen, onClose, onSessionSnaked }
                 </div>
             </div>
 
+            {timeError && <p className="text-red-500 text-sm mt-2">{timeError}</p>}
+
             <div>
                 <label htmlFor="snake_fun_rating" className="block text-sm font-medium text-gray-700">Stoke</label>
                 <div className="flex items-center space-x-4">
@@ -211,7 +229,7 @@ const SnakeSessionModal = ({ originalSession, isOpen, onClose, onSessionSnaked }
                 <Button variant="secondary" onClick={onClose} type="button" disabled={isSubmitting}>
                     Cancel
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" disabled={isSubmitting || !!timeError}>
                     {isSubmitting ? 'Creating...' : 'Confirm Snake'}
                 </Button>
             </div>
