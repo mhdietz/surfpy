@@ -591,11 +591,12 @@ def mark_notification_read(notification_id, user_id):
     finally:
         conn.close()
 
-def copy_session_as_new_user(original_session_id, new_user_id, sender_user_id):
+def copy_session_as_new_user(original_session_id, new_user_id, sender_user_id, overrides=None):
     """
     Copies an existing session and creates a new one for a different user.
     Participants from the original session are copied, but no notifications are sent to them.
-    Notes and fun_rating are reset. A 'session_snake' notification is created for the new user.
+    Notes and fun_rating are reset by default, but can be overridden.
+    A 'session_snake' notification is created for the new user.
     """
     conn = get_db_connection()
     if not conn:
@@ -623,9 +624,15 @@ def copy_session_as_new_user(original_session_id, new_user_id, sender_user_id):
             'next_tide_event_type': original_session.get('tide', {}).get('next_event_type'),
             'next_tide_event_at': original_session.get('tide', {}).get('next_event_at'),
             'next_tide_event_height': original_session.get('tide', {}).get('next_event_height'),
-            'session_notes': None,  # Reset notes
+            'session_notes': None,  # Reset notes by default
             'fun_rating': 5      # Reset fun rating to a default of 5
         }
+
+        # Apply overrides if provided
+        if overrides:
+            for key, value in overrides.items():
+                if key in ['session_name', 'session_notes', 'fun_rating', 'session_started_at', 'session_ended_at']:
+                    new_session_data[key] = value
 
         # Extract participants from the original session for copying
         original_participants = original_session.get('participants', [])

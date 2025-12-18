@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { apiCall } from '../services/api';
 import { toast } from 'react-hot-toast';
 import Button from './UI/Button';
+import SnakeSessionModal from './SnakeSessionModal';
 
 const NotificationDropdown = ({ onMarkAsRead }) => {
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSnakeModalOpen, setIsSnakeModalOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -52,52 +55,67 @@ const NotificationDropdown = ({ onMarkAsRead }) => {
 
   const handleSnakeIt = async (notification) => {
     try {
-      const response = await apiCall(`/api/surf-sessions/${notification.session_id}/snake`, { method: 'POST' });
+      // Fetch the full session details to pass to the modal
+      const response = await apiCall(`/api/surf-sessions/${notification.session_id}`);
+      
       if (response.status === 'success') {
-        toast.success('Session snaked successfully! Redirecting to edit.', { duration: 5000 });
+        setSelectedSession(response.data);
+        setIsSnakeModalOpen(true);
+
+        // Mark notification as read immediately (optional, or wait for confirm)
         if (!notification.read) {
             markAsRead(notification.id);
         }
-        navigate(`/session/${response.data.new_session_id}/edit`);
       } else {
-        toast.error(response.message || 'Failed to snake session.');
+        toast.error(response.message || 'Failed to load session details.');
       }
     } catch (error) {
-      console.error("Error snaking session:", error);
-      toast.error('An unexpected error occurred while snaking session.');
+      console.error("Error preparing snake session:", error);
+      toast.error('An unexpected error occurred while loading session.');
     }
   };
 
   return (
-    <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-30 max-h-96 overflow-y-auto">
-      <div className="px-4 py-2 text-lg font-bold text-gray-900 border-b">Notifications</div>
-      {isLoading ? (
-        <div className="px-4 py-2 text-gray-500">Loading...</div>
-      ) : notifications.length === 0 ? (
-        <div className="px-4 py-2 text-gray-500">No new alerts.</div>
-      ) : (
-        <div>
-          {notifications.map((notification) => (
-            <div key={notification.id} className={`px-4 py-3 border-b hover:bg-gray-100 ${notification.read ? 'opacity-60' : ''}`}>
-              <p className="text-sm text-gray-800">
-                <span className="font-semibold">{notification.sender_display_name}</span> tagged you in their session:
-              </p>
-              <p className="font-semibold text-blue-600">
-                {notification.session_title}
-              </p>
-              <div className="flex space-x-2 mt-2">
-                <Button onClick={() => handleViewSession(notification)} size="sm" className="flex-1">
-                  View
-                </Button>
-                <Button onClick={() => handleSnakeIt(notification)} variant="secondary" size="sm" className="flex-1">
-                  Snake It
-                </Button>
+    <>
+      <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-30 max-h-96 overflow-y-auto">
+        <div className="px-4 py-2 text-lg font-bold text-gray-900 border-b">Notifications</div>
+        {isLoading ? (
+          <div className="px-4 py-2 text-gray-500">Loading...</div>
+        ) : notifications.length === 0 ? (
+          <div className="px-4 py-2 text-gray-500">No new alerts.</div>
+        ) : (
+          <div>
+            {notifications.map((notification) => (
+              <div key={notification.id} className={`px-4 py-3 border-b hover:bg-gray-100 ${notification.read ? 'opacity-60' : ''}`}>
+                <p className="text-sm text-gray-800">
+                  <span className="font-semibold">{notification.sender_display_name}</span> tagged you in their session:
+                </p>
+                <p className="font-semibold text-blue-600">
+                  {notification.session_title}
+                </p>
+                <div className="flex space-x-2 mt-2">
+                  <Button onClick={() => handleViewSession(notification)} size="sm" className="flex-1">
+                    View
+                  </Button>
+                  <Button onClick={() => handleSnakeIt(notification)} variant="secondary" size="sm" className="flex-1">
+                    Snake It
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <SnakeSessionModal 
+        isOpen={isSnakeModalOpen}
+        onClose={() => {
+            setIsSnakeModalOpen(false);
+            setSelectedSession(null);
+        }}
+        originalSession={selectedSession}
+      />
+    </>
   );
 };
 

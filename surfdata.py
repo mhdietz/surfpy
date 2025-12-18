@@ -591,12 +591,17 @@ def delete_surf_session(user_id, session_id):
 def snake_session_route(user_id, session_id):
     """
     Creates a new session for the authenticated user by copying an existing session.
+    Accepts an optional JSON body with overrides for session fields.
     """
     try:
+        # Check for overrides in the request body
+        overrides = request.get_json() if request.is_json else None
+
         new_session = database_utils.copy_session_as_new_user(
             original_session_id=session_id,
             new_user_id=user_id,
-            sender_user_id=user_id # The user initiating the snake is the sender of any related notification
+            sender_user_id=user_id, # The user initiating the snake is the sender of any related notification
+            overrides=overrides
         )
 
         if new_session:
