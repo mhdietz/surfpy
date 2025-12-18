@@ -73,7 +73,9 @@ The application is a full-stack surf logging and forecasting platform. The backe
     - `GET /api/notifications/count`: Provides a lightweight count of unread notifications for UI badges.
     - `POST /api/notifications/<id>/read`: Marks a specific notification as read.
 -   **Frontend UI**: A `NotificationDropdown` component in the main navigation bar displays unread notifications. Each notification provides context about the event and actions, such as "View" or "Snake It".
--   **Session Snaking**: From a notification, a user can "snake" another user's session. This action calls `POST /api/surf-sessions/<id>/snake`, which creates a new session for the current user, copying the original session's data but resetting the notes and fun rating. The logic carefully handles participant copying to prevent notification loops.
+-   **Session Snaking**: From a notification, a user can "snake" another user's session. This action calls `POST /api/surf-sessions/<id>/snake`. 
+        -   **Key Logic**: The backend copies the *original* session's oceanographic data (swell, wind, tide) to the new session, rather than re-fetching it. This ensures that the user is "snaking" the exact same conditions.
+        -   **Trade-off**: The endpoint accepts optional overrides for `startTime` and `endTime`. Even if the user adjusts the times slightly, the original oceanographic data is preserved. This avoids the complexity of re-fetching historical data while maintaining the concept of "same session, same conditions".
 
 ## 4. Key Technical Decisions & Concepts
 
