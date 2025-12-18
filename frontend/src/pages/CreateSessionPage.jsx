@@ -136,8 +136,8 @@ function CreateSessionPage() {
 
       if (response.status === 'success') {
         toast.success("Surf session created successfully!");
-        // Redirect to the new session's detail page or journal
-        navigate(`/session/${response.data.id}`); 
+        // Redirect to the new session's detail page with replace: true
+        navigate(`/session/${response.data.id}`, { replace: true }); 
       } else {
         toast.error(response.message || "Failed to create surf session.");
       }
