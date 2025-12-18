@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiCall } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Spinner from './UI/Spinner';
 
 const Leaderboard = () => {
+  const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +54,10 @@ const Leaderboard = () => {
     return user.total_sessions || 0;
   };
 
+  const handleUserClick = (userId) => {
+    navigate(`/journal/${userId}`);
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -72,7 +78,12 @@ const Leaderboard = () => {
           <li key={user.user_id} className={`p-3 rounded-lg flex items-center justify-between ${currentUser.id === user.user_id ? 'bg-blue-100' : 'bg-gray-50'}`}>
             <div className="flex items-center">
               <span className="text-lg font-bold text-gray-500 w-8">{index + 1}</span>
-              <span className="font-semibold text-gray-800">{user.display_name}</span>
+              <span 
+                className="font-semibold text-gray-800 cursor-pointer hover:underline"
+                onClick={() => handleUserClick(user.user_id)}
+              >
+                {user.display_name}
+              </span>
             </div>
             <span className="text-lg font-bold text-gray-700">{getStatValue(user)}</span>
           </li>
