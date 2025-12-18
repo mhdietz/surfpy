@@ -11,7 +11,7 @@ import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 function StatsDisplay({ stats, loading, error, selectedYear, setSelectedYear }) {
   const { user: currentUser } = useAuth();
-  const profileDisplayName = currentUser?.raw_user_meta_data?.display_name || currentUser?.email?.split('@')[0] || 'Surfer';
+  const profileDisplayName = currentUser?.display_name || currentUser?.email?.split('@')[0] || 'Surfer';
 
   const handleShare = () => {
     const card = document.getElementById('shareable-card');

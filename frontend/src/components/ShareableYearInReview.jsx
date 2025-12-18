@@ -7,8 +7,6 @@ function ShareableYearInReview({ stats, selectedYear, profileDisplayName }) {
     return null;
   }
 
-  const topSession = stats.top_sessions[0];
-
   const formatDate = (isoString) => {
     if (!isoString) return '';
     const date = new Date(isoString);
@@ -40,40 +38,36 @@ function ShareableYearInReview({ stats, selectedYear, profileDisplayName }) {
       <div className="grid grid-cols-3 gap-10 text-center w-full my-auto">
         <div>
           <h3 className="text-3xl font-semibold text-gray-500">Total Sessions</h3>
-          <p className="text-7xl font-bold text-blue-500 mt-1">{stats.total_sessions || 0}</p>
+          <p className="text-7xl font-bold text-gray-900 mt-1">{stats.total_sessions || 0}</p>
         </div>
         <div>
           <h3 className="text-3xl font-semibold text-gray-500">Total Time</h3>
-          <p className="text-7xl font-bold text-green-500 mt-1">{stats.total_hours ? stats.total_hours.toFixed(0) : 0}<span className="text-4xl ml-2">hrs</span></p>
+          <p className="text-7xl font-bold text-gray-900 mt-1">{stats.total_hours ? stats.total_hours.toFixed(0) : 0}<span className="text-4xl ml-2">hrs</span></p>
         </div>
         <div>
           <h3 className="text-3xl font-semibold text-gray-500">Average Stoke</h3>
-          <p className="text-7xl font-bold text-yellow-500 mt-1">{stats.average_stoke ? stats.average_stoke.toFixed(1) : 'N/A'}</p>
+          <p className="text-7xl font-bold text-gray-900 mt-1">{stats.average_stoke ? stats.average_stoke.toFixed(1) : 'N/A'}</p>
         </div>
         </div>
 
-      {/* Top Session */}
-      <div className="bg-gray-50 rounded-3xl p-8 border border-gray-200">
-        <h3 className="text-3xl font-bold text-center mb-6">Top Session</h3>
-        <div className="flex flex-col space-y-5"> {/* Increased spacing */}
-          <div className="flex justify-between items-center"> {/* Use items-center */}
-            <p className="text-4xl font-bold leading-tight">{topSession.title}</p> {/* Add leading-tight */}
-            <div className="flex flex-col items-center flex-shrink-0 ml-4">
-              <p className="text-5xl font-extrabold text-yellow-500">{topSession.stoke.toFixed(1)}</p>
-              <p className="text-2xl font-semibold text-gray-600 -mt-1">Stoke</p>
-            </div>
-          </div>
-          <div className="flex flex-col space-y-3 text-2xl text-gray-500 pt-2"> {/* Stack location/date */}
-            <div className="flex items-center">
-              <MapPinIcon className="h-7 w-7 mr-3 text-gray-400 flex-shrink-0" />
-              <span>{topSession.spot}</span>
-            </div>
-            <div className="flex items-center">
-              <CalendarIcon className="h-7 w-7 mr-3 text-gray-400 flex-shrink-0" />
-              <span>{formatDate(topSession.date)}</span>
-            </div>
-          </div>
-        </div>
+      {/* Top Sessions */}
+      <div className="rounded-3xl p-8">
+        <h3 className="text-3xl font-bold text-center mb-6">Top Sessions</h3>
+        <ul className="space-y-4">
+          {stats.top_sessions.map((session) => (
+            <li key={session.id} className="border-b border-gray-200 pb-4 last:border-b-0">
+              <div className="flex justify-between items-start">
+                <div className="flex-grow">
+                  <p className="text-2xl font-bold">{session.title}</p>
+                  <p className="text-xl text-gray-500 mt-1">{session.spot} - {formatDate(session.date)}</p>
+                </div>
+                <div className="flex-shrink-0 ml-4 text-center">
+                  <p className="text-3xl font-extrabold text-gray-900">{session.stoke.toFixed(1)}</p>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
 
       {/* Footer */}
