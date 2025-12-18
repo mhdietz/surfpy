@@ -16,26 +16,27 @@ function ShareableYearInReview({ stats, selectedYear, profileDisplayName }) {
   return (
     <div
       id="shareable-card"
-      className="fixed -top-[9999px] -left-[9999px] z-[-1] p-14 flex flex-col bg-white text-gray-800"
+      className="fixed -top-[9999px] -left-[9999px] z-[-1] p-10 flex flex-col bg-white text-gray-800 relative"
       style={{
         width: '1080px',
         height: '1080px',
         fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       }}
     >
-      {/* Header */}
-      <div className="text-center">
-        <div className="flex flex-col items-center">
-          <Logo className="h-20 w-20 text-blue-600" />
-          <h1 className="text-6xl font-bold text-blue-600 tracking-tighter -mt-2">slapp</h1>
-        </div>
-        <p className="text-3xl font-semibold text-gray-600 mt-8">
+      {/* Corner Logo */}
+      <div className="absolute top-10 left-10">
+        <Logo className="h-12 w-12 text-blue-600" />
+      </div>
+
+      {/* Main Title */}
+      <div className="text-center mt-4 mb-8"> {/* Adjusted mt for spacing after corner logo */}
+        <p className="text-4xl font-semibold text-gray-600 tracking-wide">
           {profileDisplayName}'s {selectedYear} Year In Review
         </p>
       </div>
 
       {/* Main Stats */}
-      <div className="grid grid-cols-3 gap-10 text-center w-full my-auto">
+      <div className="grid grid-cols-3 gap-10 text-center w-full mb-8">
         <div>
           <h3 className="text-3xl font-semibold text-gray-500">Total Sessions</h3>
           <p className="text-7xl font-bold text-gray-900 mt-1">{stats.total_sessions || 0}</p>
@@ -49,6 +50,32 @@ function ShareableYearInReview({ stats, selectedYear, profileDisplayName }) {
           <p className="text-7xl font-bold text-gray-900 mt-1">{stats.average_stoke ? stats.average_stoke.toFixed(1) : 'N/A'}</p>
         </div>
         </div>
+
+      {/* Top Surf Spots */}
+      {stats.top_locations && stats.top_locations.length > 0 && (
+        <div className="rounded-3xl p-8 pt-0 mt-8"> {/* Adjusted padding and added mt-8 */}
+          <h3 className="text-3xl font-bold text-center mb-6">Top Surf Spots</h3>
+          <ul className="space-y-4">
+            {stats.top_locations.map((spot, index) => (
+              <li key={index}>
+                <div className="flex justify-between items-center">
+                  <div className="flex-grow flex items-center">
+                    <MapPinIcon className="h-7 w-7 text-gray-400 mr-3 flex-shrink-0" /> {/* Larger icon */}
+                    <div>
+                      <p className="text-2xl font-semibold text-gray-900">{spot.name}</p>
+                      {spot.region && <p className="text-xl text-gray-500">{spot.region}</p>}
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0 ml-4 text-right">
+                    <span className="text-3xl font-bold text-gray-900">{spot.session_count}</span>
+                    <p className="text-xl text-gray-600">Sessions</p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Top Sessions */}
       <div className="rounded-3xl p-8">
