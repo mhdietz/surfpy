@@ -1133,7 +1133,8 @@ def get_user_stats_by_year(user_id, year):
                     session_name AS title,
                     location AS spot,
                     session_started_at AS date,
-                    fun_rating AS stoke
+                    fun_rating AS stoke,
+                    session_notes
                 FROM surf_sessions_duplicate
                 WHERE user_id = %s AND EXTRACT(YEAR FROM session_started_at) = %s
                 ORDER BY fun_rating DESC, session_started_at DESC
