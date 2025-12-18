@@ -63,7 +63,6 @@ function ShareableYearInReview({ stats, selectedYear, profileDisplayName }) {
                 </div>
                 <div className="flex-shrink-0 ml-4 text-center">
                   <p className="text-3xl font-extrabold text-gray-900">{session.stoke.toFixed(1)}</p>
-                  <p className="text-lg text-gray-600">Stoke</p>
                 </div>
               </div>
             </li>
