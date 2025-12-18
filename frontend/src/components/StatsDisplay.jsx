@@ -110,18 +110,18 @@ function StatsDisplay({ stats, loading, error, selectedYear, setSelectedYear }) 
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-8">
+      <div className="grid grid-cols-3 gap-4 text-center mb-8">
         <div>
-          <h3 className="text-lg font-semibold text-gray-600">Total Sessions</h3>
-          <p className="text-4xl font-bold text-gray-800">{stats.total_sessions || 0}</p>
+          <h3 className="text-sm md:text-lg font-semibold text-gray-600">Total Sessions</h3>
+          <p className="text-2xl md:text-4xl font-bold text-gray-800">{stats.total_sessions || 0}</p>
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-gray-600">Total Surf Time</h3>
-          <p className="text-4xl font-bold text-gray-800">{stats.total_hours ? stats.total_hours.toFixed(1) : 0} <span className="text-2xl">hrs</span></p>
+          <h3 className="text-sm md:text-lg font-semibold text-gray-600">Total Surf Time</h3>
+          <p className="text-2xl md:text-4xl font-bold text-gray-800">{stats.total_hours ? stats.total_hours.toFixed(1) : 0} <span className="text-lg md:text-2xl">hrs</span></p>
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-gray-600">Average Stoke</h3>
-          <p className="text-4xl font-bold text-gray-800">{stats.average_stoke ? stats.average_stoke.toFixed(2) : 'N/A'}</p>
+          <h3 className="text-sm md:text-lg font-semibold text-gray-600">Average Stoke</h3>
+          <p className="text-2xl md:text-4xl font-bold text-gray-800">{stats.average_stoke ? stats.average_stoke.toFixed(2) : 'N/A'}</p>
         </div>
       </div>
       
