@@ -39,7 +39,7 @@ function EditSessionPage() {
         const spots = await getSpots();
         const options = spots.map(spot => ({
           value: spot.slug,
-          label: `${spot.name} (${spot.region}, ${spot.country})`
+          label: `${spot.name} (${spot.region}, ${spot.country})${spot.has_surf_data ? '' : ' [No surf data]'}`
         }));
         setSpotOptions(options);
       } catch (error) {
