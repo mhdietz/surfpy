@@ -51,7 +51,7 @@ function ShareableYearInReview({ stats, selectedYear, profileDisplayName }) {
         </div>
 
       {/* Top Sessions */}
-      <div className="bg-gray-50 rounded-3xl p-8 border border-gray-200">
+      <div className="rounded-3xl p-8">
         <h3 className="text-3xl font-bold text-center mb-6">Top Sessions</h3>
         <ul className="space-y-4">
           {stats.top_sessions.map((session) => (
