@@ -40,15 +40,15 @@ function ShareableYearInReview({ stats, selectedYear, profileDisplayName }) {
       <div className="grid grid-cols-3 gap-10 text-center w-full my-auto">
         <div>
           <h3 className="text-3xl font-semibold text-gray-500">Total Sessions</h3>
-          <p className="text-7xl font-bold text-blue-500 mt-1">{stats.total_sessions || 0}</p>
+          <p className="text-7xl font-bold text-gray-900 mt-1">{stats.total_sessions || 0}</p>
         </div>
         <div>
           <h3 className="text-3xl font-semibold text-gray-500">Total Time</h3>
-          <p className="text-7xl font-bold text-green-500 mt-1">{stats.total_hours ? stats.total_hours.toFixed(0) : 0}<span className="text-4xl ml-2">hrs</span></p>
+          <p className="text-7xl font-bold text-gray-900 mt-1">{stats.total_hours ? stats.total_hours.toFixed(0) : 0}<span className="text-4xl ml-2">hrs</span></p>
         </div>
         <div>
           <h3 className="text-3xl font-semibold text-gray-500">Average Stoke</h3>
-          <p className="text-7xl font-bold text-yellow-500 mt-1">{stats.average_stoke ? stats.average_stoke.toFixed(1) : 'N/A'}</p>
+          <p className="text-7xl font-bold text-gray-900 mt-1">{stats.average_stoke ? stats.average_stoke.toFixed(1) : 'N/A'}</p>
         </div>
         </div>
 
@@ -59,7 +59,7 @@ function ShareableYearInReview({ stats, selectedYear, profileDisplayName }) {
           <div className="flex justify-between items-center"> {/* Use items-center */}
             <p className="text-4xl font-bold leading-tight">{topSession.title}</p> {/* Add leading-tight */}
             <div className="flex flex-col items-center flex-shrink-0 ml-4">
-              <p className="text-5xl font-extrabold text-yellow-500">{topSession.stoke.toFixed(1)}</p>
+              <p className="text-5xl font-extrabold text-gray-900">{topSession.stoke.toFixed(1)}</p>
               <p className="text-2xl font-semibold text-gray-600 -mt-1">Stoke</p>
             </div>
           </div>
