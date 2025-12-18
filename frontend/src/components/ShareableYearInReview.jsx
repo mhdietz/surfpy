@@ -24,8 +24,9 @@ function ShareableYearInReview({ stats, selectedYear, profileDisplayName }) {
       }}
     >
       {/* Corner Logo */}
-      <div className="absolute top-10 left-10">
+      <div className="absolute top-10 left-10 flex flex-col items-center">
         <Logo className="h-12 w-12 text-blue-600" />
+        <span className="text-xl font-bold text-blue-600 -mt-2 tracking-tighter">slapp</span>
       </div>
 
       {/* Main Title */}
