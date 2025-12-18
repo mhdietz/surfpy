@@ -127,7 +127,7 @@ def fetch_tide_data(station_id, target_datetime=None, use_imperial_units=True):
     detailed_data = get_detailed_tide_data(station_id, target_datetime)
 
     if not detailed_data:
-        return generate_dummy_tide_data(target_datetime, station_id, use_imperial_units)
+        return None
 
     # Convert units if requested
     if use_imperial_units:
@@ -136,26 +136,3 @@ def fetch_tide_data(station_id, target_datetime=None, use_imperial_units=True):
         detailed_data["units"] = "feet"
 
     return detailed_data
-
-
-
-def generate_dummy_tide_data(target_datetime, station_id, use_imperial_units=True):
-    """
-    Generate dummy tide data for testing.
-    """
-    datetime_str = format_date(target_datetime)
-    if use_imperial_units:
-        height_value, units = 3.2, "feet"
-    else:
-        height_value, units = 1.0, "meters"
-    
-    return {
-        "station_id": station_id,
-        "date": datetime_str,
-        "water_level": height_value,
-        "direction": "rising",
-        "next_event_type": "high",
-        "next_event_at": (target_datetime + timedelta(hours=3)).isoformat(),
-        "next_event_height": height_value + 1.0,
-        "units": units
-    }

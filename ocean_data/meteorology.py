@@ -45,17 +45,17 @@ def fetch_weather_station_data(station_id, target_datetime, use_imperial_units=T
         raw_observations = WeatherApi.fetch_station_observations(station_id, start_time, end_time)
         if not raw_observations:
             print(f"No weather station observations found for {station_id}")
-            return [generate_dummy_met_data(target_datetime, use_imperial_units)]
+            return []
 
         met_data = WeatherApi.parse_station_observations(raw_observations)
         if not met_data:
             print(f"Failed to parse weather station data for {station_id}")
-            return [generate_dummy_met_data(target_datetime, use_imperial_units)]
+            return []
 
         closest_data = find_closest_data(met_data, target_datetime)
         if not closest_data:
             print(f"No matching weather station data found for time {target_datetime}")
-            return [generate_dummy_met_data(target_datetime, use_imperial_units)]
+            return []
 
         json_data = met_data_to_json([closest_data])
         # The parse function already returns data in imperial units (knots)
@@ -64,7 +64,7 @@ def fetch_weather_station_data(station_id, target_datetime, use_imperial_units=T
         return json_data
     except Exception as e:
         print(f"Error fetching weather station data: {str(e)}")
-        return [generate_dummy_met_data(target_datetime, use_imperial_units)]
+        return []
 
 def fetch_buoy_data(buoy_id, target_datetime, count=500, use_imperial_units=True):
     """
@@ -76,7 +76,7 @@ def fetch_buoy_data(buoy_id, target_datetime, count=500, use_imperial_units=True
         buoy = fetch_met_buoy(buoy_id)
         if not buoy:
             print(f"No meteorological buoy found with ID {buoy_id}")
-            return [generate_dummy_met_data(target_datetime, use_imperial_units)]
+            return []
         met_data = buoy.fetch_meteorological_reading(count)
         if not met_data:
             latest_data = buoy.fetch_latest_reading()
@@ -84,18 +84,18 @@ def fetch_buoy_data(buoy_id, target_datetime, count=500, use_imperial_units=True
                 met_data = [latest_data]
             else:
                 print(f"No meteorological data found for buoy {buoy_id}")
-                return [generate_dummy_met_data(target_datetime, use_imperial_units)]
+                return []
         closest_data = find_closest_data(met_data, target_datetime)
         if not closest_data:
             print(f"No matching meteorological data found for time {target_datetime}")
-            return [generate_dummy_met_data(target_datetime, use_imperial_units)]
+            return []
         json_data = met_data_to_json([closest_data])
         if use_imperial_units:
             json_data = convert_met_data_to_imperial(json_data)
         return json_data
     except Exception as e:
         print(f"Error fetching meteorological data: {str(e)}")
-        return [generate_dummy_met_data(target_datetime, use_imperial_units)]
+        return []
 
 def fetch_meteorological_data(station_id, target_datetime, count=500, use_imperial_units=True):
     """
@@ -144,19 +144,3 @@ def met_data_to_json(met_data):
                         data_point[attr] = value
             met_json.append(data_point)
     return met_json
-
-def generate_dummy_met_data(target_datetime, use_imperial_units=True):
-    """
-    Generate dummy meteorological data for testing.
-    """
-    datetime_str = target_datetime.isoformat()
-    if use_imperial_units:
-        return {
-            "date": datetime_str, "wind_speed": 10.0, "wind_direction": 180.0, "wind_gust": 14.0,
-            "air_temperature": 68.0, "water_temperature": 60.0, "pressure": 1013.2, "dewpoint_temperature": 54.0
-        }
-    else:
-        return {
-            "date": datetime_str, "wind_speed": 5.0, "wind_direction": 180.0, "wind_gust": 7.0,
-            "air_temperature": 20.0, "water_temperature": 15.0, "pressure": 1013.2, "dewpoint_temperature": 12.0
-        }

@@ -62,13 +62,13 @@ def fetch_swell_data(
         
         if not station:
             print(f"No station found with ID {buoy_id}")
-            return [generate_dummy_swell_data(target_datetime or datetime.now(timezone.utc))]
+            return []
             
         wave_data = station.fetch_wave_spectra_reading(count)
         
         if not wave_data:
             print(f"No wave data found for buoy {buoy_id}")
-            return [generate_dummy_swell_data(target_datetime or datetime.now(timezone.utc))]
+            return []
             
         if target_datetime and find_closest_only:
             closest_data = find_closest_data(wave_data, target_datetime)
@@ -76,7 +76,7 @@ def fetch_swell_data(
                 wave_data = [closest_data]
             else:
                 print(f"No matching wave data found for time {target_datetime}")
-                return [generate_dummy_swell_data(target_datetime)]
+                return []
             
         return swell_data_to_json(wave_data)
         
@@ -84,7 +84,7 @@ def fetch_swell_data(
         print(f"Error fetching swell data: {str(e)}")
         import traceback
         traceback.print_exc()
-        return [generate_dummy_swell_data(target_datetime or datetime.now(timezone.utc))]
+        return []
 
 def fetch_historical_swell_data(buoy_id: str, start_date: datetime, end_date: datetime) -> List[Dict[str, Any]]:
     """
@@ -150,19 +150,6 @@ def swell_data_to_json(wave_data: List[Any]) -> List[Dict[str, Any]]:
                 "significant_wave_height": meters_to_feet(entry.significant_wave_height) if hasattr(entry, 'significant_wave_height') else None
             })
     return wave_json
-
-def generate_dummy_swell_data(target_datetime: datetime) -> Dict[str, Any]:
-    """
-    Generate dummy swell data for testing or when real data is unavailable.
-    """
-    return {
-        "date": target_datetime.isoformat(),
-        "significant_wave_height": 2.5,
-        "swell_components": {
-            "swell_1": {"height": 2.5, "period": 12, "direction": 270},
-            "swell_2": {"height": 1.2, "period": 8, "direction": 295}
-        }
-    }
 
 def process_swell_response(swell_data: List[Dict[str, Any]]) -> Dict[str, Any]:
     """

@@ -210,13 +210,40 @@ const SessionDetail = () => {
           {session.has_surf_data && (
             <>
               {/* Swell Display Component */}
-              <SwellDisplay swellData={session.raw_swell} />
+              {session.raw_swell && session.raw_swell.length > 0 ? (
+                <SwellDisplay swellData={session.raw_swell} />
+              ) : (
+                <div className="mt-4 mb-4">
+                  <div className="text-gray-500 bg-gray-50 p-3 rounded-lg border border-black italic">
+                    <h2 className="text-xl font-bold mb-2 text-gray-800 not-italic">Swell</h2>
+                    Swell data not available
+                  </div>
+                </div>
+              )}
 
               {/* Wind Display Component */}
-              <WindDisplay windData={session.raw_met} />
+              {session.raw_met && session.raw_met.length > 0 ? (
+                <WindDisplay windData={session.raw_met} />
+              ) : (
+                <div className="mt-4 mb-4">
+                  <div className="text-gray-500 bg-gray-50 p-3 rounded-lg border border-black italic">
+                    <h2 className="text-xl font-bold mb-2 text-gray-800 not-italic">Wind & Weather</h2>
+                    Wind data not available
+                  </div>
+                </div>
+              )}
 
               {/* Tide Display Component */}
-              <TideDisplay tideData={session.tide} location_timezone={session.location_timezone} />
+              {session.tide && Object.keys(session.tide).length > 0 ? (
+                <TideDisplay tideData={session.tide} location_timezone={session.location_timezone} />
+              ) : (
+                <div className="mt-4 mb-4">
+                  <div className="text-gray-500 bg-gray-50 p-3 rounded-lg border border-black italic">
+                    <h2 className="text-xl font-bold mb-2 text-gray-800 not-italic">Tide</h2>
+                    Tide data not available
+                  </div>
+                </div>
+              )}
             </>
           )}
 
