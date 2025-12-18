@@ -392,7 +392,6 @@ def get_surf_sessions(user_id):
         filters = cleaned_filters # Use the cleaned filters
 
         sessions = get_all_sessions(user_id, filters)
-            
         return jsonify({"status": "success", "data": sessions}), 200
     except Exception as e:
         import traceback
@@ -939,7 +938,6 @@ def get_user_journal_sessions(viewer_user_id, profile_user_id):
         filters = cleaned_filters # Use the cleaned filters
 
         sessions = get_user_sessions(profile_user_id, viewer_user_id, filters)
-            
         return jsonify({"status": "success", "data": sessions}), 200
     except Exception as e:
         import traceback

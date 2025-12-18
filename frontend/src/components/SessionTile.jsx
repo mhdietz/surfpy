@@ -23,8 +23,11 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
   const day = date.getDate();
   const year = date.getFullYear();
 
+  // Calculate 'others' once here
+  const others = participants.filter(p => p.user_id !== user_id);
+
   const generateParticipantsString = () => {
-    const others = participants.filter(p => p.user_id !== user_id);
+    // This function now uses the 'others' variable from the outer scope
     if (others.length === 0) return '';
 
     const firstName = others[0].display_name;
@@ -78,7 +81,7 @@ const JournalTile = ({ session, onNavigate, onUserClick, onShaka, onOpenShakaMod
           {/* Location and Participants */}
           <div className="text-sm space-y-1">
             <p className="font-semibold text-gray-800 truncate">{location}</p>
-            {participants && participants.length > 1 && (
+            {others && others.length > 0 && ( // CONDITION CHANGED HERE
               <p className="font-normal text-gray-500 truncate">{generateParticipantsString()}</p>
             )}
           </div>
