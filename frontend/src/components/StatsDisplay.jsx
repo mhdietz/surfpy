@@ -7,7 +7,7 @@ import StokeByMonthChart from './StokeByMonthChart';
 import MostFrequentBuddy from './MostFrequentBuddy';
 import ShareableYearInReview from './ShareableYearInReview';
 import { useAuth } from '../context/AuthContext';
-import { ShareIcon } from '@heroicons/react/24/outline';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 function StatsDisplay({ stats, loading, error, selectedYear, setSelectedYear }) {
   const { user: currentUser } = useAuth();
@@ -92,10 +92,10 @@ function StatsDisplay({ stats, loading, error, selectedYear, setSelectedYear }) 
     <div className="p-4 relative">
       <button
         onClick={handleShare}
-        className="absolute top-4 right-4 p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        aria-label="Share your year in review"
+        className="absolute top-4 right-4 p-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
+        aria-label="Download your year in review image"
       >
-        <ShareIcon className="h-6 w-6" />
+        <ArrowDownTrayIcon className="h-6 w-6" />
       </button>
 
       <div className="flex justify-center space-x-2 mb-6">
