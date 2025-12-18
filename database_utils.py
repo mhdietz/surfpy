@@ -1216,6 +1216,22 @@ def get_user_stats_by_year(user_id, year):
             most_frequent_buddy = cur.fetchone()
             results['most_frequent_buddy'] = most_frequent_buddy if most_frequent_buddy else None
             
+            # 6. Top 3 Locations by Session Count
+            cur.execute("""
+                SELECT
+                    s.location AS name,
+                    COUNT(s.id) AS session_count,
+                    sb.region
+                FROM surf_sessions_duplicate s
+                JOIN surf_spots_backup sb ON s.location = sb.name -- Join to get region
+                WHERE s.user_id = %s AND EXTRACT(YEAR FROM s.session_started_at) = %s
+                GROUP BY s.location, sb.region
+                ORDER BY session_count DESC
+                LIMIT 3
+            """, (user_id, year))
+            top_locations = cur.fetchall()
+            results['top_locations'] = [dict(loc) for loc in top_locations]
+            
             results['year'] = year
 
             return results

@@ -2,6 +2,7 @@ import React from 'react';
 import html2canvas from 'html2canvas';
 import Spinner from './UI/Spinner';
 import TopSessions from './TopSessions';
+import TopLocations from './TopLocations';
 import SessionsByMonthChart from './SessionsByMonthChart';
 import StokeByMonthChart from './StokeByMonthChart';
 import MostFrequentBuddy from './MostFrequentBuddy';
@@ -125,6 +126,10 @@ function StatsDisplay({ stats, loading, error, selectedYear, setSelectedYear }) 
         </div>
       </div>
       
+      {stats.top_locations && stats.top_locations.length > 0 && (
+        <TopLocations locations={stats.top_locations} />
+      )}
+
       {stats.top_sessions && stats.top_sessions.length > 0 && (
         <TopSessions sessions={stats.top_sessions} />
       )}
