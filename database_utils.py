@@ -134,7 +134,7 @@ def get_session_detail(session_id, current_user_id):
                     (SELECT COUNT(*) FROM comments WHERE session_id = s.id) as comment_count
                 FROM surf_sessions_duplicate s
                 LEFT JOIN auth.users u ON s.user_id = u.id
-                LEFT JOIN surf_spots_backup sp ON s.location = sp.name
+                LEFT JOIN surf_spots sp ON s.location = sp.name
                 WHERE s.id = %s
             """, (current_user_id, session_id))
             session = cur.fetchone()
@@ -1223,7 +1223,7 @@ def get_user_stats_by_year(user_id, year):
                     COUNT(s.id) AS session_count,
                     sb.region
                 FROM surf_sessions_duplicate s
-                JOIN surf_spots_backup sb ON s.location = sb.name -- Join to get region
+                JOIN surf_spots sb ON s.location = sb.name -- Join to get region
                 WHERE s.user_id = %s AND EXTRACT(YEAR FROM s.session_started_at) = %s
                 GROUP BY s.location, sb.region
                 ORDER BY session_count DESC
@@ -1435,7 +1435,7 @@ def get_session_summary_list(viewer_id, profile_user_id_filter=None, filters={})
                     (SELECT COUNT(*) FROM comments WHERE session_id = s.id) as comment_count
                 FROM surf_sessions_duplicate s
                 LEFT JOIN auth.users u ON s.user_id = u.id
-                LEFT JOIN surf_spots_backup sp ON s.location = sp.name
+                LEFT JOIN surf_spots sp ON s.location = sp.name
             """
             params = [viewer_id]
             where_clauses = []
@@ -1648,7 +1648,7 @@ def get_surf_spot_by_slug(slug):
                     id, created_at, slug, name, swell_buoy_id, tide_station_id, 
                     wind_lat, wind_long, breaking_wave_depth, breaking_wave_angle, 
                     breaking_wave_slope, timezone, met_buoy_id, has_surf_data
-                FROM surf_spots_backup
+                FROM surf_spots
                 WHERE slug ILIKE %s
             """, (slug,))
             spot = cur.fetchone()
@@ -1671,7 +1671,7 @@ def get_all_surf_spots():
                     id, created_at, slug, name, swell_buoy_id, tide_station_id, 
                     wind_lat, wind_long, breaking_wave_depth, breaking_wave_angle, 
                     breaking_wave_slope, timezone, region
-                FROM surf_spots_backup
+                FROM surf_spots
                 ORDER BY name
             """)
             spots = cur.fetchall()
@@ -1697,7 +1697,7 @@ def get_surf_spots_by_slugs(slugs):
                     id, created_at, slug, name, swell_buoy_id, tide_station_id, 
                     wind_lat, wind_long, breaking_wave_depth, breaking_wave_angle, 
                     breaking_wave_slope, timezone
-                FROM surf_spots_backup
+                FROM surf_spots
                 WHERE slug IN %s
                 ORDER BY name
             """
@@ -1722,7 +1722,7 @@ def get_surf_spot_by_name(name):
                     id, created_at, slug, name, swell_buoy_id, tide_station_id, 
                     wind_lat, wind_long, breaking_wave_depth, breaking_wave_angle, 
                     breaking_wave_slope, timezone, met_buoy_id, has_surf_data
-                FROM surf_spots_backup
+                FROM surf_spots
                 WHERE name ILIKE %s
             """, (name,))
             spot = cur.fetchone()
@@ -1742,7 +1742,7 @@ def get_all_regions():
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT DISTINCT region 
-                FROM surf_spots_backup 
+                FROM surf_spots 
                 WHERE region IS NOT NULL AND region <> '' 
                 ORDER BY region;
             """)
@@ -1767,7 +1767,7 @@ def get_all_spots_for_typeahead():
             cur.execute("""
                 SELECT 
                     id, name, slug, country, region, has_surf_data
-                FROM surf_spots_backup
+                FROM surf_spots
                 ORDER BY name
             """)
             spots = cur.fetchall()
