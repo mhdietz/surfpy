@@ -9,7 +9,14 @@ The application is a full-stack surf logging and forecasting platform. The backe
 ### Backend
 -   **Backend (`surfdata.py`)**: The core of the application is a **Flask API**. It handles all incoming requests, user authentication, and API routing. It uses `Flask-Caching` for performance on data-intensive endpoints.
 
--   **Database (`database_utils.py`)**: All persistent data is stored in a **PostgreSQL** database, managed via the `database_utils.py` module. This module uses the `psycopg2` library to interact with the database. Key tables include `surf_sessions_duplicate` for session logs, `auth.users` for user data, `surf_spots` for location configurations, `session_participants` for tagging, `session_shakas` for reactions, and `notifications` for the notification system.
+-   **Database (`database_utils.py`)**: All persistent data is stored in a **PostgreSQL** database, managed via the `database_utils.py` module. This module uses the `psycopg2` library to interact with the database. Key tables include:
+    -   `surf_sessions_duplicate`: Main session logs.
+    -   `auth.users`: User identity (Supabase).
+    -   `surf_spots`: Location configuration and metadata (expanded to 200+ spots).
+    -   `session_participants`: Relational tagging of users in sessions.
+    -   `session_shakas`: Reaction system.
+    -   `notifications`: System for tags and other user alerts.
+    -   `comments`: User comments on sessions.
 
 -   **Data Abstraction Layer (`ocean_data/`)**: This Python package serves as a high-level interface for all external oceanographic data. It abstracts the complexities of fetching and processing data, providing simple functions like `fetch_swell_data` to the main application.
 -   **Core Data Engine (`surfpy/`)**: This is a powerful, low-level library that acts as the engine for all data fetching and processing. It interfaces directly with external data sources like NOAA buoys and tide stations.
@@ -54,31 +61,33 @@ The application is a full-stack surf logging and forecasting platform. The backe
 -   **Relational Session Tagging**: The application uses a relational model for tagging users in a session. Instead of duplicating sessions, a single session record is created, and all participants (the creator and tagged users) are linked to it via records in the `session_participants` table. This approach ensures data integrity, simplifies queries, and is highly scalable.
 -   **Shaka Reactions**: Users can give a "shaka" to any surf session. This is handled by a `POST /api/surf-sessions/<session_id>/shaka` endpoint that toggles the reaction. All session retrieval endpoints now include a `shakas` object containing the total count, a preview of users who have reacted, and a `viewer_has_shakaed` boolean flag.
 
-### c. User Statistics & Journal
+### c. User Statistics, Journal & Year in Review
 -   **Flow**: Users can view their own journal (`/journal`) or a friend's journal (`/journal/:userId`), which includes a `Log` tab for sessions and a `Stats` tab for aggregate data.
 -   **API Integration**: The `Stats` tab fetches data from the dedicated `/api/users/:id/stats` endpoint, providing total sessions, total surf time, and average fun rating.
+-   **Year in Review**: A specialized "Year in Review" feature provides a highly visual summary of a user's surfing year, including top sessions, aggregated stats, and "most frequent buddy" analysis. This is accessed via a dedicated UI flow.
 
 ### d. Community Leaderboards
 -   **Flow**: A community leaderboard (`/feed?tab=leaderboard`) displays top users based on various statistics (sessions, time, rating), filterable by year.
--   **API Integration**: The leaderboard data is fetched from the dedicated `/api/leaderboard` endpoint, which supports filtering by year and statistic.
+-   **API Integration**: The leaderboard data is fetched from the dedicated `/api/leaderboard` endpoint, which supports filtering by year and statistic. User names in the leaderboard are clickable links to their public profiles.
 
 ### e. Expanded Surf Spots & Typeahead Search
--   **Backend**: The number of surf spots has been expanded to over 200, with many spots now existing as simple locations without direct oceanographic data feeds (`has_surf_data=false`). A new, unauthenticated `/api/spots` endpoint was created to serve this full list of spots (including `id`, `name`, `slug`, `region`, `country`) to the frontend for a new typeahead search component.
--   **Frontend**: To support the expanded list of spots, the simple location dropdown on the session creation and editing pages has been replaced with a searchable `react-select` typeahead component, providing a much-improved user experience for finding a location.
+-   **Backend**: The `surf_spots` table contains over 240 spots. Spots are categorized by `region` and `country`. A boolean `has_surf_data` flag distinguishes "data-rich" spots (with buoy/tide feeds) from "data-light" locations.
+-   **Typeahead**: An unauthenticated `/api/spots` endpoint serves the full spot list. The frontend uses a `react-select` typeahead component in the Create/Edit flows, allowing users to easily find any supported spot.
 
 ### f. In-App Notifications & Session Snaking
--   **Flow**: Notifications are generated for key user interactions, such as being tagged in a surf session (`session_tag`).
--   **API Endpoints**: The system is supported by several backend endpoints:
-    - `GET /api/notifications`: Fetches a list of notifications for the authenticated user.
-    - `GET /api/notifications/count`: Provides a lightweight count of unread notifications for UI badges.
-    - `POST /api/notifications/<id>/read`: Marks a specific notification as read.
--   **Frontend UI**: A `NotificationDropdown` component in the main navigation bar displays unread notifications. Each notification provides context about the event and actions, such as "View" or "Snake It".
--   **Session Snaking**: From a notification, a user can "snake" another user's session. This action calls `POST /api/surf-sessions/<id>/snake`.
-        -   **Frontend Modal (`SnakeSessionModal.jsx`) Enhancements**:
-            -   **Time Validation**: The modal now includes client-side validation to ensure the `endTime` is after the `startTime` for the new session, providing inline feedback.
-            -   **Editable Tagged Participants**: Users can now view, add, and remove tagged participants for the new session. The list is pre-filled with participants from the original session, automatically excluding the current user. A debounced search functionality allows users to find and tag other surfers.
-        -   **Key Logic**: The backend copies the *original* session's oceanographic data (swell, wind, tide) to the new session, rather than re-fetching it. This ensures that the user is "snaking" the exact same conditions.
-        -   **Trade-off**: The endpoint accepts optional overrides for `startTime` and `endTime`, and `tagged_users`. Even if the user adjusts the times slightly, the original oceanographic data is preserved. This avoids the complexity of re-fetching historical data while maintaining the concept of "same session, same conditions".
+-   **Flow**: Notifications are generated for interactions like being tagged (`session_tag`).
+-   **UI**: A `NotificationDropdown` in the navbar displays unread items.
+-   **Session Snaking**: Users can "snake" (copy) a session from a notification.
+    -   **Action**: Clicking "Snake It" opens a modal (`SnakeSessionModal.jsx`) where users can verify time and participants.
+    -   **Logic**: The backend (`POST /api/surf-sessions/<id>/snake`) duplicates the original session's oceanographic conditions to a new session for the snaking user, while allowing overrides for time and participants.
+
+### g. Comments System
+-   **Overview**: A lightweight social feature allowing users to comment on sessions.
+-   **Data Model**: Stored in the `comments` table, linked to `surf_sessions_duplicate` and `auth.users`. Limit of 500 characters.
+-   **API**:
+    -   `GET /api/sessions/{id}/comments`: Retrieve comments for a session.
+    -   `POST /api/sessions/{id}/comments`: Add a new comment.
+-   **Frontend**: A `CommentModal.jsx` provides the interface. Session tiles and details display a dynamic `comment_count`.
 
 ## 4. Key Technical Decisions & Concepts
 
