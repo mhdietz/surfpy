@@ -8,16 +8,7 @@ oceanographic data sources and handling location-based operations.
 import surfpy
 from surfpy.location import Location
 import database_utils
-
-# Mapping from old location names to new slugs for backward compatibility
-LEGACY_LOCATION_MAP = {
-    "lido": "lido-beach",
-    "manasquan": "manasquan-beach",
-    "rockaways": "rockaways-beach",
-    "belmar": "belmar-beach",
-    "steamer_lane": "steamer-lane",
-    "trestles": "trestles-beach"
-}
+from database_utils import LEGACY_LOCATION_MAP
 
 def get_spot_config(spot_name):
     """

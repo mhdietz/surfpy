@@ -4,10 +4,19 @@ import json
 from datetime import datetime, time, date
 import uuid
 from psycopg2.extras import Json
-from ocean_data.location import LEGACY_LOCATION_MAP
 from collections import OrderedDict
 
 import os
+
+# Mapping from old location names to new slugs for backward compatibility
+LEGACY_LOCATION_MAP = {
+    "lido": "lido-beach",
+    "manasquan": "manasquan-beach",
+    "rockaways": "rockaways-beach",
+    "belmar": "belmar-beach",
+    "steamer_lane": "steamer-lane",
+    "trestles": "lower-trestles"
+}
 
 # Database connection string
 # Use environment variable for Vercel, with a fallback for local development
