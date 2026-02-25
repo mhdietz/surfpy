@@ -49,7 +49,7 @@ jobs:
             echo "spot_args=rockaways lido belmar manasquan" >> $GITHUB_OUTPUT
             echo "label=East Coast" >> $GITHUB_OUTPUT
           elif [ "$INPUT" = "west" ]; then
-            echo "spot_args=steamer_lane trestles" >> $GITHUB_OUTPUT
+            echo "spot_args=steamer_lane trestles ocean_beach_central" >> $GITHUB_OUTPUT
             echo "label=West Coast" >> $GITHUB_OUTPUT
           elif [ "$INPUT" = "all" ] || [ -n "$INPUT" ]; then
             echo "spot_args=" >> $GITHUB_OUTPUT
@@ -58,7 +58,7 @@ jobs:
             echo "spot_args=rockaways lido belmar manasquan" >> $GITHUB_OUTPUT
             echo "label=East Coast (scheduled)" >> $GITHUB_OUTPUT
           else
-            echo "spot_args=steamer_lane trestles" >> $GITHUB_OUTPUT
+            echo "spot_args=steamer_lane trestles ocean_beach_central" >> $GITHUB_OUTPUT
             echo "label=West Coast (scheduled)" >> $GITHUB_OUTPUT
           fi
 

@@ -55,21 +55,23 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 SPOTS = {
-    "rockaways":    "5842041f4e65fad6a7708852",
-    "lido":         "5842041f4e65fad6a77089e2",
-    "belmar":       "5842041f4e65fad6a7708a01",
-    "manasquan":    "5842041f4e65fad6a7708856",
-    "steamer_lane": "5842041f4e65fad6a7708805",
-    "trestles":     "5842041f4e65fad6a770888a",
+    "rockaways":            "5842041f4e65fad6a7708852",
+    "lido":                 "5842041f4e65fad6a77089e2",
+    "belmar":               "5842041f4e65fad6a7708a01",
+    "manasquan":            "5842041f4e65fad6a7708856",
+    "steamer_lane":         "5842041f4e65fad6a7708805",
+    "trestles":             "5842041f4e65fad6a770888a",
+    "ocean_beach_central":  "638e32a4f052ba4ed06d0e3e",
 }
 
 SPOT_TIMEZONES = {
-    "rockaways":    "America/New_York",
-    "lido":         "America/New_York",
-    "belmar":       "America/New_York",
-    "manasquan":    "America/New_York",
-    "steamer_lane": "America/Los_Angeles",
-    "trestles":     "America/Los_Angeles",
+    "rockaways":            "America/New_York",
+    "lido":                 "America/New_York",
+    "belmar":               "America/New_York",
+    "manasquan":            "America/New_York",
+    "steamer_lane":         "America/Los_Angeles",
+    "trestles":             "America/Los_Angeles",
+    "ocean_beach_central":  "America/Los_Angeles",
 }
 
 TARGET_TIMES = [
