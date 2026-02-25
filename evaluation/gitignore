@@ -1,5 +1,8 @@
 # evaluation/.gitignore
 
+# Local environment — never commit credentials
+.env
+
 # Database — local only, do not commit
 swell_data.db
 
