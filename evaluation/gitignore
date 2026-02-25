@@ -1,0 +1,15 @@
+# evaluation/.gitignore
+
+# Database — local only, do not commit
+swell_data.db
+
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Jupyter notebooks (if used for analysis)
+.ipynb_checkpoints/
