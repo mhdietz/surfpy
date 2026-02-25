@@ -1,0 +1,84 @@
+name: Collect Surfline Data
+
+on:
+  # Scheduled runs — two per day, one per coast
+  # All times are UTC. GitHub Actions cron uses UTC.
+  schedule:
+    # East coast spots — 11:30pm ET = 04:30 UTC (next day, EST)
+    - cron: '30 4 * * *'
+    # West coast spots — 11:30pm PT = 07:30 UTC (next day, PST)
+    - cron: '30 7 * * *'
+
+  # Manual trigger for testing — allows specifying which coast or running all spots
+  workflow_dispatch:
+    inputs:
+      spots:
+        description: 'Which spots to collect (east, west, or all)'
+        required: false
+        default: 'all'
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: evaluation/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r evaluation/requirements.txt
+
+      - name: Determine which spots to run
+        id: spots
+        run: |
+          # On scheduled runs, determine coast from current UTC hour
+          # 04:30 UTC = east coast run, 07:30 UTC = west coast run
+          # On manual runs, use the input parameter
+          HOUR=$(date -u +%H)
+          INPUT="${{ github.event.inputs.spots }}"
+
+          if [ "$INPUT" = "east" ]; then
+            echo "spot_args=rockaways lido belmar manasquan" >> $GITHUB_OUTPUT
+            echo "label=East Coast" >> $GITHUB_OUTPUT
+          elif [ "$INPUT" = "west" ]; then
+            echo "spot_args=steamer_lane trestles" >> $GITHUB_OUTPUT
+            echo "label=West Coast" >> $GITHUB_OUTPUT
+          elif [ "$INPUT" = "all" ] || [ -n "$INPUT" ]; then
+            echo "spot_args=" >> $GITHUB_OUTPUT
+            echo "label=All Spots" >> $GITHUB_OUTPUT
+          elif [ "$HOUR" -ge 4 ] && [ "$HOUR" -lt 6 ]; then
+            echo "spot_args=rockaways lido belmar manasquan" >> $GITHUB_OUTPUT
+            echo "label=East Coast (scheduled)" >> $GITHUB_OUTPUT
+          else
+            echo "spot_args=steamer_lane trestles" >> $GITHUB_OUTPUT
+            echo "label=West Coast (scheduled)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run collection — ${{ steps.spots.outputs.label }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          cd evaluation
+          SPOTS="${{ steps.spots.outputs.spot_args }}"
+          if [ -z "$SPOTS" ]; then
+            # No args = collect all spots
+            python collect_surfline.py
+          else
+            # Collect each spot individually so one failure doesn't block others
+            for spot in $SPOTS; do
+              echo "--- Collecting $spot ---"
+              python collect_surfline.py "$spot" || echo "WARNING: $spot failed, continuing"
+            done
+          fi
+
+      - name: Summary
+        if: always()
+        run: echo "Collection run complete for ${{ steps.spots.outputs.label }}"
