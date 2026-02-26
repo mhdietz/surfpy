@@ -341,6 +341,11 @@ def save_reading(conn, location, spot_id, reading) -> bool:
 def collect_spot(spot_name, target_date, conn) -> int:
     spot_id = SPOTS[spot_name]
     tz_name = SPOT_TIMEZONES[spot_name]
+    # If no date specified, use today in the spot's local timezone — not UTC.
+    # This matters when the script runs after midnight UTC but is still
+    # the same evening locally (e.g. 8pm PT = 4am UTC next day).
+    if target_date is None:
+        target_date = datetime.now(tz=ZoneInfo(tz_name)).date()
     log.info("Collecting %s (spot_id=%s) for %s", spot_name, spot_id, target_date)
 
     wave_data = fetch_surfline(spot_id)
@@ -371,7 +376,7 @@ def collect_all(target_date, conn) -> int:
 
 def parse_args():
     args = sys.argv[1:]
-    target_date = date.today()
+    target_date = None  # Each spot will resolve to its own local date
     spot_names = list(SPOTS.keys())
 
     if not args:
