@@ -70,8 +70,14 @@ SPOT_TIMEZONES = {
     "ocean_beach_central":  "America/Los_Angeles",
 }
 
-# Collect all hours of the day
-TARGET_TIMES = [time(h, 0) for h in range(24)]
+# Five snapshots covering the full surfable day, always past by 8pm local
+TARGET_TIMES = [
+    time(6, 0),
+    time(9, 0),
+    time(12, 0),
+    time(15, 0),
+    time(18, 0),
+]
 
 SURFLINE_BASE = "https://services.surfline.com/kbyg/spots/forecasts/wave"
 
