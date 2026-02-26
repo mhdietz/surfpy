@@ -4,10 +4,10 @@ on:
   # Scheduled runs — two per day, one per coast
   # All times are UTC. GitHub Actions cron uses UTC.
   schedule:
-    # East coast spots — 11:30pm ET = 04:30 UTC (next day, EST)
-    - cron: '30 4 * * *'
-    # West coast spots — 11:30pm PT = 07:30 UTC (next day, PST)
-    - cron: '30 7 * * *'
+    # East coast spots — 8pm ET = 01:00 UTC (EST) / 00:00 UTC (EDT)
+    - cron: '0 1 * * *'
+    # West coast spots — 8pm PT = 04:00 UTC (PST) / 03:00 UTC (PDT)
+    - cron: '0 4 * * *'
 
   # Manual trigger for testing — allows specifying which coast or running all spots
   workflow_dispatch:
@@ -40,7 +40,7 @@ jobs:
         id: spots
         run: |
           # On scheduled runs, determine coast from current UTC hour
-          # 04:30 UTC = east coast run, 07:30 UTC = west coast run
+          # East coast fires at 01:00 UTC, west coast at 04:00 UTC
           # On manual runs, use the input parameter
           HOUR=$(date -u +%H)
           INPUT="${{ github.event.inputs.spots }}"
@@ -54,7 +54,7 @@ jobs:
           elif [ "$INPUT" = "all" ] || [ -n "$INPUT" ]; then
             echo "spot_args=" >> $GITHUB_OUTPUT
             echo "label=All Spots" >> $GITHUB_OUTPUT
-          elif [ "$HOUR" -ge 4 ] && [ "$HOUR" -lt 6 ]; then
+          elif [ "$HOUR" -ge 0 ] && [ "$HOUR" -lt 3 ]; then
             echo "spot_args=rockaways manasquan" >> $GITHUB_OUTPUT
             echo "label=East Coast (scheduled)" >> $GITHUB_OUTPUT
           else
