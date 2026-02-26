@@ -56,8 +56,6 @@ log = logging.getLogger(__name__)
 
 SPOTS = {
     "rockaways":            "5842041f4e65fad6a7708852",
-    "lido":                 "5842041f4e65fad6a77089e2",
-    "belmar":               "5842041f4e65fad6a7708a01",
     "manasquan":            "5842041f4e65fad6a7708856",
     "steamer_lane":         "5842041f4e65fad6a7708805",
     "trestles":             "5842041f4e65fad6a770888a",
@@ -66,8 +64,6 @@ SPOTS = {
 
 SPOT_TIMEZONES = {
     "rockaways":            "America/New_York",
-    "lido":                 "America/New_York",
-    "belmar":               "America/New_York",
     "manasquan":            "America/New_York",
     "steamer_lane":         "America/Los_Angeles",
     "trestles":             "America/Los_Angeles",
@@ -154,11 +150,42 @@ HEADERS = {
     "Referer": "https://www.surfline.com/",
 }
 
+SCRAPINGBEE_URL = "https://app.scrapingbee.com/api/v1/"
+
 
 def fetch_surfline(spot_id: str, days: int = 2) -> list[dict]:
-    params = {"spotId": spot_id, "days": days, "intervalHours": 1}
+    """
+    Fetch hourly wave forecast from Surfline.
+
+    Uses ScrapingBee as a proxy when SCRAPINGBEE_API_KEY is set (required for
+    GitHub Actions to avoid Surfline 403s from datacenter IPs). Falls back to
+    direct requests when running locally without the key.
+    """
+    target_url = (
+        f"{SURFLINE_BASE}?spotId={spot_id}&days={days}&intervalHours=1"
+    )
+    api_key = os.environ.get("SCRAPINGBEE_API_KEY")
+
     try:
-        resp = requests.get(SURFLINE_BASE, params=params, headers=HEADERS, timeout=15)
+        if api_key:
+            # Route through ScrapingBee residential proxy
+            resp = requests.get(
+                SCRAPINGBEE_URL,
+                params={
+                    "api_key": api_key,
+                    "url": target_url,
+                    "render_js": "false",      # No JS rendering needed, saves credits
+                    "premium_proxy": "false",  # Standard proxy sufficient for Surfline
+                },
+                timeout=30,
+            )
+            log.debug("ScrapingBee request for spot %s — status %s", spot_id, resp.status_code)
+        else:
+            # Direct request — works fine locally
+            resp = requests.get(SURFLINE_BASE, params={
+                "spotId": spot_id, "days": days, "intervalHours": 1
+            }, headers=HEADERS, timeout=15)
+
         resp.raise_for_status()
         data = resp.json()
         return data.get("data", {}).get("wave", [])

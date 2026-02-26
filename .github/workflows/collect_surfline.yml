@@ -46,7 +46,7 @@ jobs:
           INPUT="${{ github.event.inputs.spots }}"
 
           if [ "$INPUT" = "east" ]; then
-            echo "spot_args=rockaways lido belmar manasquan" >> $GITHUB_OUTPUT
+            echo "spot_args=rockaways manasquan" >> $GITHUB_OUTPUT
             echo "label=East Coast" >> $GITHUB_OUTPUT
           elif [ "$INPUT" = "west" ]; then
             echo "spot_args=steamer_lane trestles ocean_beach_central" >> $GITHUB_OUTPUT
@@ -55,7 +55,7 @@ jobs:
             echo "spot_args=" >> $GITHUB_OUTPUT
             echo "label=All Spots" >> $GITHUB_OUTPUT
           elif [ "$HOUR" -ge 4 ] && [ "$HOUR" -lt 6 ]; then
-            echo "spot_args=rockaways lido belmar manasquan" >> $GITHUB_OUTPUT
+            echo "spot_args=rockaways manasquan" >> $GITHUB_OUTPUT
             echo "label=East Coast (scheduled)" >> $GITHUB_OUTPUT
           else
             echo "spot_args=steamer_lane trestles ocean_beach_central" >> $GITHUB_OUTPUT
@@ -65,6 +65,7 @@ jobs:
       - name: Run collection — ${{ steps.spots.outputs.label }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SCRAPINGBEE_API_KEY: ${{ secrets.SCRAPINGBEE_API_KEY }}
         run: |
           cd evaluation
           SPOTS="${{ steps.spots.outputs.spot_args }}"
