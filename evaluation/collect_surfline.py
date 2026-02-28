@@ -101,17 +101,58 @@ def normalize_to_feet(parsed: dict) -> dict:
     """
     Convert all height fields from meters to feet in-place.
     Called only when is_meters() returns True.
+    surf_min/surf_max rounded to whole numbers; swell heights to 1 decimal.
     """
-    height_fields = [
-        "surf_min", "surf_max",
+    surf_fields = ["surf_min", "surf_max"]
+    swell_fields = [
         "primary_swell_height",
         "secondary_swell_height",
         "tertiary_swell_height",
     ]
-    for field in height_fields:
+    for field in surf_fields:
         if parsed.get(field) is not None:
-            parsed[field] = round(parsed[field] * M_TO_FT, 4)
+            parsed[field] = round(parsed[field] * M_TO_FT)
+    for field in swell_fields:
+        if parsed.get(field) is not None:
+            parsed[field] = round(parsed[field] * M_TO_FT, 1)
+    direction_fields = [
+        "primary_swell_direction",
+        "secondary_swell_direction",
+        "tertiary_swell_direction",
+    ]
+    for field in direction_fields:
+        if parsed.get(field) is not None:
+            parsed[field] = round(parsed[field])
     log.debug("Normalized reading from meters to feet.")
+    return parsed
+
+
+def round_heights(parsed: dict) -> dict:
+    """
+    Apply rounding to readings already in feet.
+    surf_min/surf_max to whole numbers; swell heights to 1 decimal;
+    swell directions to nearest degree.
+    """
+    surf_fields = ["surf_min", "surf_max"]
+    swell_fields = [
+        "primary_swell_height",
+        "secondary_swell_height",
+        "tertiary_swell_height",
+    ]
+    direction_fields = [
+        "primary_swell_direction",
+        "secondary_swell_direction",
+        "tertiary_swell_direction",
+    ]
+    for field in surf_fields:
+        if parsed.get(field) is not None:
+            parsed[field] = round(parsed[field])
+    for field in swell_fields:
+        if parsed.get(field) is not None:
+            parsed[field] = round(parsed[field], 1)
+    for field in direction_fields:
+        if parsed.get(field) is not None:
+            parsed[field] = round(parsed[field])
     return parsed
 
 
@@ -316,9 +357,11 @@ def parse_reading(reading: dict) -> dict:
         "tertiary_swell_power":     sf(2, "power"),
     }
 
-    # Normalize to feet if Surfline returned meters
+    # Normalize to feet if Surfline returned meters, otherwise just round
     if is_meters(parsed["surf_min"]):
         parsed = normalize_to_feet(parsed)
+    else:
+        parsed = round_heights(parsed)
 
     return parsed
 
