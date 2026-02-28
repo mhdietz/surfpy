@@ -81,6 +81,40 @@ TARGET_TIMES = [
 
 SURFLINE_BASE = "https://services.surfline.com/kbyg/spots/forecasts/wave"
 
+M_TO_FT = 3.28084
+
+# ---------------------------------------------------------------------------
+# Units normalization
+# ---------------------------------------------------------------------------
+
+def is_meters(surf_min) -> bool:
+    """
+    Surfline returns whole numbers when units are feet, decimals when meters.
+    If surf_min has a fractional component, treat the entire reading as meters.
+    """
+    if surf_min is None:
+        return False
+    return surf_min != int(surf_min)
+
+
+def normalize_to_feet(parsed: dict) -> dict:
+    """
+    Convert all height fields from meters to feet in-place.
+    Called only when is_meters() returns True.
+    """
+    height_fields = [
+        "surf_min", "surf_max",
+        "primary_swell_height",
+        "secondary_swell_height",
+        "tertiary_swell_height",
+    ]
+    for field in height_fields:
+        if parsed.get(field) is not None:
+            parsed[field] = round(parsed[field] * M_TO_FT, 4)
+    log.debug("Normalized reading from meters to feet.")
+    return parsed
+
+
 # ---------------------------------------------------------------------------
 # Database — Postgres
 # ---------------------------------------------------------------------------
@@ -244,6 +278,8 @@ def parse_reading(reading: dict) -> dict:
     """
     Sort swells by impact descending, skip zero-height placeholders.
     Primary = most influential swell at this specific break.
+    Normalizes height fields to feet if Surfline returns meters
+    (detected via fractional surf_min).
     """
     surf = reading.get("surf", {})
     active_swells = sorted(
@@ -259,7 +295,7 @@ def parse_reading(reading: dict) -> dict:
         except IndexError:
             return None
 
-    return {
+    parsed = {
         "surf_min":                 surf.get("min"),
         "surf_max":                 surf.get("max"),
         "surf_optimal_score":       surf.get("optimalScore"),
@@ -279,6 +315,12 @@ def parse_reading(reading: dict) -> dict:
         "tertiary_swell_impact":    sf(2, "impact"),
         "tertiary_swell_power":     sf(2, "power"),
     }
+
+    # Normalize to feet if Surfline returned meters
+    if is_meters(parsed["surf_min"]):
+        parsed = normalize_to_feet(parsed)
+
+    return parsed
 
 
 # ---------------------------------------------------------------------------
