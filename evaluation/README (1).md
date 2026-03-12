@@ -28,6 +28,11 @@ is `evaluation.swell_readings`. This schema is fully separate from SLAPP's
 application tables.
 
 ### Automation
+The workflow is defined in `.github/workflows/collect_surfline.yml`. It can also
+be triggered manually via GitHub Actions → "Run workflow", with an optional input
+to target `east`, `west`, or `all` spots — useful for testing or recovering a
+missed run.
+
 Collection runs automatically via **GitHub Actions** on a cron schedule:
 - **1am UTC daily** — East coast spots (rockaways, manasquan)
 - **4am UTC daily** — West coast spots (steamer_lane, trestles, ocean_beach_central)
