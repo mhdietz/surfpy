@@ -9,14 +9,19 @@ Connects to the same Supabase instance as SLAPP but writes only to the
 evaluation.swell_readings table, which is fully separate from app tables.
 
 Usage:
-    python collect_surfline.py                  # all spots, today
-    python collect_surfline.py lido             # one spot, today
-    python collect_surfline.py lido 2025-08-15  # one spot, specific date
+    python collect_surfline.py                          # all spots, today
+    python collect_surfline.py rockaways                # one spot, today
+    python collect_surfline.py rockaways 2025-08-15     # one spot, specific date
+    python collect_surfline.py --dry-run                # all spots, today, no DB writes
+    python collect_surfline.py rockaways --dry-run      # one spot, today, no DB writes
 
 Environment variables:
-    DATABASE_URL  — standard psycopg2 connection string
-                    e.g. postgresql://user:pass@host:5432/dbname
-                    Loaded from .env if present, otherwise from environment.
+    DATABASE_URL            — standard psycopg2 connection string
+                              e.g. postgresql://user:pass@host:5432/dbname
+                              Loaded from .env if present, otherwise from environment.
+    CLOUDFLARE_WORKER_URL   — proxy Worker URL (required in GitHub Actions to avoid
+                              Surfline 403s from datacenter IPs). Falls back to direct
+                              requests when not set (works fine locally).
 
 The Surfline API is undocumented and unauthenticated. Responses may change.
 This script targets the /kbyg/spots/forecasts/wave endpoint.
@@ -228,36 +233,29 @@ HEADERS = {
     "Referer": "https://www.surfline.com/",
 }
 
-SCRAPINGBEE_URL = "https://app.scrapingbee.com/api/v1/"
-
 
 def fetch_surfline(spot_id: str, days: int = 2) -> list[dict]:
     """
     Fetch hourly wave forecast from Surfline.
 
-    Uses ScrapingBee as a proxy when SCRAPINGBEE_API_KEY is set (required for
-    GitHub Actions to avoid Surfline 403s from datacenter IPs). Falls back to
-    direct requests when running locally without the key.
+    Routes through a Cloudflare Worker proxy when CLOUDFLARE_WORKER_URL is set
+    (required for GitHub Actions to avoid Surfline 403s from datacenter IPs).
+    Falls back to direct requests when running locally without the variable.
     """
     target_url = (
         f"{SURFLINE_BASE}?spotId={spot_id}&days={days}&intervalHours=1"
     )
-    api_key = os.environ.get("SCRAPINGBEE_API_KEY")
+    worker_url = os.environ.get("CLOUDFLARE_WORKER_URL")
 
     try:
-        if api_key:
-            # Route through ScrapingBee residential proxy
+        if worker_url:
+            # Route through Cloudflare Worker proxy
             resp = requests.get(
-                SCRAPINGBEE_URL,
-                params={
-                    "api_key": api_key,
-                    "url": target_url,
-                    "render_js": "false",      # No JS rendering needed, saves credits
-                    "premium_proxy": "false",  # Standard proxy sufficient for Surfline
-                },
+                worker_url,
+                params={"url": target_url},
                 timeout=30,
             )
-            log.debug("ScrapingBee request for spot %s — status %s", spot_id, resp.status_code)
+            log.debug("Cloudflare Worker request for spot %s — status %s", spot_id, resp.status_code)
         else:
             # Direct request — works fine locally
             resp = requests.get(SURFLINE_BASE, params={
@@ -423,7 +421,7 @@ def save_reading(conn, location, spot_id, reading) -> bool:
 # Collection
 # ---------------------------------------------------------------------------
 
-def collect_spot(spot_name, target_date, conn) -> int:
+def collect_spot(spot_name, target_date, conn, dry_run=False) -> int:
     spot_id = SPOTS[spot_name]
     tz_name = SPOT_TIMEZONES[spot_name]
     # If no date specified, use today in the spot's local timezone — not UTC.
@@ -441,17 +439,32 @@ def collect_spot(spot_name, target_date, conn) -> int:
     readings = select_target_readings(wave_data, target_date, tz_name)
     saved = 0
     for target_time, reading in readings:
-        if save_reading(conn, spot_name, spot_id, reading):
+        if dry_run:
+            parsed = parse_reading(reading)
+            log.info(
+                "  [DRY RUN] Would save %s @ %s local — surf %s–%sft, "
+                "primary swell %.1fft @ %ss from %s°",
+                spot_name,
+                target_time.strftime("%H:%M"),
+                parsed.get("surf_min"),
+                parsed.get("surf_max"),
+                parsed.get("primary_swell_height") or 0,
+                parsed.get("primary_swell_period") or 0,
+                parsed.get("primary_swell_direction") or 0,
+            )
             saved += 1
-            log.info("  → Saved %s @ %s local", spot_name, target_time.strftime("%H:%M"))
+        else:
+            if save_reading(conn, spot_name, spot_id, reading):
+                saved += 1
+                log.info("  → Saved %s @ %s local", spot_name, target_time.strftime("%H:%M"))
 
-    log.info("  %d/%d readings saved for %s", saved, len(readings), spot_name)
+    log.info("  %d/%d readings for %s", saved, len(readings), spot_name)
     return saved
 
 
-def collect_all(target_date, conn) -> int:
-    total = sum(collect_spot(name, target_date, conn) for name in SPOTS)
-    log.info("Done. %d total readings saved.", total)
+def collect_all(target_date, conn, dry_run=False) -> int:
+    total = sum(collect_spot(name, target_date, conn, dry_run=dry_run) for name in SPOTS)
+    log.info("Done. %d total readings%s.", total, " (dry run)" if dry_run else "")
     return total
 
 
@@ -463,9 +476,15 @@ def parse_args():
     args = sys.argv[1:]
     target_date = None  # Each spot will resolve to its own local date
     spot_names = list(SPOTS.keys())
+    dry_run = False
+
+    # Strip --dry-run before other parsing
+    if "--dry-run" in args:
+        dry_run = True
+        args = [a for a in args if a != "--dry-run"]
 
     if not args:
-        return spot_names, target_date
+        return spot_names, target_date, dry_run
 
     if args[0] in SPOTS:
         spot_names = [args[0]]
@@ -482,17 +501,19 @@ def parse_args():
             log.error("Unknown spot '%s'. Available: %s", args[0], ", ".join(SPOTS.keys()))
             sys.exit(1)
 
-    return spot_names, target_date
+    return spot_names, target_date, dry_run
 
 
 def main():
-    spot_names, target_date = parse_args()
+    spot_names, target_date, dry_run = parse_args()
     conn = get_db()
+    if dry_run:
+        log.info("*** DRY RUN — no data will be written ***")
     log.info("Date: %s | Spots: %s", target_date, ", ".join(spot_names))
     if len(spot_names) == 1:
-        collect_spot(spot_names[0], target_date, conn)
+        collect_spot(spot_names[0], target_date, conn, dry_run=dry_run)
     else:
-        collect_all(target_date, conn)
+        collect_all(target_date, conn, dry_run=dry_run)
     conn.close()
 
 
