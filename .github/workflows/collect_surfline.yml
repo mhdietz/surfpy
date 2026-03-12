@@ -65,7 +65,7 @@ jobs:
       - name: Run collection — ${{ steps.spots.outputs.label }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SCRAPINGBEE_API_KEY: ${{ secrets.SCRAPINGBEE_API_KEY }}
+          CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
         run: |
           cd evaluation
           SPOTS="${{ steps.spots.outputs.spot_args }}"
