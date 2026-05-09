@@ -322,8 +322,8 @@ LIMIT 20;
 ### Next — data pipeline
 - [ ] NDBC daily automation — GitHub Actions cron (`collect_ndbc.yml`) mirroring
       Surfline schedule, running 30 min after Surfline collection
-- [ ] Prior-day comparison view — add "Yesterday" section to `evaluate.py` dashboard
-      showing side-by-side NDBC vs Surfline for the previous day across all spots
+- [ ] Prior-week comparison view — add "Last 7 Days" section to `evaluate.py` dashboard
+      showing side-by-side NDBC vs Surfline for the previous week across all spots
 - [ ] `fetch/ndbc_wind.py` — NDBC standard met data (wind speed, direction, gusts)
       from the same buoys; store in `evaluation` schema
 - [ ] `fetch/tide.py` — NOAA CO-OPS API for tide predictions and observed water
