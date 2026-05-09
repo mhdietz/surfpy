@@ -1,4 +1,4 @@
-# evaluation/
+# evaluation
 
 Ground-truth collection and model evaluation pipeline for SLAPP swell data.
 
