@@ -20,6 +20,7 @@ the `evaluation` schema, which is invisible to the main app.
 | `collect_surfline.py` | Pulls Surfline LOTUS data for configured spots, stores in Supabase Postgres |
 | `fetch/ndbc.py` | Fetches NDBC spectral buoy data for configured spots, stores alongside Surfline data |
 | `evaluate.py` | Queries both sources, computes MAE/bias/std per spot, renders `report.html` dashboard |
+| `send_report.py` | Emails `report.html` as an attachment via Gmail SMTP |
 | `report.html` | Generated HTML dashboard — do not edit directly, re-run `evaluate.py` to refresh |
 
 ---
@@ -43,12 +44,22 @@ manually via GitHub Actions → "Run workflow".
 This corresponds to 8pm local time for each coast, ensuring all 5 daily target
 readings (6am–6pm) are in the past by collection time.
 
-**NDBC collection** (`collect_ndbc.yml`) — mirrors the Surfline schedule:
-- **1:30am UTC daily** — East coast spots
-- **4:30am UTC daily** — West coast spots
+**NDBC collection** (`collect_ndbc.yml`) — runs weekly:
+- **2:00am UTC every Sunday** — all spots in a single run
 
-Running NDBC collection 30 minutes after Surfline ensures the same-day data is
-available for both sources before the dashboard is refreshed.
+NDBC realtime2 serves ~45 days of data, so daily collection is unnecessary.
+Weekly collection captures the full week's readings without data loss and
+matches the weekly review cadence.
+
+**Weekly email report** (`email_report.yml`) — sends the report every Monday:
+- **4:00pm UTC every Monday** — 11am EST / 12pm EDT
+
+Regenerates `report.html` fresh from the database, then emails it as an HTML
+attachment to configured recipients. Open the attachment in a browser to view
+the full interactive dashboard. Requires two GitHub Actions secrets:
+`GMAIL_USER` (sending address) and `GMAIL_APP_PASSWORD` (16-character app
+password from Google account settings → Security → 2-Step Verification →
+App Passwords).
 
 ### Proxy
 Surfline returns 403s for requests originating from datacenter IPs (including
@@ -67,7 +78,7 @@ NDBC is a public government API and requires no proxy.
 # From the evaluation/ directory
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install requests psycopg2-binary python-dotenv pytz numpy scipy
+pip install -r requirements.txt
 ```
 
 Requires Python 3.9+ (uses `zoneinfo`). On Python 3.8 add: `pip install backports.zoneinfo`
@@ -140,10 +151,12 @@ python evaluate.py
 python evaluate.py rockaways
 ```
 
-Opens `report.html` in any browser. Dashboard includes per-spot stats tables
-(MAE, bias, std dev for height, period, direction), stacked time series charts
-(height / direction / period on shared x-axis), and scatter plots with R²
-and linear fit annotations.
+Opens `report.html` in any browser. Dashboard includes:
+- **Last 7 Days** — grid of five primary swell height charts (Surfline vs NDBC),
+  one per spot, for a quick weekly review
+- **All-Time Summary** — per-spot MAE/bias/std for height, period, and direction
+- **Per-spot detail** — stacked time series (height/direction/period) and scatter
+  plots with R² and linear fit annotations
 
 Captures readings at **6am, 9am, 12pm, 3pm, and 6pm local time** for each spot.
 Duplicate runs are safe — existing timestamps are skipped via unique constraint.
@@ -318,12 +331,14 @@ LIMIT 20;
 - [x] `--dry-run` mode for both collection scripts
 - [x] `evaluate.py` — HTML dashboard with per-spot MAE/bias/std, stacked time
       series (height/direction/period), scatter plots with R² and linear fit
+- [x] NDBC weekly automation — `collect_ndbc.yml` runs every Sunday 2am UTC;
+      weekly cadence is sufficient given NDBC's 45-day rolling data window
+- [x] Last 7 Days chart grid — `evaluate.py` dashboard opens with a row of five
+      primary swell height charts (Surfline vs NDBC) for quick weekly review
+- [x] Weekly email report — `email_report.yml` regenerates and emails `report.html`
+      every Monday at ~11am ET via Gmail SMTP; `send_report.py` handles delivery
 
 ### Next — data pipeline
-- [ ] NDBC daily automation — GitHub Actions cron (`collect_ndbc.yml`) mirroring
-      Surfline schedule, running 30 min after Surfline collection
-- [ ] Prior-week comparison view — add "Last 7 Days" section to `evaluate.py` dashboard
-      showing side-by-side NDBC vs Surfline for the previous week across all spots
 - [ ] `fetch/ndbc_wind.py` — NDBC standard met data (wind speed, direction, gusts)
       from the same buoys; store in `evaluation` schema
 - [ ] `fetch/tide.py` — NOAA CO-OPS API for tide predictions and observed water
