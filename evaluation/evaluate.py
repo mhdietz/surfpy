@@ -15,7 +15,8 @@ import os
 import argparse
 import math
 import json
-from datetime import timezone
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 import psycopg2
 import psycopg2.extras
@@ -24,6 +25,14 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 SPOTS = ['rockaways', 'manasquan', 'steamer_lane', 'trestles', 'ocean_beach_central']
 MATCH_TOLERANCE_MINUTES = 90
+
+SPOT_TIMEZONES = {
+    'rockaways':           'America/New_York',
+    'manasquan':           'America/New_York',
+    'steamer_lane':        'America/Los_Angeles',
+    'trestles':            'America/Los_Angeles',
+    'ocean_beach_central': 'America/Los_Angeles',
+}
 
 # ---------------------------------------------------------------------------
 # DB
@@ -48,6 +57,21 @@ def fetch_readings(conn, location):
               AND source IN ('surfline_lotus', 'ndbc_buoy')
             ORDER BY timestamp ASC
         """, (location,))
+        return cur.fetchall()
+
+
+def fetch_readings_recent(conn, location, days=7):
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT source, timestamp,
+                   primary_swell_height, primary_swell_period, primary_swell_direction
+            FROM evaluation.swell_readings
+            WHERE location = %s
+              AND source IN ('surfline_lotus', 'ndbc_buoy')
+              AND timestamp >= %s
+            ORDER BY timestamp ASC
+        """, (location, cutoff))
         return cur.fetchall()
 
 
@@ -192,9 +216,135 @@ def analyze_spot(location, rows):
     }
 
 
+def analyze_spot_recent(location, rows):
+    """Extract matched pairs for the last-N-days height chart."""
+    tz = ZoneInfo(SPOT_TIMEZONES.get(location, 'UTC'))
+    pairs = match_readings(rows)
+    if not pairs:
+        return None
+
+    pair_rows = []
+    for sl, nb in pairs:
+        sl_ts = sl['timestamp'].replace(tzinfo=timezone.utc) if sl['timestamp'].tzinfo is None else sl['timestamp']
+        local_ts = sl_ts.astimezone(tz)
+        pair_rows.append({
+            'date':      local_ts.strftime('%b %-d'),
+            'slot':      local_ts.strftime('%-I%p').lower(),
+            'tz_abbr':   local_ts.strftime('%Z'),
+            'sl_height': fv(sl, 'primary_swell_height'),
+            'nb_height': fv(nb, 'primary_swell_height'),
+        })
+
+    tz_abbr = pair_rows[-1]['tz_abbr'] if pair_rows else ''
+    return {
+        'location': location,
+        'n_pairs':  len(pairs),
+        'tz_abbr':  tz_abbr,
+        'pairs':    pair_rows,
+    }
+
+
 # ---------------------------------------------------------------------------
 # HTML renderer
 # ---------------------------------------------------------------------------
+
+def render_weekly_section(recent_results, days=7):
+    """Returns the HTML for the Last 7 Days grid of primary height charts."""
+    now   = datetime.now(timezone.utc)
+    start = now - timedelta(days=days)
+    date_range = f"{start.strftime('%b %-d')} → {now.strftime('%b %-d, %Y')}"
+
+    if not recent_results:
+        return f'''
+    <section class="weekly-section" id="weekly">
+        <div class="section-title">Last {days} Days — Primary Swell Height — {date_range}</div>
+        <p class="weekly-no-data">No matched readings in the last {days} days.</p>
+    </section>'''
+
+    cards_html = ''
+    charts_js  = ''
+
+    for r in recent_results:
+        loc     = r['location']
+        label   = SPOT_LABELS.get(loc, loc)
+        pairs   = r['pairs']
+        tz_abbr = r['tz_abbr']
+
+        if not pairs:
+            cards_html += f'<div class="weekly-chart-card"><div class="weekly-chart-title">{label}</div><p class="weekly-no-data">No data</p></div>'
+            continue
+
+        labels_json = json.dumps([f"{p['date']} {p['slot']}" for p in pairs])
+        sl_json     = json.dumps([p['sl_height'] for p in pairs])
+        nb_json     = json.dumps([p['nb_height']  for p in pairs])
+
+        cards_html += f'''
+        <div class="weekly-chart-card">
+            <div class="weekly-chart-title">{label} <span class="weekly-chart-meta">{r["n_pairs"]} readings · {tz_abbr}</span></div>
+            <div class="weekly-chart-wrap"><canvas id="wk-{loc}"></canvas></div>
+        </div>'''
+
+        charts_js += f'''
+        (function() {{
+            var MONO = "'IBM Plex Mono', monospace";
+            var ctx = document.getElementById('wk-{loc}').getContext('2d');
+            new Chart(ctx, {{
+                type: 'line',
+                data: {{
+                    labels: {labels_json},
+                    datasets: [
+                        {{ label: 'Surfline', data: {sl_json},
+                           borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.08)',
+                           borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: true, spanGaps: true }},
+                        {{ label: 'NDBC', data: {nb_json},
+                           borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.08)',
+                           borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: true, spanGaps: true }},
+                    ]
+                }},
+                options: {{
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: {{ mode: 'index', intersect: false }},
+                    plugins: {{
+                        legend: {{ labels: {{ color: '#94a3b8', font: {{ family: MONO, size: 10 }}, boxWidth: 10, padding: 6 }} }},
+                        tooltip: {{
+                            backgroundColor: '#0f172a', titleColor: '#94a3b8',
+                            bodyColor: '#e2e8f0', borderColor: '#1e293b', borderWidth: 1,
+                            titleFont: {{ family: MONO, size: 10 }}, bodyFont: {{ family: MONO, size: 10 }},
+                            callbacks: {{ label: function(c) {{
+                                var v = c.parsed.y;
+                                return v != null ? c.dataset.label + ': ' + v.toFixed(1) + 'ft' : c.dataset.label + ': —';
+                            }} }}
+                        }},
+                    }},
+                    scales: {{
+                        x: {{
+                            ticks: {{
+                                color: '#475569', font: {{ family: MONO, size: 9 }},
+                                maxTicksLimit: 7, maxRotation: 0,
+                                callback: function(val) {{
+                                    var lbl = this.getLabelForValue(val);
+                                    return lbl ? lbl.split(' ').slice(0, 2).join(' ') : '';
+                                }}
+                            }},
+                            grid: {{ color: '#1e293b' }},
+                        }},
+                        y: {{
+                            ticks: {{ color: '#475569', font: {{ family: MONO, size: 9 }}, callback: function(v) {{ return v + 'ft'; }} }},
+                            grid: {{ color: '#1e293b' }},
+                            beginAtZero: true,
+                        }},
+                    }}
+                }}
+            }});
+        }})();'''
+
+    return f'''
+    <section class="weekly-section" id="weekly">
+        <div class="section-title">Last {days} Days — Primary Swell Height — {date_range}</div>
+        <div class="weekly-grid">{cards_html}</div>
+        <script>document.addEventListener('DOMContentLoaded', function() {{ {charts_js} }});</script>
+    </section>'''
+
 
 SPOT_LABELS = {
     'rockaways':           'Rockaways',
@@ -216,7 +366,7 @@ def bias_class(val):
     if val < -0.3: return 'neg'
     return 'neutral'
 
-def render_html(results, target_spots):
+def render_html(results, target_spots, recent_results=None):
     from datetime import datetime
     generated = datetime.now().strftime('%B %d, %Y at %H:%M')
 
@@ -675,6 +825,9 @@ def render_html(results, target_spots):
             <td>{r["n_pairs"]}</td>
         </tr>'''
 
+    weekly_html = render_weekly_section(recent_results) if recent_results else ''
+    weekly_nav  = '<a href="#weekly">Last 7 Days</a>' if weekly_html else ''
+
     return f'''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -758,6 +911,15 @@ def render_html(results, target_spots):
     .dir-note {{ font-size:10px; color:var(--muted); margin-bottom:.4rem; font-style:italic; }}
     footer {{ border-top:1px solid var(--border); padding:1.5rem 3rem; font-size:11px; color:var(--muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:.5rem; }}
     footer span {{ color:var(--blue); }}
+    .weekly-section {{ margin-bottom:3rem; }}
+    .weekly-grid {{ display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }}
+    @media (max-width:900px) {{ .weekly-grid {{ grid-template-columns:1fr 1fr; }} }}
+    @media (max-width:600px) {{ .weekly-grid {{ grid-template-columns:1fr; }} }}
+    .weekly-chart-card {{ background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:.75rem 1rem; }}
+    .weekly-chart-title {{ font-family:'Syne',sans-serif; font-size:11px; font-weight:600; color:var(--text); margin-bottom:.5rem; }}
+    .weekly-chart-meta {{ color:var(--muted); font-weight:400; font-family:'IBM Plex Mono',monospace; font-size:10px; }}
+    .weekly-chart-wrap {{ position:relative; height:160px; }}
+    .weekly-no-data {{ color:var(--muted); font-size:12px; padding:.5rem 0; }}
 </style>
 </head>
 <body>
@@ -775,11 +937,13 @@ def render_html(results, target_spots):
 </header>
 
 <nav>
-    <a href="#summary">Summary</a>
+    {weekly_nav}
+    <a href="#summary">All-Time Summary</a>
     {"".join(f'<a href="#{r["location"]}">{SPOT_LABELS.get(r["location"], r["location"])}</a>' for r in results)}
 </nav>
 
 <main>
+    {weekly_html}
     <section class="summary-section" id="summary">
         <div class="section-title">All Spots — Primary &amp; Secondary Swell Comparison</div>
         <table class="summary-table">
@@ -842,6 +1006,17 @@ def main():
         else:
             print(f"  {loc}: no matched pairs")
 
+    print("\nAnalyzing last 7 days...")
+    recent_results = []
+    for loc in target_spots:
+        rows = fetch_readings_recent(conn, loc)
+        if not rows:
+            continue
+        result = analyze_spot_recent(loc, rows)
+        if result:
+            recent_results.append(result)
+            print(f"  {SPOT_LABELS.get(loc, loc)}: {result['n_pairs']} pairs")
+
     conn.close()
 
     if not results:
@@ -850,7 +1025,7 @@ def main():
 
     output_path = os.path.join(os.path.dirname(__file__), 'report.html')
     with open(output_path, 'w') as f:
-        f.write(render_html(results, target_spots))
+        f.write(render_html(results, target_spots, recent_results or None))
 
     print(f"\nReport written to {output_path}")
 

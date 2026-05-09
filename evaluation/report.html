@@ -81,6 +81,15 @@
     .dir-note { font-size:10px; color:var(--muted); margin-bottom:.4rem; font-style:italic; }
     footer { border-top:1px solid var(--border); padding:1.5rem 3rem; font-size:11px; color:var(--muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:.5rem; }
     footer span { color:var(--blue); }
+    .weekly-section { margin-bottom:3rem; }
+    .weekly-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+    @media (max-width:900px) { .weekly-grid { grid-template-columns:1fr 1fr; } }
+    @media (max-width:600px) { .weekly-grid { grid-template-columns:1fr; } }
+    .weekly-chart-card { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:.75rem 1rem; }
+    .weekly-chart-title { font-family:'Syne',sans-serif; font-size:11px; font-weight:600; color:var(--text); margin-bottom:.5rem; }
+    .weekly-chart-meta { color:var(--muted); font-weight:400; font-family:'IBM Plex Mono',monospace; font-size:10px; }
+    .weekly-chart-wrap { position:relative; height:160px; }
+    .weekly-no-data { color:var(--muted); font-size:12px; padding:.5rem 0; }
 </style>
 </head>
 <body>
@@ -90,7 +99,7 @@
     <h1>NDBC <span>vs</span> Surfline</h1>
     <p class="header-sub">Comparing raw buoy spectral data against Surfline LOTUS nearshore estimates</p>
     <div class="header-meta">
-        <div class="meta-item"><span class="meta-label">Generated</span><span class="meta-value">May 09, 2026 at 12:26</span></div>
+        <div class="meta-item"><span class="meta-label">Generated</span><span class="meta-value">May 09, 2026 at 16:55</span></div>
         <div class="meta-item"><span class="meta-label">Spots</span><span class="meta-value">5</span></div>
         <div class="meta-item"><span class="meta-label">Bias direction</span><span class="meta-value">NDBC − Surfline</span></div>
         <div class="meta-item"><span class="meta-label">Match window</span><span class="meta-value">±90min</span></div>
@@ -98,11 +107,298 @@
 </header>
 
 <nav>
-    <a href="#summary">Summary</a>
+    <a href="#weekly">Last 7 Days</a>
+    <a href="#summary">All-Time Summary</a>
     <a href="#rockaways">Rockaways</a><a href="#manasquan">Manasquan</a><a href="#steamer_lane">Steamer Lane</a><a href="#trestles">Trestles</a><a href="#ocean_beach_central">Ocean Beach</a>
 </nav>
 
 <main>
+    
+    <section class="weekly-section" id="weekly">
+        <div class="section-title">Last 7 Days — Primary Swell Height — May 2 → May 9, 2026</div>
+        <div class="weekly-grid">
+        <div class="weekly-chart-card">
+            <div class="weekly-chart-title">Rockaways <span class="weekly-chart-meta">31 readings · EDT</span></div>
+            <div class="weekly-chart-wrap"><canvas id="wk-rockaways"></canvas></div>
+        </div>
+        <div class="weekly-chart-card">
+            <div class="weekly-chart-title">Manasquan <span class="weekly-chart-meta">31 readings · EDT</span></div>
+            <div class="weekly-chart-wrap"><canvas id="wk-manasquan"></canvas></div>
+        </div>
+        <div class="weekly-chart-card">
+            <div class="weekly-chart-title">Steamer Lane <span class="weekly-chart-meta">32 readings · PDT</span></div>
+            <div class="weekly-chart-wrap"><canvas id="wk-steamer_lane"></canvas></div>
+        </div>
+        <div class="weekly-chart-card">
+            <div class="weekly-chart-title">Trestles <span class="weekly-chart-meta">32 readings · PDT</span></div>
+            <div class="weekly-chart-wrap"><canvas id="wk-trestles"></canvas></div>
+        </div>
+        <div class="weekly-chart-card">
+            <div class="weekly-chart-title">Ocean Beach <span class="weekly-chart-meta">32 readings · PDT</span></div>
+            <div class="weekly-chart-wrap"><canvas id="wk-ocean_beach_central"></canvas></div>
+        </div></div>
+        <script>document.addEventListener('DOMContentLoaded', function() { 
+        (function() {
+            var MONO = "'IBM Plex Mono', monospace";
+            var ctx = document.getElementById('wk-rockaways').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ["May 2 6pm", "May 3 6am", "May 3 9am", "May 3 12pm", "May 3 3pm", "May 3 6pm", "May 4 6am", "May 4 9am", "May 4 12pm", "May 4 3pm", "May 4 6pm", "May 5 6am", "May 5 9am", "May 5 12pm", "May 5 3pm", "May 5 6pm", "May 6 6am", "May 6 9am", "May 6 12pm", "May 6 3pm", "May 6 6pm", "May 7 6am", "May 7 9am", "May 7 12pm", "May 7 3pm", "May 7 6pm", "May 8 6am", "May 8 9am", "May 8 12pm", "May 8 3pm", "May 8 6pm"],
+                    datasets: [
+                        { label: 'Surfline', data: [1.9, 2.0, 1.9, 1.8, 1.7, 1.6, 1.7, 3.1, 3.1, 4.1, 4.8, 4.5, 4.3, 4.5, 6.2, 7.6, 7.3, 7.1, 7.1, 6.6, 5.9, 3.6, 3.4, 3.2, 3.1, 3.0, 1.9, 1.8, 1.9, 2.2, 1.7],
+                           borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.08)',
+                           borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: true, spanGaps: true },
+                        { label: 'NDBC', data: [1.9, 2.3, 1.8, 1.0, 1.2, 1.4, 1.0, 1.8, 1.5, 2.5, 3.9, 2.4, 1.9, 1.8, 2.9, 6.1, 3.5, 4.2, 3.7, 4.1, 2.5, 3.0, 2.5, 3.3, 2.9, 2.6, 1.9, 1.8, 1.5, 1.5, 2.2],
+                           borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.08)',
+                           borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: true, spanGaps: true },
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { family: MONO, size: 10 }, boxWidth: 10, padding: 6 } },
+                        tooltip: {
+                            backgroundColor: '#0f172a', titleColor: '#94a3b8',
+                            bodyColor: '#e2e8f0', borderColor: '#1e293b', borderWidth: 1,
+                            titleFont: { family: MONO, size: 10 }, bodyFont: { family: MONO, size: 10 },
+                            callbacks: { label: function(c) {
+                                var v = c.parsed.y;
+                                return v != null ? c.dataset.label + ': ' + v.toFixed(1) + 'ft' : c.dataset.label + ': —';
+                            } }
+                        },
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#475569', font: { family: MONO, size: 9 },
+                                maxTicksLimit: 7, maxRotation: 0,
+                                callback: function(val) {
+                                    var lbl = this.getLabelForValue(val);
+                                    return lbl ? lbl.split(' ').slice(0, 2).join(' ') : '';
+                                }
+                            },
+                            grid: { color: '#1e293b' },
+                        },
+                        y: {
+                            ticks: { color: '#475569', font: { family: MONO, size: 9 }, callback: function(v) { return v + 'ft'; } },
+                            grid: { color: '#1e293b' },
+                            beginAtZero: true,
+                        },
+                    }
+                }
+            });
+        })();
+        (function() {
+            var MONO = "'IBM Plex Mono', monospace";
+            var ctx = document.getElementById('wk-manasquan').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ["May 2 6pm", "May 3 6am", "May 3 9am", "May 3 12pm", "May 3 3pm", "May 3 6pm", "May 4 6am", "May 4 9am", "May 4 12pm", "May 4 3pm", "May 4 6pm", "May 5 6am", "May 5 9am", "May 5 12pm", "May 5 3pm", "May 5 6pm", "May 6 6am", "May 6 9am", "May 6 12pm", "May 6 3pm", "May 6 6pm", "May 7 6am", "May 7 9am", "May 7 12pm", "May 7 3pm", "May 7 6pm", "May 8 6am", "May 8 9am", "May 8 12pm", "May 8 3pm", "May 8 6pm"],
+                    datasets: [
+                        { label: 'Surfline', data: [2.2, 2.3, 2.4, 2.2, 2.1, 2.1, 2.1, 1.8, 1.6, 3.3, 3.7, 3.4, 3.4, 3.9, 5.4, 5.7, 5.2, 5.2, 5.0, 5.0, 4.3, 3.0, 2.8, 2.5, 2.4, 2.3, 1.6, 1.5, 1.2, 1.9, 1.9],
+                           borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.08)',
+                           borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: true, spanGaps: true },
+                        { label: 'NDBC', data: [1.9, 2.2, 2.0, 1.4, 2.7, 2.7, 2.4, 1.8, 1.7, 1.9, 2.3, 2.4, 2.6, 2.4, 3.4, 3.9, 2.4, 2.8, 2.8, 3.1, 3.6, 2.0, 2.8, 3.0, 2.1, 2.2, 1.2, 2.1, 0.9, 1.5, 2.0],
+                           borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.08)',
+                           borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: true, spanGaps: true },
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { family: MONO, size: 10 }, boxWidth: 10, padding: 6 } },
+                        tooltip: {
+                            backgroundColor: '#0f172a', titleColor: '#94a3b8',
+                            bodyColor: '#e2e8f0', borderColor: '#1e293b', borderWidth: 1,
+                            titleFont: { family: MONO, size: 10 }, bodyFont: { family: MONO, size: 10 },
+                            callbacks: { label: function(c) {
+                                var v = c.parsed.y;
+                                return v != null ? c.dataset.label + ': ' + v.toFixed(1) + 'ft' : c.dataset.label + ': —';
+                            } }
+                        },
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#475569', font: { family: MONO, size: 9 },
+                                maxTicksLimit: 7, maxRotation: 0,
+                                callback: function(val) {
+                                    var lbl = this.getLabelForValue(val);
+                                    return lbl ? lbl.split(' ').slice(0, 2).join(' ') : '';
+                                }
+                            },
+                            grid: { color: '#1e293b' },
+                        },
+                        y: {
+                            ticks: { color: '#475569', font: { family: MONO, size: 9 }, callback: function(v) { return v + 'ft'; } },
+                            grid: { color: '#1e293b' },
+                            beginAtZero: true,
+                        },
+                    }
+                }
+            });
+        })();
+        (function() {
+            var MONO = "'IBM Plex Mono', monospace";
+            var ctx = document.getElementById('wk-steamer_lane').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ["May 2 3pm", "May 2 6pm", "May 3 6am", "May 3 9am", "May 3 12pm", "May 3 3pm", "May 3 6pm", "May 4 6am", "May 4 9am", "May 4 12pm", "May 4 3pm", "May 4 6pm", "May 5 6am", "May 5 9am", "May 5 12pm", "May 5 3pm", "May 5 6pm", "May 6 6am", "May 6 9am", "May 6 12pm", "May 6 3pm", "May 6 6pm", "May 7 6am", "May 7 9am", "May 7 12pm", "May 7 3pm", "May 7 6pm", "May 8 6am", "May 8 9am", "May 8 12pm", "May 8 3pm", "May 8 6pm"],
+                    datasets: [
+                        { label: 'Surfline', data: [5.3, 3.9, 5.3, 5.3, 5.3, 5.2, 5.1, 4.4, 4.8, 4.7, 5.9, 5.8, 5.4, 5.1, 4.8, 4.5, 4.3, 3.3, 3.2, 3.1, 3.5, 4.0, 3.5, 3.6, 3.7, 5.9, 6.5, 3.7, 3.3, 6.3, 6.7, 7.1],
+                           borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.08)',
+                           borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: true, spanGaps: true },
+                        { label: 'NDBC', data: [3.2, 3.1, 1.8, 2.9, 2.2, 3.4, 3.9, 3.3, 2.7, 3.1, 3.2, 3.6, 2.6, 3.1, 2.3, 3.2, 2.3, 1.9, 2.0, 1.6, 1.4, 2.8, 3.4, 3.2, 3.6, 3.4, 2.3, 2.4, 3.1, 2.9, 2.0, 2.7],
+                           borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.08)',
+                           borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: true, spanGaps: true },
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { family: MONO, size: 10 }, boxWidth: 10, padding: 6 } },
+                        tooltip: {
+                            backgroundColor: '#0f172a', titleColor: '#94a3b8',
+                            bodyColor: '#e2e8f0', borderColor: '#1e293b', borderWidth: 1,
+                            titleFont: { family: MONO, size: 10 }, bodyFont: { family: MONO, size: 10 },
+                            callbacks: { label: function(c) {
+                                var v = c.parsed.y;
+                                return v != null ? c.dataset.label + ': ' + v.toFixed(1) + 'ft' : c.dataset.label + ': —';
+                            } }
+                        },
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#475569', font: { family: MONO, size: 9 },
+                                maxTicksLimit: 7, maxRotation: 0,
+                                callback: function(val) {
+                                    var lbl = this.getLabelForValue(val);
+                                    return lbl ? lbl.split(' ').slice(0, 2).join(' ') : '';
+                                }
+                            },
+                            grid: { color: '#1e293b' },
+                        },
+                        y: {
+                            ticks: { color: '#475569', font: { family: MONO, size: 9 }, callback: function(v) { return v + 'ft'; } },
+                            grid: { color: '#1e293b' },
+                            beginAtZero: true,
+                        },
+                    }
+                }
+            });
+        })();
+        (function() {
+            var MONO = "'IBM Plex Mono', monospace";
+            var ctx = document.getElementById('wk-trestles').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ["May 2 3pm", "May 2 6pm", "May 3 6am", "May 3 9am", "May 3 12pm", "May 3 3pm", "May 3 6pm", "May 4 6am", "May 4 9am", "May 4 12pm", "May 4 3pm", "May 4 6pm", "May 5 6am", "May 5 9am", "May 5 12pm", "May 5 3pm", "May 5 6pm", "May 6 6am", "May 6 9am", "May 6 12pm", "May 6 3pm", "May 6 6pm", "May 7 6am", "May 7 9am", "May 7 12pm", "May 7 3pm", "May 7 6pm", "May 8 6am", "May 8 9am", "May 8 12pm", "May 8 3pm", "May 8 6pm"],
+                    datasets: [
+                        { label: 'Surfline', data: [1.5, 1.5, 1.4, 1.5, 1.5, 1.3, 1.4, 1.5, 1.3, 1.2, 1.4, 1.6, 2.6, 2.4, 2.3, 2.4, 2.3, 1.8, 1.6, 1.5, 1.5, 1.4, 1.5, 1.3, 1.4, 1.4, 1.5, 1.6, 1.5, 1.3, 1.2, 1.3],
+                           borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.08)',
+                           borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: true, spanGaps: true },
+                        { label: 'NDBC', data: [0.8, 0.8, 2.0, 1.9, 1.0, 0.9, 1.2, 1.2, 1.8, 1.6, 1.4, 1.6, 1.7, 1.3, 1.5, 2.1, 2.3, 2.1, 1.7, 2.0, 1.1, 1.7, 1.6, 1.4, 1.9, 1.4, 1.4, 1.4, 1.5, 1.2, 0.8, 1.3],
+                           borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.08)',
+                           borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: true, spanGaps: true },
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { family: MONO, size: 10 }, boxWidth: 10, padding: 6 } },
+                        tooltip: {
+                            backgroundColor: '#0f172a', titleColor: '#94a3b8',
+                            bodyColor: '#e2e8f0', borderColor: '#1e293b', borderWidth: 1,
+                            titleFont: { family: MONO, size: 10 }, bodyFont: { family: MONO, size: 10 },
+                            callbacks: { label: function(c) {
+                                var v = c.parsed.y;
+                                return v != null ? c.dataset.label + ': ' + v.toFixed(1) + 'ft' : c.dataset.label + ': —';
+                            } }
+                        },
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#475569', font: { family: MONO, size: 9 },
+                                maxTicksLimit: 7, maxRotation: 0,
+                                callback: function(val) {
+                                    var lbl = this.getLabelForValue(val);
+                                    return lbl ? lbl.split(' ').slice(0, 2).join(' ') : '';
+                                }
+                            },
+                            grid: { color: '#1e293b' },
+                        },
+                        y: {
+                            ticks: { color: '#475569', font: { family: MONO, size: 9 }, callback: function(v) { return v + 'ft'; } },
+                            grid: { color: '#1e293b' },
+                            beginAtZero: true,
+                        },
+                    }
+                }
+            });
+        })();
+        (function() {
+            var MONO = "'IBM Plex Mono', monospace";
+            var ctx = document.getElementById('wk-ocean_beach_central').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ["May 2 3pm", "May 2 6pm", "May 3 6am", "May 3 9am", "May 3 12pm", "May 3 3pm", "May 3 6pm", "May 4 6am", "May 4 9am", "May 4 12pm", "May 4 3pm", "May 4 6pm", "May 5 6am", "May 5 9am", "May 5 12pm", "May 5 3pm", "May 5 6pm", "May 6 6am", "May 6 9am", "May 6 12pm", "May 6 3pm", "May 6 6pm", "May 7 6am", "May 7 9am", "May 7 12pm", "May 7 3pm", "May 7 6pm", "May 8 6am", "May 8 9am", "May 8 12pm", "May 8 3pm", "May 8 6pm"],
+                    datasets: [
+                        { label: 'Surfline', data: [5.0, 3.8, 4.9, 4.9, 4.8, 4.7, 4.5, 3.7, 4.9, 4.9, 4.8, 4.7, 4.3, 4.1, 3.9, 3.0, 3.5, 2.7, 2.6, 2.5, 1.5, 3.0, 3.0, 3.0, 3.1, 3.3, 3.3, 5.5, 5.8, 5.8, 5.8, 5.6],
+                           borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.08)',
+                           borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: true, spanGaps: true },
+                        { label: 'NDBC', data: [2.4, 2.0, 1.8, 3.4, 3.6, 4.2, 3.8, 3.1, 3.8, 2.9, 4.7, 4.5, 3.5, 2.3, 3.6, 3.1, 2.4, 2.3, 1.7, 2.6, 2.6, 2.5, 3.9, 3.7, 4.1, 3.4, 3.7, 2.5, 2.2, 2.3, 1.9, 1.9],
+                           borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.08)',
+                           borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: true, spanGaps: true },
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { family: MONO, size: 10 }, boxWidth: 10, padding: 6 } },
+                        tooltip: {
+                            backgroundColor: '#0f172a', titleColor: '#94a3b8',
+                            bodyColor: '#e2e8f0', borderColor: '#1e293b', borderWidth: 1,
+                            titleFont: { family: MONO, size: 10 }, bodyFont: { family: MONO, size: 10 },
+                            callbacks: { label: function(c) {
+                                var v = c.parsed.y;
+                                return v != null ? c.dataset.label + ': ' + v.toFixed(1) + 'ft' : c.dataset.label + ': —';
+                            } }
+                        },
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#475569', font: { family: MONO, size: 9 },
+                                maxTicksLimit: 7, maxRotation: 0,
+                                callback: function(val) {
+                                    var lbl = this.getLabelForValue(val);
+                                    return lbl ? lbl.split(' ').slice(0, 2).join(' ') : '';
+                                }
+                            },
+                            grid: { color: '#1e293b' },
+                        },
+                        y: {
+                            ticks: { color: '#475569', font: { family: MONO, size: 9 }, callback: function(v) { return v + 'ft'; } },
+                            grid: { color: '#1e293b' },
+                            beginAtZero: true,
+                        },
+                    }
+                }
+            });
+        })(); });</script>
+    </section>
     <section class="summary-section" id="summary">
         <div class="section-title">All Spots — Primary &amp; Secondary Swell Comparison</div>
         <table class="summary-table">
@@ -2344,7 +2640,7 @@
 
 <footer>
     <div>SLAPP evaluation pipeline · NDBC realtime2 spectral data vs Surfline LOTUS</div>
-    <div>Generated <span>May 09, 2026 at 12:26</span></div>
+    <div>Generated <span>May 09, 2026 at 16:55</span></div>
 </footer>
 
 </body>
