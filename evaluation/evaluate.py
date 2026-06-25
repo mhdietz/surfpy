@@ -75,6 +75,79 @@ def fetch_readings_recent(conn, location, days=7):
         return cur.fetchall()
 
 
+def fetch_slapp_stats(conn):
+    """Fetch slapp app usage statistics from the main app tables."""
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM auth.users")
+            total_users = cur.fetchone()['count']
+
+            cur.execute("""
+                SELECT
+                    COUNT(*) as total_sessions,
+                    ROUND(COALESCE(SUM(EXTRACT(EPOCH FROM (session_ended_at - session_started_at)))/3600.0, 0)::numeric, 1) as total_hours,
+                    ROUND(AVG(fun_rating)::numeric, 2) as avg_stoke
+                FROM surf_sessions_duplicate
+            """)
+            row = cur.fetchone()
+            total_sessions = row['total_sessions']
+            total_hours    = float(row['total_hours']) if row['total_hours'] is not None else 0.0
+            avg_stoke      = float(row['avg_stoke'])   if row['avg_stoke']   is not None else None
+
+            cur.execute("""
+                SELECT COUNT(*) as week_sessions, COUNT(DISTINCT user_id) as week_active_users
+                FROM surf_sessions_duplicate
+                WHERE session_started_at >= NOW() - INTERVAL '7 days'
+            """)
+            week_row = cur.fetchone()
+            week_sessions      = week_row['week_sessions']
+            week_active_users  = week_row['week_active_users']
+
+            cur.execute("""
+                SELECT
+                    COALESCE(
+                        u.raw_user_meta_data->>'display_name',
+                        NULLIF(TRIM(COALESCE(u.raw_user_meta_data->>'first_name','') || ' ' || COALESCE(u.raw_user_meta_data->>'last_name','')), ''),
+                        split_part(u.email, '@', 1)
+                    ) as display_name,
+                    COUNT(*) as session_count
+                FROM surf_sessions_duplicate s
+                JOIN auth.users u ON s.user_id = u.id
+                WHERE s.session_started_at >= NOW() - INTERVAL '7 days'
+                GROUP BY u.id, u.raw_user_meta_data, u.email
+                ORDER BY session_count DESC
+            """)
+            week_by_user = [{'display_name': r['display_name'], 'count': r['session_count']}
+                            for r in cur.fetchall()]
+
+            cur.execute("""
+                SELECT location, COUNT(*) as cnt
+                FROM surf_sessions_duplicate
+                WHERE session_started_at >= NOW() - INTERVAL '7 days'
+                GROUP BY location ORDER BY cnt DESC LIMIT 1
+            """)
+            top_spot_row = cur.fetchone()
+            top_spot = top_spot_row['location'] if top_spot_row else None
+
+            cur.execute("SELECT COUNT(*) FROM session_shakas")
+            total_shakas = cur.fetchone()['count']
+
+        return {
+            'total_users':       total_users,
+            'total_sessions':    total_sessions,
+            'total_hours':       total_hours,
+            'avg_stoke':         avg_stoke,
+            'total_shakas':      total_shakas,
+            'week_sessions':     week_sessions,
+            'week_active_users': week_active_users,
+            'week_by_user':      week_by_user,
+            'top_spot':          top_spot,
+        }
+    except Exception as e:
+        print(f"  Warning: could not fetch slapp stats ({e})")
+        return None
+
+
 # ---------------------------------------------------------------------------
 # Matching
 # ---------------------------------------------------------------------------
@@ -354,6 +427,59 @@ SPOT_LABELS = {
     'ocean_beach_central': 'Ocean Beach',
 }
 
+def render_slapp_section(stats):
+    """Render the Slapp app activity section for the weekly report."""
+    if not stats:
+        return ''
+
+    def stat_card(label, value, unit=''):
+        return f'''
+        <div class="slapp-card">
+            <div class="slapp-card-value">{value}<span class="slapp-card-unit">{unit}</span></div>
+            <div class="slapp-card-label">{label}</div>
+        </div>'''
+
+    stoke_display = f'{stats["avg_stoke"]:.1f} / 10' if stats['avg_stoke'] is not None else '—'
+    hours_display = f'{stats["total_hours"]:.0f}'
+
+    cards_html = (
+        stat_card('Registered Users',    stats['total_users'])
+      + stat_card('Sessions All-Time',   stats['total_sessions'])
+      + stat_card('Hours in the Water',  hours_display, 'h')
+      + stat_card('Avg Stoke',           stoke_display)
+      + stat_card('Shakas Given',        stats['total_shakas'])
+    )
+
+    # This week activity
+    week_count = stats['week_sessions']
+    if week_count == 0:
+        week_body = '<p class="slapp-flat-week">Flat week — no sessions logged. Time to fix some bugs. 🤙</p>'
+    else:
+        user_lines = ''.join(
+            f'<div class="slapp-week-user"><span class="slapp-week-name">{u["display_name"]}</span>'
+            f'<span class="slapp-week-count">{u["count"]} session{"s" if u["count"] != 1 else ""}</span></div>'
+            for u in stats['week_by_user']
+        )
+        top_spot_line = (
+            f'<div class="slapp-week-spot">Top spot: <span class="slapp-week-spot-name">{stats["top_spot"]}</span></div>'
+            if stats['top_spot'] else ''
+        )
+        week_body = f'''
+        <div class="slapp-week-users">{user_lines}</div>
+        {top_spot_line}'''
+
+    return f'''
+    <section class="slapp-section" id="slapp">
+        <div class="section-title">Slapp — App Activity</div>
+        <div class="slapp-grid">{cards_html}</div>
+        <div class="slapp-week-box">
+            <div class="slapp-week-header">This Week
+                <span class="slapp-week-meta">{week_count} session{"s" if week_count != 1 else ""} · {stats["week_active_users"]} active user{"s" if stats["week_active_users"] != 1 else ""}</span>
+            </div>
+            {week_body}
+        </div>
+    </section>'''
+
 def fmt(val, unit='', precision=2):
     if val is None:
         return '<span class="null">—</span>'
@@ -366,7 +492,7 @@ def bias_class(val):
     if val < -0.3: return 'neg'
     return 'neutral'
 
-def render_html(results, target_spots, recent_results=None):
+def render_html(results, target_spots, recent_results=None, slapp_stats=None):
     from datetime import datetime
     generated = datetime.now().strftime('%B %d, %Y at %H:%M')
 
@@ -827,6 +953,8 @@ def render_html(results, target_spots, recent_results=None):
 
     weekly_html = render_weekly_section(recent_results) if recent_results else ''
     weekly_nav  = '<a href="#weekly">Last 7 Days</a>' if weekly_html else ''
+    slapp_html  = render_slapp_section(slapp_stats)
+    slapp_nav   = '<a href="#slapp">App Activity</a>' if slapp_html else ''
 
     return f'''<!DOCTYPE html>
 <html lang="en">
@@ -920,6 +1048,24 @@ def render_html(results, target_spots, recent_results=None):
     .weekly-chart-meta {{ color:var(--muted); font-weight:400; font-family:'IBM Plex Mono',monospace; font-size:10px; }}
     .weekly-chart-wrap {{ position:relative; height:160px; }}
     .weekly-no-data {{ color:var(--muted); font-size:12px; padding:.5rem 0; }}
+    .slapp-section {{ margin-bottom:3rem; }}
+    .slapp-grid {{ display:grid; grid-template-columns:repeat(5,1fr); gap:1rem; margin-bottom:1rem; }}
+    @media (max-width:900px) {{ .slapp-grid {{ grid-template-columns:repeat(3,1fr); }} }}
+    @media (max-width:600px) {{ .slapp-grid {{ grid-template-columns:repeat(2,1fr); }} }}
+    .slapp-card {{ background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:1rem 1.25rem; }}
+    .slapp-card-value {{ font-family:'Syne',sans-serif; font-size:1.6rem; font-weight:800; color:var(--blue); line-height:1; }}
+    .slapp-card-unit {{ font-size:1rem; font-weight:400; color:var(--subtle); margin-left:2px; }}
+    .slapp-card-label {{ font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; margin-top:.35rem; }}
+    .slapp-week-box {{ background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:1rem 1.25rem; }}
+    .slapp-week-header {{ font-family:'Syne',sans-serif; font-size:11px; font-weight:600; color:var(--text); margin-bottom:.75rem; }}
+    .slapp-week-meta {{ font-family:'IBM Plex Mono',monospace; font-weight:400; font-size:10px; color:var(--muted); margin-left:.75rem; }}
+    .slapp-week-users {{ display:flex; flex-wrap:wrap; gap:.5rem 2rem; margin-bottom:.5rem; }}
+    .slapp-week-user {{ display:flex; align-items:baseline; gap:.5rem; }}
+    .slapp-week-name {{ color:var(--text); font-size:12px; }}
+    .slapp-week-count {{ color:var(--green); font-size:11px; }}
+    .slapp-week-spot {{ font-size:11px; color:var(--muted); margin-top:.25rem; }}
+    .slapp-week-spot-name {{ color:var(--subtle); }}
+    .slapp-flat-week {{ color:var(--muted); font-size:12px; }}
 </style>
 </head>
 <body>
@@ -938,12 +1084,14 @@ def render_html(results, target_spots, recent_results=None):
 
 <nav>
     {weekly_nav}
+    {slapp_nav}
     <a href="#summary">All-Time Summary</a>
     {"".join(f'<a href="#{r["location"]}">{SPOT_LABELS.get(r["location"], r["location"])}</a>' for r in results)}
 </nav>
 
 <main>
     {weekly_html}
+    {slapp_html}
     <section class="summary-section" id="summary">
         <div class="section-title">All Spots — Primary &amp; Secondary Swell Comparison</div>
         <table class="summary-table">
@@ -988,6 +1136,8 @@ def main():
 
     conn = get_connection()
     print(f"Connected. Analyzing {len(target_spots)} spot(s)...\n")
+    print("Fetching slapp app stats...")
+    slapp_stats = fetch_slapp_stats(conn)
 
     results = []
     for loc in target_spots:
@@ -1025,7 +1175,7 @@ def main():
 
     output_path = os.path.join(os.path.dirname(__file__), 'report.html')
     with open(output_path, 'w') as f:
-        f.write(render_html(results, target_spots, recent_results or None))
+        f.write(render_html(results, target_spots, recent_results or None, slapp_stats))
 
     print(f"\nReport written to {output_path}")
 
