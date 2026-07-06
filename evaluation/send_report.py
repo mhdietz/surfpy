@@ -44,7 +44,7 @@ def main():
         report_bytes = f.read()
 
     today   = datetime.now().strftime('%B %d, %Y')
-    subject = f"SLAPP Wave Report — {today}"
+    subject = f"SLAPP Report — {today}"
 
     msg            = MIMEMultipart()
     msg['From']    = gmail_user
@@ -52,7 +52,7 @@ def main():
     msg['Subject'] = subject
 
     msg.attach(MIMEText(
-        "Weekly NDBC vs Surfline evaluation attached.\n"
+        "Weekly SLAPP usage  & NDBC vs Surfline report attached.\n"
         "Open the HTML file in a browser to view the charts.",
         'plain'
     ))
