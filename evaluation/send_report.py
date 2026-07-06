@@ -13,6 +13,7 @@ Usage:
 
 import os
 import sys
+import random
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
@@ -26,6 +27,17 @@ RECIPIENTS = [
 ]
 
 REPORT_PATH = os.path.join(os.path.dirname(__file__), 'report.html')
+QUOTES_PATH = os.path.join(os.path.dirname(__file__), 'quotes.txt')
+
+
+def load_random_quote():
+    if not os.path.exists(QUOTES_PATH):
+        return None
+
+    with open(QUOTES_PATH, 'r', encoding='utf-8') as f:
+        quotes = [line.strip() for line in f if line.strip()]
+
+    return random.choice(quotes) if quotes else None
 
 
 def main():
@@ -51,11 +63,16 @@ def main():
     msg['To']      = ', '.join(RECIPIENTS)
     msg['Subject'] = subject
 
-    msg.attach(MIMEText(
+    body = (
         "Weekly SLAPP usage  & NDBC vs Surfline report attached.\n"
-        "Open the HTML file in a browser to view the charts.",
-        'plain'
-    ))
+        "Open the HTML file in a browser to view the charts."
+    )
+
+    quote = load_random_quote()
+    if quote:
+        body += f"\n\n📖 {quote}"
+
+    msg.attach(MIMEText(body, 'plain'))
 
     attachment = MIMEBase('text', 'html')
     attachment.set_payload(report_bytes)
