@@ -19,9 +19,15 @@ Environment variables:
     DATABASE_URL            — standard psycopg2 connection string
                               e.g. postgresql://user:pass@host:5432/dbname
                               Loaded from .env if present, otherwise from environment.
-    CLOUDFLARE_WORKER_URL   — proxy Worker URL (required in GitHub Actions to avoid
-                              Surfline 403s from datacenter IPs). Falls back to direct
-                              requests when not set (works fine locally).
+    SCRAPINGBEE_API_KEY     — ScrapingBee API key (required in GitHub Actions to avoid
+                              Surfline 403s from datacenter/proxy IPs). Takes priority
+                              over CLOUDFLARE_WORKER_URL when both are set.
+    CLOUDFLARE_WORKER_URL   — proxy Worker URL. Fallback used only if
+                              SCRAPINGBEE_API_KEY is not set. As of 2026-05-15,
+                              Surfline began blocking Cloudflare Worker egress IPs
+                              broadly, so this path 403s — kept only in case that
+                              changes. Falls back to direct requests when neither
+                              is set (works fine locally from a residential IP).
 
 The Surfline API is undocumented and unauthenticated. Responses may change.
 This script targets the /kbyg/spots/forecasts/wave endpoint.
@@ -238,17 +244,33 @@ def fetch_surfline(spot_id: str, days: int = 2) -> list[dict]:
     """
     Fetch hourly wave forecast from Surfline.
 
-    Routes through a Cloudflare Worker proxy when CLOUDFLARE_WORKER_URL is set
-    (required for GitHub Actions to avoid Surfline 403s from datacenter IPs).
-    Falls back to direct requests when running locally without the variable.
+    Routes through ScrapingBee when SCRAPINGBEE_API_KEY is set (required for
+    GitHub Actions to avoid Surfline 403s from datacenter/proxy IPs). Falls back
+    to a Cloudflare Worker proxy when only CLOUDFLARE_WORKER_URL is set — note
+    Surfline began blocking Worker egress IPs on 2026-05-15, so that path 403s.
+    Falls back to direct requests when neither is set (works fine locally).
     """
     target_url = (
         f"{SURFLINE_BASE}?spotId={spot_id}&days={days}&intervalHours=1"
     )
+    scrapingbee_key = os.environ.get("SCRAPINGBEE_API_KEY")
     worker_url = os.environ.get("CLOUDFLARE_WORKER_URL")
 
     try:
-        if worker_url:
+        if scrapingbee_key:
+            # Route through ScrapingBee — render_js=false since this is a JSON
+            # API response, not a page that needs rendering (saves credits).
+            resp = requests.get(
+                "https://app.scrapingbee.com/api/v1/",
+                params={
+                    "api_key": scrapingbee_key,
+                    "url": target_url,
+                    "render_js": "false",
+                },
+                timeout=30,
+            )
+            log.debug("ScrapingBee request for spot %s — status %s", spot_id, resp.status_code)
+        elif worker_url:
             # Route through Cloudflare Worker proxy
             resp = requests.get(
                 worker_url,
