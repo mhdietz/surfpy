@@ -19,9 +19,29 @@ the `evaluation` schema, which is invisible to the main app.
 |------|---------|
 | `collect_surfline.py` | Pulls Surfline LOTUS data for configured spots, stores in Supabase Postgres |
 | `fetch/ndbc.py` | Fetches NDBC spectral buoy data for configured spots, stores alongside Surfline data |
-| `evaluate.py` | Queries both sources, computes MAE/bias/std per spot, renders `report.html` dashboard |
+| `fetch/cdip.py` | Fetches CDIP nearshore buoy data (CA spots only) via the `howsit` package, stores alongside the above |
+| `evaluate.py` | Scores an arbitrary list of comparison sources (`COMPARISON_SOURCES` registry) against Surfline ground truth — computes MAE/bias/std/R² per spot per source, renders `report.html` |
 | `send_report.py` | Emails `report.html` as an attachment via Gmail SMTP |
 | `report.html` | Generated HTML dashboard — do not edit directly, re-run `evaluate.py` to refresh |
+| `RESEARCH_NOTES.md` | Living notes on wave physics, forecasting model architecture, and defining "good enough" — read alongside this file, not a replacement for it |
+
+`evaluate.py` is no longer hardcoded to exactly two sources. Adding a new comparison
+source (a new buoy network, or a correction model's output) is a registry entry in
+`evaluate.py`'s `COMPARISON_SOURCES` list, not a code change — see the module
+docstring. `--sources ndbc_buoy,cdip_buoy` on the CLI lets you filter which registered
+sources a given run includes.
+
+### `howsit`
+
+Data-fetching logic that's meant to be shared with other projects (currently:
+[partiwave](https://github.com/mhdietz/howsit)) lives in a separate package,
+[`howsit`](https://github.com/mhdietz/howsit), installed via `requirements.txt`
+(`pip install git+https://github.com/mhdietz/howsit.git`). It's an intentional,
+understood replacement for the parts of `surfpy` this project and partiwave both
+lean on — grown one function at a time, proven out here (since this project has
+live Surfline ground truth to validate against) before partiwave's product pipeline
+depends on it. `fetch/cdip.py` is the first consumer. `fetch/ndbc.py` still uses
+`surfpy` directly — replatforming it onto `howsit` is a planned next step, not done yet.
 
 ---
 
@@ -63,12 +83,20 @@ App Passwords).
 
 ### Proxy
 Surfline returns 403s for requests originating from datacenter IPs (including
-GitHub Actions). A **Cloudflare Worker** proxies requests through Cloudflare's
-network to bypass this. The Worker URL is stored as a GitHub Actions secret
-(`CLOUDFLARE_WORKER_URL`). When `CLOUDFLARE_WORKER_URL` is not set (local dev),
-the script falls back to direct requests, which work fine from residential IPs.
+GitHub Actions). **ScrapingBee** is the primary proxy (`SCRAPINGBEE_API_KEY` secret,
+`render_js=false` since this is a JSON API). A **Cloudflare Worker** is kept as a
+fallback if `SCRAPINGBEE_API_KEY` isn't set, but note: as of **2026-05-15** Surfline
+began blocking the Cloudflare Worker's egress IPs broadly (403 on every request,
+confirmed by hitting the Worker directly from multiple networks) — this silently
+starved the evaluation dataset of new Surfline readings for ~8 weeks, since the
+collection workflow's per-spot error handling meant the job kept reporting
+"success" despite writing zero rows. Fixed 2026-07-08 by switching to ScrapingBee.
+**Lesson**: a green CI run does not mean data is actually landing — check
+`MAX(timestamp)` per source in `evaluation.swell_readings` periodically, don't just
+trust workflow status. When neither proxy is set (local dev), the script falls back
+to direct requests, which work fine from residential IPs.
 
-NDBC is a public government API and requires no proxy.
+NDBC and CDIP are public government/academic APIs and require no proxy.
 
 ---
 
@@ -169,7 +197,7 @@ Duplicate runs are safe — existing timestamps are skipped via unique constrain
 
 | Column | Description |
 |--------|-------------|
-| `source` | `surfline_lotus` or `ndbc_buoy` |
+| `source` | `surfline_lotus`, `ndbc_buoy`, or `cdip_buoy` |
 | `location` | Spot name key (e.g. `rockaways`, `steamer_lane`) |
 | `spot_id` | Surfline spot ID or NDBC buoy ID |
 | `timestamp` | UTC timestamptz of the reading |
@@ -216,17 +244,29 @@ multiplier. `raw_data` JSONB preserves original API response for reprocessing.
 **NDBC:** `surfpy` returns heights in meters. Converted to feet via `3.28084`
 multiplier on ingest.
 
+**CDIP:** OPeNDAP ascii responses return heights in meters, same `3.28084`
+multiplier. CDIP reports one dominant wave height/period/direction per reading, not
+a full spectral decomposition — only `primary_swell_*` columns are populated;
+`secondary_swell_*`/`tertiary_swell_*` are NULL for `cdip_buoy` rows.
+
 ---
 
 ## Configured spots
 
-| Name | Surfline ID | NDBC Buoy ID | Timezone | Coast |
-|------|------------|--------------|----------|-------|
-| rockaways | 5842041f4e65fad6a7708852 | 44065 | America/New_York | East |
-| manasquan | 5842041f4e65fad6a7708856 | 44091 | America/New_York | East |
-| steamer_lane | 5842041f4e65fad6a7708805 | 46236 | America/Los_Angeles | West |
-| trestles | 5842041f4e65fad6a770888a | 46277 | America/Los_Angeles | West |
-| ocean_beach_central | 638e32a4f052ba4ed06d0e3e | 46237 | America/Los_Angeles | West |
+| Name | Surfline ID | NDBC Buoy ID | CDIP Station | Timezone | Coast |
+|------|------------|--------------|--------------|----------|-------|
+| rockaways | 5842041f4e65fad6a7708852 | 44065 | — (no CDIP coverage) | America/New_York | East |
+| manasquan | 5842041f4e65fad6a7708856 | 44091 | — (no CDIP coverage) | America/New_York | East |
+| steamer_lane | 5842041f4e65fad6a7708805 | 46236 | 254 (currently offline — see note) | America/Los_Angeles | West |
+| trestles | 5842041f4e65fad6a770888a | 46277 | 284 | America/Los_Angeles | West |
+| ocean_beach_central | 638e32a4f052ba4ed06d0e3e | 46237 | 142 | America/Los_Angeles | West |
+
+CDIP station IDs are reused from partiwave's own validated taxonomy (its 158→254
+substitution for Steamer Lane, made after 158 was found decommissioned). As of
+2026-07-08, station 254 itself is not appearing in CDIP's realtime catalog at all —
+confirmed against `thredds.cdip.ucsd.edu`'s live listing, not a fetch bug. `fetch/cdip.py`
+degrades gracefully (skips the spot, logs a warning) when this happens. If it stays
+down, Steamer Lane may need a different substitute nearshore station.
 
 Lido Beach and Belmar were removed — they returned identical values to Rockaways
 and Manasquan respectively, adding no signal.
@@ -238,6 +278,14 @@ in both `collect_surfline.py` and `fetch/ndbc.py`.
 ---
 
 ## Key findings to date
+
+**Note (2026-07-08):** the numbers below are unchanged from the original spring
+dataset — Surfline collection was silently broken 2026-05-15 through 2026-07-08 (see
+Proxy section), so nothing new landed in that window. Collection has resumed as of
+this date; treat "6 weeks of matched data" below as "6 weeks, all from spring 2026,"
+not "6 weeks ending recently." CDIP data (added 2026-07-08) has only ~1 week of
+history so far — its R² numbers in the live report are not yet meaningful (too few
+matched pairs), don't draw conclusions from them until more accumulates.
 
 Spots split into two tiers based on ~6 weeks of matched data (spring 2026):
 
@@ -338,30 +386,60 @@ LIMIT 20;
 - [x] Weekly email report — `email_report.yml` regenerates and emails `report.html`
       every Monday at ~11am ET via Gmail SMTP; `send_report.py` handles delivery
 
+See "Recently completed (2026-07-08)" below for the Surfline outage fix, harness
+generalization, CDIP fetcher, and `howsit` — kept separate since they're a distinct
+batch of work, not part of the original build-out above.
+
+### Recently completed (2026-07-08)
+- [x] **Surfline collection outage fixed** — Cloudflare Worker had been silently
+      403ing since 2026-05-15 (Surfline blocking Worker egress IPs broadly); switched
+      to ScrapingBee as primary proxy. See Proxy section above.
+- [x] **Model evaluation framework** — `evaluate.py` generalized from a hardcoded
+      Surfline-vs-NDBC binary comparison to an N-way `COMPARISON_SOURCES` registry.
+      Regression-verified to reproduce identical output for NDBC-only before adding
+      CDIP. Also lands the interface contract for scoring "virtual" sources (model
+      outputs computed on the fly, not DB-backed) — no model registered against it yet.
+- [x] `fetch/cdip.py` — CDIP nearshore buoy data for the 3 CA spots, via the new
+      `howsit` package (see below). Wiring `cdip_buoy` into the registry required
+      only a config entry, no other code change — confirms the harness generalization
+      actually works, not just in theory.
+- [x] `howsit` ([github.com/mhdietz/howsit](https://github.com/mhdietz/howsit)) —
+      new shared, stdlib-only data-fetching library, an intentional replacement for
+      the parts of `surfpy` this project and partiwave both depend on. Seeded from
+      partiwave's own (already surfpy-free) CDIP fetch logic. This project is its
+      first consumer/proving ground.
+
 ### Next — data pipeline
-- [ ] `fetch/ndbc_wind.py` — NDBC standard met data (wind speed, direction, gusts)
-      from the same buoys; store in `evaluation` schema
+- [ ] Replatform `fetch/ndbc.py` off `surfpy` onto `howsit` (met-file fetch is a
+      straightforward port from partiwave; spectral primary/secondary/tertiary
+      decomposition needs to be understood and rebuilt cleanly, not copy-pasted)
+- [ ] NDBC wind/gust/pressure/temp — expected to fall out of the `fetch/ndbc.py`
+      replatform almost for free, since the met file already returns wind fields
+      in the same request used for wave data. Store in a new `evaluation.wind_readings`
+      table (different shape/cadence than `swell_readings`, doesn't belong bolted on).
 - [ ] `fetch/tide.py` — NOAA CO-OPS API for tide predictions and observed water
       levels; store in `evaluation` schema
 - [ ] NDBC historical archive backfill — fetch from `data/historical/swden/` and
       `data/historical/swdir/` `.gz` files to extend coverage beyond the 45-day
       realtime2 window; pairs against existing Surfline data going back to Feb 2026
+- [ ] Steamer Lane's CDIP 254 is currently offline (not in CDIP's realtime catalog at
+      all) — if it stays down, find a substitute nearshore station
 
 ### Next — modeling
-- [ ] Model evaluation framework — extend `evaluate.py` to score multiple model
-      outputs against Surfline ground truth in a structured, comparable way;
-      build this harness before building models
 - [ ] `models/model_1_empirical.py` — per-spot learned correction: fit directional
       offset, nonlinear height scaling (power law), and period adjustment from
-      collected data. First real attempt to close the Steamer Lane / OB gap.
-      Insert before Green's Law since systematic patterns are already visible.
+      collected data. First real attempt to close the Steamer Lane / OB gap. Register
+      it as a `kind: 'virtual'` comparison source in `evaluate.py` (interface already
+      exists) — scored through the exact same harness as any real source.
+      **Before calling this "done,"** define what "good enough" actually means in
+      `RESEARCH_NOTES.md` (Section 5) — MAE/bias/R² going down isn't automatically
+      the same as a surfer's decision not changing.
 - [ ] `models/model_2_shoaling.py` — Green's Law shoaling correction using
       `breaking_wave_depth` from `surf_spots`. Physics-based depth transformation,
       period-dependent. Expected to help East Coast more than California.
-- [ ] `fetch/cdip.py` — CDIP nearshore buoy data (California spots). Highest-
-      leverage input for Steamer Lane and OB since nearshore buoys have already
-      felt bathymetric effects.
-- [ ] `models/model_3_cdip.py` — CDIP nearshore buoy where available
+- [ ] `models/model_3_cdip.py` — score CDIP as a correction input where available
+      (fetch is done, see above; only ~1 week of matched data so far — R² numbers
+      right now are noise, not signal, don't draw conclusions yet)
 - [ ] `fetch/ww3.py` — WaveWatch III via NOAA OPeNDAP
 - [ ] `models/model_4_ww3.py` — WW3 directional spectrum + refraction coefficient;
       adds direction-dependent transformation relevant to consistent directional
