@@ -150,8 +150,23 @@ Starting questions to work through (not yet answered):
   the industry talk in terms of categorical accuracy (flat/small/fun-size/overhead) rather than
   continuous height error?
 
-**Status: unresolved.** This section should get a real pass before Model 1 is judged as a success
-or failure — right now "the number went down" isn't actually a validated definition of "good enough."
+**Scope boundary (2026-07-09):** "good enough" is about physical-parameter agreement with LOTUS —
+categorical/bucketed height, period, and direction — **not** about predicting subjective surf
+quality or enjoyment. Quality judgment doesn't reduce to physical parameters: two surfers can (and
+do) disagree about the same swell, so there's no clean label to fit a model against. The job of
+evaluation is to determine whether a source gives a surfer the same *picture* of conditions LOTUS
+would, not whether they'd have fun — that call stays with the surfer. This also directly answers
+the "does the industry talk in terms of categorical accuracy" starting question above: yes, that's
+the intended shape of the target metric.
+
+One more caveat worth stating plainly: LOTUS itself is an imperfect ground truth, not an absolute
+one — it's simply the best publicly-comparable representation of conditions available right now.
+"Agreement with LOTUS" is a proxy target, and should be understood as such rather than as truth.
+
+**Status: unresolved.** The scope boundary above narrows the question but doesn't answer it — the
+bucket boundaries and relative-vs-absolute error framing above are still open. This section should
+get a real pass before Model 1 is judged as a success or failure — right now "the number went down"
+isn't actually a validated definition of "good enough."
 
 ---
 

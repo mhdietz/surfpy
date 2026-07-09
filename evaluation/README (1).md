@@ -413,10 +413,19 @@ batch of work, not part of the original build-out above.
 - [ ] Replatform `fetch/ndbc.py` off `surfpy` onto `howsit` (met-file fetch is a
       straightforward port from partiwave; spectral primary/secondary/tertiary
       decomposition needs to be understood and rebuilt cleanly, not copy-pasted)
-- [ ] NDBC wind/gust/pressure/temp — expected to fall out of the `fetch/ndbc.py`
-      replatform almost for free, since the met file already returns wind fields
-      in the same request used for wave data. Store in a new `evaluation.wind_readings`
-      table (different shape/cadence than `swell_readings`, doesn't belong bolted on).
+- [ ] NDBC wind/gust/pressure/temp — falls out of the `fetch/ndbc.py` replatform
+      almost for free, since the met file already returns wind fields in the same
+      request used for wave data. Store in a new `evaluation.wind_readings` table
+      (different shape/cadence than `swell_readings`, doesn't belong bolted on).
+      This is offshore-buoy wind, scored through the same harness as everything
+      else — not assumed to be "the" wind answer, may just be the best available
+      signal at some spots.
+- [ ] Wind source research — evaluate additional wind sources per spot (land-based
+      stations e.g. NWS ASOS/AWOS, other buoys, etc.) against NDBC and each other.
+      Offshore buoy wind is known to diverge from nearshore surf-spot wind
+      (land/sea breeze, terrain sheltering), but which source wins per spot is an
+      open question. Start from proximity-to-spot as a first heuristic; don't
+      assume land beats offshore going in.
 - [ ] `fetch/tide.py` — NOAA CO-OPS API for tide predictions and observed water
       levels; store in `evaluation` schema
 - [ ] NDBC historical archive backfill — fetch from `data/historical/swden/` and
@@ -426,14 +435,16 @@ batch of work, not part of the original build-out above.
       all) — if it stays down, find a substitute nearshore station
 
 ### Next — modeling
+- [ ] Define "good enough" (`RESEARCH_NOTES.md` Section 5) — MAE/bias/R² going
+      down isn't automatically the same as a surfer's decision not changing.
+      Qualitative and easy to skip in favor of concrete coding tasks, but it's
+      the actual target metric model_1 (and everything after it) gets judged
+      against, so it needs a real pass before, not after.
 - [ ] `models/model_1_empirical.py` — per-spot learned correction: fit directional
       offset, nonlinear height scaling (power law), and period adjustment from
       collected data. First real attempt to close the Steamer Lane / OB gap. Register
       it as a `kind: 'virtual'` comparison source in `evaluate.py` (interface already
       exists) — scored through the exact same harness as any real source.
-      **Before calling this "done,"** define what "good enough" actually means in
-      `RESEARCH_NOTES.md` (Section 5) — MAE/bias/R² going down isn't automatically
-      the same as a surfer's decision not changing.
 - [ ] `models/model_2_shoaling.py` — Green's Law shoaling correction using
       `breaking_wave_depth` from `surf_spots`. Physics-based depth transformation,
       period-dependent. Expected to help East Coast more than California.
