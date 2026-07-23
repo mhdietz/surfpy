@@ -1088,7 +1088,7 @@ def render_html(results, target_spots, comparison_sources, recent_results=None, 
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SLAPP / Wave Data Evaluation</title>
+<title>SLAPP Weekly — App Activity &amp; Wave Data Evaluation</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -1202,9 +1202,9 @@ def render_html(results, target_spots, comparison_sources, recent_results=None, 
 <body>
 
 <header>
-    <div class="header-label">SLAPP · Wave Data Pipeline</div>
-    <h1>{comparison_labels} <span>vs</span> Surfline</h1>
-    <p class="header-sub">Comparing public data sources against Surfline LOTUS nearshore estimates</p>
+    <div class="header-label">SLAPP · Weekly Report</div>
+    <h1>Slapp Activity <span>&amp;</span> Wave Data Evaluation</h1>
+    <p class="header-sub">SLAPP app usage this week, plus {comparison_labels} vs Surfline LOTUS nearshore estimates</p>
     <div class="header-meta">
         <div class="meta-item"><span class="meta-label">Generated</span><span class="meta-value">{generated}</span></div>
         <div class="meta-item"><span class="meta-label">Spots</span><span class="meta-value">{len(results)}</span></div>
@@ -1214,15 +1214,15 @@ def render_html(results, target_spots, comparison_sources, recent_results=None, 
 </header>
 
 <nav>
-    {weekly_nav}
     {slapp_nav}
+    {weekly_nav}
     <a href="#summary">All-Time Summary</a>
     {"".join(f'<a href="#{r["location"]}">{SPOT_LABELS.get(r["location"], r["location"])}</a>' for r in results)}
 </nav>
 
 <main>
-    {weekly_html}
     {slapp_html}
+    {weekly_html}
     <section class="summary-section" id="summary">
         <div class="section-title">All Spots — Primary &amp; Secondary Swell Comparison</div>
         <table class="summary-table">
