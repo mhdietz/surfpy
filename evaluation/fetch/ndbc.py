@@ -53,6 +53,22 @@ TARGET_HOURS_LOCAL = [6, 9, 12, 15, 18]
 # surfpy realtime2 endpoints serve ~45 days
 REALTIME_COUNT = 3000  # generous count to ensure full 45-day coverage
 
+# Fallback row count used when the full-window parse fails — e.g. NDBC's
+# energy and directional files for a buoy having mismatched line counts
+# somewhere in the ~45-day window (surfpy's parser walks both files by raw
+# list index, so a single missing row anywhere upstream of "now" misaligns
+# or crashes the rest of the parse; see rockaways/44065, gap first seen
+# 2026-08-12). A smaller count keeps the parse entirely within the freshest
+# rows, safely before any such gap. Must stay ABOVE one week's worth of
+# rows (~336 at a 30-min cadence) so consecutive weekly runs' fallback
+# fetches overlap with no gap between them, and comfortably below the
+# known-clean margin in front of the current gap (~421 rows as of
+# 2026-08-21 — this margin only grows over time as the gap ages further
+# back in the rolling window). 380 satisfies both today; revisit if a buoy
+# with a faster/slower cadence or a closer-to-"now" gap needs a different
+# value.
+FALLBACK_COUNT = 380
+
 METERS_TO_FEET = 3.28084
 
 # ---------------------------------------------------------------------------
@@ -95,13 +111,35 @@ def fetch_spectra_for_buoy(buoy_id: str) -> list:
         except ValueError:
             pass
 
-    data = BuoyStation.parse_wave_spectra_reading_data(
-        energy_text,
-        directional_text,
-        REALTIME_COUNT,
-        modification_date
-    )
-    return data or []
+    try:
+        data = BuoyStation.parse_wave_spectra_reading_data(
+            energy_text,
+            directional_text,
+            REALTIME_COUNT,
+            modification_date
+        )
+        return data or []
+    except Exception as e:
+        # Full-window parse failed — most likely a mismatched-line-count gap
+        # somewhere in the window (see FALLBACK_COUNT comment above). Retry
+        # against the same already-downloaded text with a much smaller count
+        # so the parse stays within the freshest, known-clean rows instead
+        # of giving up on this buoy entirely for the week.
+        print(f"  Full-window parse failed for buoy {buoy_id} ({type(e).__name__}: {e}). "
+              f"Retrying with the most recent {FALLBACK_COUNT} rows only...")
+        try:
+            data = BuoyStation.parse_wave_spectra_reading_data(
+                energy_text,
+                directional_text,
+                FALLBACK_COUNT,
+                modification_date
+            )
+            if data:
+                print(f"  Fallback succeeded: {len(data)} recent readings.")
+            return data or []
+        except Exception as e2:
+            print(f"  Fallback parse also failed for buoy {buoy_id}: {type(e2).__name__}: {e2}")
+            return []
 
 
 # ---------------------------------------------------------------------------
