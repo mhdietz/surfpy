@@ -54,8 +54,13 @@ jobs:
         if: always()
         run: |
           SPOT="${{ github.event.inputs.spot }}"
-          if [ -n "$SPOT" ]; then
-            echo "NDBC collection complete for $SPOT"
+          if [ "${{ job.status }}" = "success" ]; then
+            STATUS="succeeded"
           else
-            echo "NDBC collection complete for all spots"
+            STATUS="had failures (see collection step output above)"
+          fi
+          if [ -n "$SPOT" ]; then
+            echo "NDBC collection $STATUS for $SPOT"
+          else
+            echo "NDBC collection $STATUS for all spots"
           fi

@@ -275,46 +275,75 @@ def write_to_db(conn, spot_name: str, buoy_id: str, rows: list) -> tuple[int, in
 # Per-spot orchestration
 # ---------------------------------------------------------------------------
 
-def process_spot(spot_name: str, dry_run: bool, conn) -> None:
+def process_spot(spot_name: str, dry_run: bool, conn) -> dict:
+    """
+    Fetch, align, and (unless dry_run) write one spot's NDBC data.
+
+    Returns a result dict:
+        {'spot': spot_name, 'status': 'ok'|'error', 'inserted': int,
+         'skipped': int, 'error': str|None}
+
+    Never raises for per-buoy failures (network, parse, empty data) — only
+    errors while processing THIS spot are caught here, so one bad buoy can't
+    take down the rest of the run. Bugs in main(), argument parsing, or DB
+    connection setup still propagate and crash immediately, unchanged.
+    """
     config = SPOTS[spot_name]
     buoy_id = config['buoy_id']
     tz_name = config['timezone']
+
+    result = {'spot': spot_name, 'status': 'ok', 'inserted': 0, 'skipped': 0, 'error': None}
 
     print(f"\n{'='*50}")
     print(f"Spot: {spot_name}  |  Buoy: {buoy_id}  |  TZ: {tz_name}")
     print(f"{'='*50}")
 
-    # Fetch raw buoy data
-    print(f"  Fetching spectra from NDBC realtime2...")
-    buoy_data = fetch_spectra_for_buoy(buoy_id)
+    try:
+        # Fetch raw buoy data
+        print(f"  Fetching spectra from NDBC realtime2...")
+        buoy_data = fetch_spectra_for_buoy(buoy_id)
 
-    if not buoy_data:
-        print(f"  No data returned for buoy {buoy_id}. Skipping.")
-        return
+        if not buoy_data:
+            print(f"  No data returned for buoy {buoy_id}. Skipping.")
+            return result
 
-    # Determine available date range from fetched data
-    dates = [e.date.replace(tzinfo=timezone.utc) for e in buoy_data]
-    earliest = min(dates)
-    latest = max(dates)
-    print(f"  Fetched {len(buoy_data)} readings  |  {earliest.date()} → {latest.date()}")
+        # Determine available date range from fetched data
+        dates = [e.date.replace(tzinfo=timezone.utc) for e in buoy_data]
+        earliest = min(dates)
+        latest = max(dates)
+        print(f"  Fetched {len(buoy_data)} readings  |  {earliest.date()} → {latest.date()}")
 
-    # Align to 5 daily time slots, going back as far as data allows
-    rows = align_to_slots(buoy_data, tz_name, earliest)
-    print(f"  Aligned to {len(rows)} slot-matched readings")
+        # Align to 5 daily time slots, going back as far as data allows
+        rows = align_to_slots(buoy_data, tz_name, earliest)
+        print(f"  Aligned to {len(rows)} slot-matched readings")
 
-    if dry_run:
-        # Print a sample without writing
-        print(f"  DRY RUN — sample of first 3 rows:")
-        for row in rows[:3]:
-            entry = row['buoy_data']
-            swells = extract_swell_slots(entry)
-            surf = estimate_surf_height(entry)
-            print(f"    {row['timestamp'].isoformat()}  surf={surf}  primary={swells['primary_swell_height']}ft @ {swells['primary_swell_period']}s {swells['primary_swell_direction']}°")
-        return
+        if dry_run:
+            # Print a sample without writing
+            print(f"  DRY RUN — sample of first 3 rows:")
+            for row in rows[:3]:
+                entry = row['buoy_data']
+                swells = extract_swell_slots(entry)
+                surf = estimate_surf_height(entry)
+                print(f"    {row['timestamp'].isoformat()}  surf={surf}  primary={swells['primary_swell_height']}ft @ {swells['primary_swell_period']}s {swells['primary_swell_direction']}°")
+            return result
 
-    # Write to DB
-    inserted, skipped = write_to_db(conn, spot_name, buoy_id, rows)
-    print(f"  Inserted: {inserted}  |  Skipped (duplicates): {skipped}")
+        # Write to DB
+        inserted, skipped = write_to_db(conn, spot_name, buoy_id, rows)
+        print(f"  Inserted: {inserted}  |  Skipped (duplicates): {skipped}")
+        result['inserted'] = inserted
+        result['skipped'] = skipped
+        return result
+
+    except Exception as e:
+        if conn:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        print(f"  ERROR processing spot '{spot_name}' (buoy {buoy_id}): {type(e).__name__}: {e}")
+        result['status'] = 'error'
+        result['error'] = f"{type(e).__name__}: {e}"
+        return result
 
 
 # ---------------------------------------------------------------------------
@@ -350,12 +379,29 @@ def main():
             print(f"Database connection failed: {e}")
             sys.exit(1)
 
+    results = []
     try:
         for spot_name in target_spots:
-            process_spot(spot_name, args.dry_run, conn)
+            results.append(process_spot(spot_name, args.dry_run, conn))
     finally:
         if conn:
             conn.close()
+
+    failed = [r for r in results if r['status'] == 'error']
+    print(f"\n{'='*50}")
+    print(f"Summary: {len(results) - len(failed)}/{len(results)} spots succeeded")
+    if not args.dry_run:
+        total_inserted = sum(r['inserted'] for r in results)
+        total_skipped = sum(r['skipped'] for r in results)
+        print(f"  Total inserted: {total_inserted}  |  Total skipped (duplicates): {total_skipped}")
+    if failed:
+        print(f"  Failed spots:")
+        for r in failed:
+            print(f"    - {r['spot']}: {r['error']}")
+    print(f"{'='*50}")
+
+    if failed:
+        sys.exit(1)
 
     print("\nDone.")
 
