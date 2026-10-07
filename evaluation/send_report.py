@@ -19,7 +19,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email import encoders
-from datetime import datetime
+from datetime import datetime, timezone
 
 RECIPIENTS = [
     'martinhdietz@gmail.com',
@@ -30,14 +30,29 @@ REPORT_PATH = os.path.join(os.path.dirname(__file__), 'report.html')
 QUOTES_PATH = os.path.join(os.path.dirname(__file__), 'quotes.txt')
 
 
-def load_random_quote():
+# Fixed seed so the shuffled order is stable from week to week. Adding or
+# removing quotes reshuffles, which can cause one early repeat.
+QUOTE_SHUFFLE_SEED = 'eval-weekly-quotes'
+
+
+def load_weekly_quote():
+    """
+    Pick this week's quote by stepping through a seeded shuffle of quotes.txt,
+    one quote per week, so every quote is used once before any repeats.
+    Manual re-runs in the same week get the same quote.
+    """
     if not os.path.exists(QUOTES_PATH):
         return None
 
     with open(QUOTES_PATH, 'r', encoding='utf-8') as f:
         quotes = [line.strip() for line in f if line.strip()]
 
-    return random.choice(quotes) if quotes else None
+    if not quotes:
+        return None
+
+    random.Random(QUOTE_SHUFFLE_SEED).shuffle(quotes)
+    week_number = datetime.now(timezone.utc).date().toordinal() // 7
+    return quotes[week_number % len(quotes)]
 
 
 def main():
@@ -68,7 +83,7 @@ def main():
         "Open the HTML file in a browser to view the charts."
     )
 
-    quote = load_random_quote()
+    quote = load_weekly_quote()
     if quote:
         body += f"\n\n📖 {quote}"
 
