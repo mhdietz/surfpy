@@ -12,29 +12,36 @@ Functions:
     - convert_met_data_to_imperial: Convert all meteorological data to imperial units
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import math
 
-def find_closest_data(data_list, target_datetime):
+def find_closest_data(data_list, target_datetime, max_gap=timedelta(hours=3)):
     """
     Find the data entry closest to the given target datetime.
-    
+
     Args:
         data_list (list): List of data objects with date attribute
         target_datetime (datetime): Target datetime (timezone-aware)
-        
+        max_gap (timedelta, optional): Maximum allowed distance between the target
+            and the closest entry. Guards against attaching stale readings when a
+            buoy has an outage. Pass None to disable.
+
     Returns:
-        object: Data object closest to the target time or None if no data
+        object: Data object closest to the target time, or None if no data or
+            the closest entry is further than max_gap away
     """
     if not data_list:
         return None
-        
+
     # Ensure target_datetime is timezone-aware
     if target_datetime.tzinfo is None:
         target_datetime = target_datetime.replace(tzinfo=timezone.utc)
-        
+
     # Find the closest entry by time difference
-    return min(data_list, key=lambda entry: abs(entry.date.replace(tzinfo=timezone.utc) - target_datetime))
+    closest = min(data_list, key=lambda entry: abs(entry.date.replace(tzinfo=timezone.utc) - target_datetime))
+    if max_gap is not None and abs(closest.date.replace(tzinfo=timezone.utc) - target_datetime) > max_gap:
+        return None
+    return closest
 
 def convert_to_utc(dt):
     """

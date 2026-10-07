@@ -161,6 +161,9 @@ class BuoyStation(BaseStation):
         all_data = []
         for i in range(header_lines, header_lines + data_lines):
             raw_data_line = raw_data[i].split()
+            # Skip blank/truncated lines (e.g. the trailing newline)
+            if len(raw_data_line) < 19:
+                continue
             data = BuoyData(units.Units.metric)
             wave_summary = Swell(units.Units.metric)
             data.date = pytz.utc.localize(datetime(*[int(x) for x in raw_data_line[0:5]]))
@@ -202,6 +205,9 @@ class BuoyStation(BaseStation):
         all_data = []
         for i in range(header_lines, header_lines + data_lines):
             raw_data_line = raw_data[i].split()
+            # Skip blank/truncated lines (e.g. the trailing newline)
+            if len(raw_data_line) < 15:
+                continue
             data = BuoyData(units.Units.metric)
             data.wave_summary = Swell(units.Units.metric)
             swell_component = Swell(units.Units.metric)
@@ -250,6 +256,10 @@ class BuoyStation(BaseStation):
         for i in range(header_lines, header_lines + data_lines):
             raw_energy = energy_data[i].strip().replace(')', '').replace('(', '').split()
             raw_directional = directional_data[i].strip().replace(')', '').replace('(', '').split()
+            # Skip blank/truncated lines (e.g. the trailing newline, which is reached
+            # whenever the file has fewer rows than count_limit)
+            if len(raw_energy) < 6 or len(raw_directional) < 6:
+                continue
 
             spectra = BuoySpectra()
             data = BuoyData(units.Units.metric)
