@@ -18,15 +18,15 @@ LEGACY_LOCATION_MAP = {
     "trestles": "lower-trestles"
 }
 
-# Database connection string
-# Use environment variable for Vercel, with a fallback for local development
-db_url = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://postgres:kooksinthekitchen@db.ehrfwjekssrnbgmgxctg.supabase.co:5432/postgres"
-)
+# Database connection string - set DATABASE_URL in the environment
+# (Vercel project settings in production, a local .env / shell export for development)
+db_url = os.environ.get("DATABASE_URL")
 
 def get_db_connection():
     """Create and return a database connection"""
+    if not db_url:
+        print("Error connecting to database: DATABASE_URL environment variable is not set")
+        return None
     try:
         conn = psycopg2.connect(db_url)
         return conn
