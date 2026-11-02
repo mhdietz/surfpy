@@ -30,7 +30,12 @@ Environment variables:
                               is set (works fine locally from a residential IP).
 
 The Surfline API is undocumented and unauthenticated. Responses may change.
-This script targets the /kbyg/spots/forecasts/wave endpoint.
+This script targets the /kbyg/spots/forecasts/swells endpoint. It replaced
+/kbyg/spots/forecasts/wave, which began returning 404 on 2026-09-02/03. The new
+endpoint has no surf min/max/optimalScore, so those columns are NULL from then on.
+
+Exits non-zero if any requested spot yields no readings, so an outage fails the
+GitHub Actions run instead of reporting success with zero rows written.
 """
 
 import os
@@ -39,6 +44,7 @@ import json
 import logging
 from datetime import datetime, date, time
 from pathlib import Path
+from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
 import requests
@@ -90,53 +96,11 @@ TARGET_TIMES = [
     time(18, 0),
 ]
 
-SURFLINE_BASE = "https://services.surfline.com/kbyg/spots/forecasts/wave"
-
-M_TO_FT = 3.28084
+SURFLINE_BASE = "https://services.surfline.com/kbyg/spots/forecasts/swells"
 
 # ---------------------------------------------------------------------------
-# Units normalization
+# Rounding
 # ---------------------------------------------------------------------------
-
-def is_meters(surf_min) -> bool:
-    """
-    Surfline returns whole numbers when units are feet, decimals when meters.
-    If surf_min has a fractional component, treat the entire reading as meters.
-    """
-    if surf_min is None:
-        return False
-    return surf_min != int(surf_min)
-
-
-def normalize_to_feet(parsed: dict) -> dict:
-    """
-    Convert all height fields from meters to feet in-place.
-    Called only when is_meters() returns True.
-    surf_min/surf_max rounded to whole numbers; swell heights to 1 decimal.
-    """
-    surf_fields = ["surf_min", "surf_max"]
-    swell_fields = [
-        "primary_swell_height",
-        "secondary_swell_height",
-        "tertiary_swell_height",
-    ]
-    for field in surf_fields:
-        if parsed.get(field) is not None:
-            parsed[field] = round(parsed[field] * M_TO_FT)
-    for field in swell_fields:
-        if parsed.get(field) is not None:
-            parsed[field] = round(parsed[field] * M_TO_FT, 1)
-    direction_fields = [
-        "primary_swell_direction",
-        "secondary_swell_direction",
-        "tertiary_swell_direction",
-    ]
-    for field in direction_fields:
-        if parsed.get(field) is not None:
-            parsed[field] = round(parsed[field])
-    log.debug("Normalized reading from meters to feet.")
-    return parsed
-
 
 def round_heights(parsed: dict) -> dict:
     """
@@ -250,9 +214,13 @@ def fetch_surfline(spot_id: str, days: int = 2) -> list[dict]:
     Surfline began blocking Worker egress IPs on 2026-05-15, so that path 403s.
     Falls back to direct requests when neither is set (works fine locally).
     """
-    target_url = (
-        f"{SURFLINE_BASE}?spotId={spot_id}&days={days}&intervalHours=1"
-    )
+    params = {
+        "spotId": spot_id,
+        "days": days,
+        "intervalHours": 1,
+        "units[swellHeight]": "FT",
+    }
+    target_url = f"{SURFLINE_BASE}?{urlencode(params)}"
     scrapingbee_key = os.environ.get("SCRAPINGBEE_API_KEY")
     worker_url = os.environ.get("CLOUDFLARE_WORKER_URL")
 
@@ -280,15 +248,23 @@ def fetch_surfline(spot_id: str, days: int = 2) -> list[dict]:
             log.debug("Cloudflare Worker request for spot %s — status %s", spot_id, resp.status_code)
         else:
             # Direct request — works fine locally
-            resp = requests.get(SURFLINE_BASE, params={
-                "spotId": spot_id, "days": days, "intervalHours": 1
-            }, headers=HEADERS, timeout=15)
+            resp = requests.get(SURFLINE_BASE, params=params, headers=HEADERS, timeout=15)
 
-        resp.raise_for_status()
+        if not resp.ok:
+            # Log status and body, not the exception text: its URL contains the
+            # proxy API key, and the body is what explains why a request failed.
+            log.error("Surfline API request failed for spot %s: HTTP %s: %s",
+                      spot_id, resp.status_code, resp.text[:200])
+            return []
+
         data = resp.json()
-        return data.get("data", {}).get("wave", [])
+        units = data.get("associated", {}).get("units", {}).get("swellHeight")
+        if units != "FT":
+            log.error("Expected swell heights in FT for spot %s, got %r", spot_id, units)
+            return []
+        return data.get("data", {}).get("swells", [])
     except requests.RequestException as exc:
-        log.error("Surfline API request failed for spot %s: %s", spot_id, exc)
+        log.error("Surfline API request failed for spot %s: %s", spot_id, type(exc).__name__)
         return []
     except (KeyError, ValueError) as exc:
         log.error("Unexpected Surfline response shape for spot %s: %s", spot_id, exc)
@@ -339,8 +315,9 @@ def parse_reading(reading: dict) -> dict:
     """
     Sort swells by impact descending, skip zero-height placeholders.
     Primary = most influential swell at this specific break.
-    Normalizes height fields to feet if Surfline returns meters
-    (detected via fractional surf_min).
+    Heights are requested in feet in fetch_surfline. Surfline's units label has
+    been wrong before and there's no surf_min to cross-check against anymore, so
+    a units problem would show up as a ~0.3x ratio against NDBC, not an error here.
     """
     surf = reading.get("surf", {})
     active_swells = sorted(
@@ -377,13 +354,7 @@ def parse_reading(reading: dict) -> dict:
         "tertiary_swell_power":     sf(2, "power"),
     }
 
-    # Normalize to feet if Surfline returned meters, otherwise just round
-    if is_meters(parsed["surf_min"]):
-        parsed = normalize_to_feet(parsed)
-    else:
-        parsed = round_heights(parsed)
-
-    return parsed
+    return round_heights(parsed)
 
 
 # ---------------------------------------------------------------------------
@@ -444,6 +415,11 @@ def save_reading(conn, location, spot_id, reading) -> bool:
 # ---------------------------------------------------------------------------
 
 def collect_spot(spot_name, target_date, conn, dry_run=False) -> int:
+    """
+    Returns the number of target readings Surfline returned. Not the number
+    saved: re-running a day saves nothing because the rows already exist, which
+    isn't a failure.
+    """
     spot_id = SPOTS[spot_name]
     tz_name = SPOT_TIMEZONES[spot_name]
     # If no date specified, use today in the spot's local timezone — not UTC.
@@ -481,13 +457,15 @@ def collect_spot(spot_name, target_date, conn, dry_run=False) -> int:
                 log.info("  → Saved %s @ %s local", spot_name, target_time.strftime("%H:%M"))
 
     log.info("  %d/%d readings for %s", saved, len(readings), spot_name)
-    return saved
+    return len(readings)
 
 
-def collect_all(target_date, conn, dry_run=False) -> int:
-    total = sum(collect_spot(name, target_date, conn, dry_run=dry_run) for name in SPOTS)
-    log.info("Done. %d total readings%s.", total, " (dry run)" if dry_run else "")
-    return total
+def collect_all(target_date, conn, dry_run=False) -> list[str]:
+    """Collect every spot, one failure not blocking the rest. Returns the spots with no readings."""
+    failed = [name for name in SPOTS if not collect_spot(name, target_date, conn, dry_run=dry_run)]
+    log.info("Done. %d/%d spots returned readings%s.",
+             len(SPOTS) - len(failed), len(SPOTS), " (dry run)" if dry_run else "")
+    return failed
 
 
 # ---------------------------------------------------------------------------
@@ -533,10 +511,13 @@ def main():
         log.info("*** DRY RUN — no data will be written ***")
     log.info("Date: %s | Spots: %s", target_date, ", ".join(spot_names))
     if len(spot_names) == 1:
-        collect_spot(spot_names[0], target_date, conn, dry_run=dry_run)
+        failed = [] if collect_spot(spot_names[0], target_date, conn, dry_run=dry_run) else spot_names
     else:
-        collect_all(target_date, conn, dry_run=dry_run)
+        failed = collect_all(target_date, conn, dry_run=dry_run)
     conn.close()
+    if failed:
+        log.error("No readings collected for: %s", ", ".join(failed))
+        sys.exit(1)
 
 
 if __name__ == "__main__":

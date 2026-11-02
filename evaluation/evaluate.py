@@ -49,11 +49,13 @@ SPOT_TIMEZONES = {
 # nothing registers a virtual source yet, this is the interface contract for
 # when models/model_1_empirical.py etc. land).
 
-GROUND_TRUTH = {'id': 'surfline_lotus', 'label': 'Surfline', 'color': '#38bdf8', 'fill': 'rgba(56,189,248,0.08)'}
+# 'max_age_days' on a db source: flag it in the report if its newest reading is older
+# than this. Surfline collects daily; the buoys collect weekly.
+GROUND_TRUTH = {'id': 'surfline_lotus', 'label': 'Surfline', 'color': '#38bdf8', 'fill': 'rgba(56,189,248,0.08)', 'max_age_days': 2}
 
 COMPARISON_SOURCES = [
-    {'id': 'ndbc_buoy', 'label': 'NDBC', 'color': '#f97316', 'fill': 'rgba(249,115,22,0.08)', 'kind': 'db'},
-    {'id': 'cdip_buoy', 'label': 'CDIP', 'color': '#a78bfa', 'fill': 'rgba(167,139,250,0.08)', 'kind': 'db'},
+    {'id': 'ndbc_buoy', 'label': 'NDBC', 'color': '#f97316', 'fill': 'rgba(249,115,22,0.08)', 'kind': 'db', 'max_age_days': 9},
+    {'id': 'cdip_buoy', 'label': 'CDIP', 'color': '#a78bfa', 'fill': 'rgba(167,139,250,0.08)', 'kind': 'db', 'max_age_days': 9},
 ]
 
 SWELL_FIELDS = [
@@ -109,6 +111,36 @@ def fetch_readings_recent(conn, location, source_ids, days=7):
             ORDER BY timestamp ASC
         """, (location, source_ids, cutoff))
         return cur.fetchall()
+
+
+def find_stale_sources(conn, locations, comparison_sources):
+    """
+    Warning strings for each source/spot whose newest reading is too old. A green
+    collection run doesn't prove data landed, so check what's actually in the table.
+    """
+    specs = {s['id']: s for s in [GROUND_TRUTH] + comparison_sources if s.get('max_age_days')}
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT source, location, MAX(timestamp) AS latest
+            FROM evaluation.swell_readings
+            WHERE location = ANY(%s)
+              AND source = ANY(%s)
+            GROUP BY source, location
+            ORDER BY source, location
+        """, (locations, list(specs)))
+        rows = cur.fetchall()
+
+    now = datetime.now(timezone.utc)
+    warnings = []
+    for row in rows:
+        spec = specs[row['source']]
+        age_days = (now - row['latest']).days
+        if age_days > spec['max_age_days']:
+            warnings.append(
+                f"{spec['label']} is stale at {SPOT_LABELS.get(row['location'], row['location'])}: "
+                f"last reading {row['latest'].strftime('%Y-%m-%d')} ({age_days} days ago)"
+            )
+    return warnings
 
 
 def materialize_virtual_sources(rows, comparison_sources):
@@ -602,7 +634,7 @@ def bias_class(val):
     if val < -0.3: return 'neg'
     return 'neutral'
 
-def render_html(results, target_spots, comparison_sources, recent_results=None, slapp_stats=None):
+def render_html(results, target_spots, comparison_sources, recent_results=None, slapp_stats=None, stale_warnings=None):
     from datetime import datetime
     generated = datetime.now().strftime('%B %d, %Y at %H:%M')
     sources = display_sources(comparison_sources)
@@ -1079,6 +1111,11 @@ def render_html(results, target_spots, comparison_sources, recent_results=None, 
             </tr>'''
 
     weekly_html = render_weekly_section(recent_results, comparison_sources) if recent_results else ''
+    stale_html = (
+        '<section class="stale-banner"><div class="stale-title">Data collection problem</div><ul>'
+        + ''.join(f'<li>{w}</li>' for w in stale_warnings)
+        + '</ul></section>'
+    ) if stale_warnings else ''
     weekly_nav  = '<a href="#weekly">Last 7 Days</a>' if weekly_html else ''
     slapp_html  = render_slapp_section(slapp_stats)
     slapp_nav   = '<a href="#slapp">App Activity</a>' if slapp_html else ''
@@ -1100,6 +1137,9 @@ def render_html(results, target_spots, comparison_sources, recent_results=None, 
         --blue:    #38bdf8; --orange:  #f97316; --green:  #34d399;
     }}
     html {{ scroll-behavior: smooth; }}
+    .stale-banner {{ border:1px solid #f87171; background:rgba(248,113,113,0.1); padding:1rem 1.25rem; margin-bottom:2rem; }}
+    .stale-title {{ color:#f87171; font-weight:600; margin-bottom:.5rem; }}
+    .stale-banner ul {{ list-style-position:inside; }}
     body {{
         background: var(--bg); color: var(--text);
         font-family: 'IBM Plex Mono', monospace;
@@ -1221,6 +1261,7 @@ def render_html(results, target_spots, comparison_sources, recent_results=None, 
 </nav>
 
 <main>
+    {stale_html}
     {slapp_html}
     {weekly_html}
     <section class="summary-section" id="summary">
@@ -1303,6 +1344,10 @@ def main():
         else:
             print(f"  {loc}: no matched pairs")
 
+    stale_warnings = find_stale_sources(conn, target_spots, comparison_sources)
+    for warning in stale_warnings:
+        print(f"  WARNING: {warning}")
+
     print("\nAnalyzing last 7 days...")
     recent_results = []
     for loc in target_spots:
@@ -1323,7 +1368,11 @@ def main():
 
     output_path = os.path.join(os.path.dirname(__file__), 'report.html')
     with open(output_path, 'w') as f:
-        f.write(render_html(results, target_spots, comparison_sources, recent_results or None, slapp_stats))
+        f.write(render_html(results, target_spots, comparison_sources, recent_results or None, slapp_stats, stale_warnings))
+
+    # send_report.py runs as a separate step and puts these in the email itself
+    with open(os.path.join(os.path.dirname(__file__), 'stale_warnings.txt'), 'w') as f:
+        f.write(''.join(f'{w}\n' for w in stale_warnings))
 
     print(f"\nReport written to {output_path}")
 

@@ -96,6 +96,21 @@ collection workflow's per-spot error handling meant the job kept reporting
 trust workflow status. When neither proxy is set (local dev), the script falls back
 to direct requests, which work fine from residential IPs.
 
+**Second outage (2026-09-02 → fix below):** Surfline removed `/kbyg/spots/forecasts/wave`
+(404 from residential IPs too, so not a proxy block). Last readings are from 2026-09-01
+local time. The gap can't be backfilled: the API only serves today onward. Collection now
+uses `/kbyg/spots/forecasts/swells`, found in a browser's network tab on a spot page.
+
+**Failures are now visible:** a spot with no readings fails the workflow run, and
+`evaluate.py` checks `MAX(timestamp)` per source/spot and puts any stale sources in the
+report and in the weekly email's subject and body. Thresholds are `max_age_days` in its
+source registry.
+
+**ScrapingBee credits:** this is a 1,000-credit trial account (620 used as of 2026-11-02)
+at 5 credits/day, and 404s appear to use credits too. At that rate it runs out around
+mid-January 2027, and its stated expiry date (2026-03-12) has already passed. Plan a
+replacement before then.
+
 NDBC and CDIP are public government/academic APIs and require no proxy.
 
 ---
@@ -201,9 +216,9 @@ Duplicate runs are safe — existing timestamps are skipped via unique constrain
 | `location` | Spot name key (e.g. `rockaways`, `steamer_lane`) |
 | `spot_id` | Surfline spot ID or NDBC buoy ID |
 | `timestamp` | UTC timestamptz of the reading |
-| `surf_min` | Surfline min breaking wave height (ft); NDBC: significant wave height (Hs) as proxy |
-| `surf_max` | Surfline max breaking wave height (ft); NDBC: same as surf_min |
-| `surf_optimal_score` | Surfline quality score (0, 1, or 2); NULL for NDBC |
+| `surf_min` | Surfline min breaking wave height (ft), NULL since the 2026-09 endpoint change; NDBC: significant wave height (Hs) as proxy |
+| `surf_max` | Surfline max breaking wave height (ft), NULL since the 2026-09 endpoint change; NDBC: same as surf_min |
+| `surf_optimal_score` | Surfline quality score (0, 1, or 2), NULL since the 2026-09 endpoint change; NULL for NDBC |
 | `primary_swell_height` | Height of dominant swell component (ft, 1 decimal) |
 | `primary_swell_period` | Period of primary swell (seconds) |
 | `primary_swell_direction` | Direction of primary swell (degrees) |
@@ -240,6 +255,11 @@ despite claiming feet in the `associated.units` field. Detected by checking whet
 `surf_min` has a fractional component — Surfline always returns whole numbers when
 units are feet. Meter responses are converted to feet on ingest via `3.28084`
 multiplier. `raw_data` JSONB preserves original API response for reprocessing.
+
+This detection no longer applies: the `/swells` endpoint has no `surf_min`. The collector
+now requests `units[swellHeight]=FT` and rejects responses not labelled `FT`, but given the
+history above, the label alone isn't proof. If it's wrong, heights will read about 0.3x
+NDBC at the affected spot, so check that after any endpoint change.
 
 **NDBC:** `surfpy` returns heights in meters. Converted to feet via `3.28084`
 multiplier on ingest.
@@ -278,6 +298,10 @@ in both `collect_surfline.py` and `fetch/ndbc.py`.
 ---
 
 ## Key findings to date
+
+**Note (2026-11-02):** Surfline data has a second gap, 2026-09-02 through the fix date
+(see Proxy section). Rows after it come from the `/swells` endpoint and may not be
+directly comparable until bias against NDBC is checked on both sides of the gap.
 
 **Note (2026-07-08):** the numbers below are unchanged from the original spring
 dataset — Surfline collection was silently broken 2026-05-15 through 2026-07-08 (see
@@ -409,7 +433,14 @@ batch of work, not part of the original build-out above.
       partiwave's own (already surfpy-free) CDIP fetch logic. This project is its
       first consumer/proving ground.
 
+### Recently completed (2026-11-02)
+- [x] **Surfline collection moved to `/swells`** after `/wave` was removed — see Proxy section.
+- [x] **Outage visibility** — failed collection fails the run; stale sources are flagged in
+      the weekly report and email.
+
 ### Next — data pipeline
+- [ ] Decide whether to also collect Surfline surf height (`surf_min`/`surf_max`), which
+      `/swells` doesn't return. Would use another 5 ScrapingBee credits/day.
 - [ ] Replatform `fetch/ndbc.py` off `surfpy` onto `howsit` (met-file fetch is a
       straightforward port from partiwave; spectral primary/secondary/tertiary
       decomposition needs to be understood and rebuilt cleanly, not copy-pasted)

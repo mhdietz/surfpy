@@ -77,11 +77,17 @@ jobs:
             # No args = collect all spots
             python collect_surfline.py
           else
-            # Collect each spot individually so one failure doesn't block others
+            # Collect each spot individually so one failure doesn't block others,
+            # then fail the run if any spot failed
+            FAILED=""
             for spot in $SPOTS; do
               echo "--- Collecting $spot ---"
-              python collect_surfline.py "$spot" || echo "WARNING: $spot failed, continuing"
+              python collect_surfline.py "$spot" || FAILED="$FAILED $spot"
             done
+            if [ -n "$FAILED" ]; then
+              echo "::error::Surfline collection failed for:$FAILED"
+              exit 1
+            fi
           fi
 
       - name: Summary
