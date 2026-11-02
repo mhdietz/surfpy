@@ -28,6 +28,7 @@ RECIPIENTS = [
 
 REPORT_PATH = os.path.join(os.path.dirname(__file__), 'report.html')
 QUOTES_PATH = os.path.join(os.path.dirname(__file__), 'quotes.txt')
+WARNINGS_PATH = os.path.join(os.path.dirname(__file__), 'stale_warnings.txt')
 
 
 # Fixed seed so the shuffled order is stable from week to week. Adding or
@@ -55,6 +56,15 @@ def load_weekly_quote():
     return quotes[week_number % len(quotes)]
 
 
+def load_stale_warnings():
+    """Lines evaluate.py wrote for sources with no recent data."""
+    if not os.path.exists(WARNINGS_PATH):
+        return []
+
+    with open(WARNINGS_PATH, 'r', encoding='utf-8') as f:
+        return [line.strip() for line in f if line.strip()]
+
+
 def main():
     gmail_user     = os.environ.get('GMAIL_USER')
     gmail_password = os.environ.get('GMAIL_APP_PASSWORD')
@@ -73,6 +83,10 @@ def main():
     today   = datetime.now().strftime('%B %d, %Y')
     subject = f"SLAPP Report — {today}"
 
+    warnings = load_stale_warnings()
+    if warnings:
+        subject = f"⚠️ Stale data — {subject}"
+
     msg            = MIMEMultipart()
     msg['From']    = gmail_user
     msg['To']      = ', '.join(RECIPIENTS)
@@ -82,6 +96,9 @@ def main():
         "Weekly SLAPP usage  & NDBC vs Surfline report attached.\n"
         "Open the HTML file in a browser to view the charts."
     )
+
+    if warnings:
+        body = "⚠️ Data collection problem:\n" + "\n".join(f"- {w}" for w in warnings) + "\n\n" + body
 
     quote = load_weekly_quote()
     if quote:
