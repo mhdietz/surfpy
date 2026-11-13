@@ -44,6 +44,7 @@ import json
 import logging
 from datetime import datetime, date, time
 from pathlib import Path
+from time import sleep
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
@@ -97,6 +98,8 @@ TARGET_TIMES = [
 ]
 
 SURFLINE_BASE = "https://services.surfline.com/kbyg/spots/forecasts/swells"
+MAX_ATTEMPTS = 3
+RETRY_BACKOFF_SECONDS = 10
 
 # ---------------------------------------------------------------------------
 # Rounding
@@ -224,31 +227,46 @@ def fetch_surfline(spot_id: str, days: int = 2) -> list[dict]:
     scrapingbee_key = os.environ.get("SCRAPINGBEE_API_KEY")
     worker_url = os.environ.get("CLOUDFLARE_WORKER_URL")
 
-    try:
+    def _request() -> requests.Response:
         if scrapingbee_key:
             # Route through ScrapingBee — render_js=false since this is a JSON
             # API response, not a page that needs rendering (saves credits).
-            resp = requests.get(
+            # Successful calls take up to ~15s; 30s timed out occasionally.
+            return requests.get(
                 "https://app.scrapingbee.com/api/v1/",
                 params={
                     "api_key": scrapingbee_key,
                     "url": target_url,
                     "render_js": "false",
                 },
-                timeout=30,
+                timeout=90,
             )
-            log.debug("ScrapingBee request for spot %s — status %s", spot_id, resp.status_code)
-        elif worker_url:
+        if worker_url:
             # Route through Cloudflare Worker proxy
-            resp = requests.get(
-                worker_url,
-                params={"url": target_url},
-                timeout=30,
-            )
-            log.debug("Cloudflare Worker request for spot %s — status %s", spot_id, resp.status_code)
-        else:
-            # Direct request — works fine locally
-            resp = requests.get(SURFLINE_BASE, params=params, headers=HEADERS, timeout=15)
+            return requests.get(worker_url, params={"url": target_url}, timeout=30)
+        # Direct request — works fine locally
+        return requests.get(SURFLINE_BASE, params=params, headers=HEADERS, timeout=15)
+
+    try:
+        # ScrapingBee intermittently returns 500 ("please try again, you will
+        # not be charged") or hangs; retry those, not 4xx (a 403/404 won't fix itself).
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            try:
+                resp = _request()
+            except (requests.Timeout, requests.ConnectionError) as exc:
+                if attempt == MAX_ATTEMPTS:
+                    raise
+                log.warning("Attempt %d/%d for spot %s failed (%s), retrying",
+                            attempt, MAX_ATTEMPTS, spot_id, type(exc).__name__)
+            else:
+                log.debug("Request for spot %s — status %s", spot_id, resp.status_code)
+                if resp.status_code < 500 and resp.status_code != 429:
+                    break
+                if attempt == MAX_ATTEMPTS:
+                    break
+                log.warning("Attempt %d/%d for spot %s got HTTP %s, retrying",
+                            attempt, MAX_ATTEMPTS, spot_id, resp.status_code)
+            sleep(RETRY_BACKOFF_SECONDS * attempt)
 
         if not resp.ok:
             # Log status and body, not the exception text: its URL contains the
